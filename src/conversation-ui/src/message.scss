@@ -12,20 +12,12 @@
     .message__content {
       background: var(--background-muted);
     }
-
-    .message__sub {
-      margin-left: 1rem;
-    }
   }
 
   &:not(.message--system) {
     &,
     .message__content {
       align-self: flex-end;
-    }
-
-    .message__sub {
-      margin-right: 1rem;
     }
   }
 
@@ -36,7 +28,8 @@
   }
 
   .message__sub {
-    font-size: .8rem;
-    opacity: .75;
+    font-size: 0.8rem;
+    margin: 0 1rem;
+    opacity: 0.75;
   }
 }

@@ -10,7 +10,7 @@ function Message({ content, role, date }) {
   const [displaySub, setDisplaySub] = useState(false);
 
   return (
-    <div className={`message ${role == "system" ? "message--system" : ""}`}>
+    <div className={`message ${role == "system" ? "message--system" : undefined}`}>
       <div className="message__content" onClick={() => setDisplaySub(!displaySub)}>
         { /* eslint-disable-next-line react/no-children-prop */ }
         <ReactMarkdown linkTarget="_blank" remarkPlugins={[remarkGfm]} children={content} />

@@ -3,19 +3,36 @@
 }
 
 .header {
+  --header-padding: 1rem;
+
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   height: 100vh;
+  justify-content: space-between;
   overflow-x: auto;
-  padding: 1rem;
   position: fixed;
   width: var(--header-width);
 
-  > *:not(:last-child) {
-    margin-bottom: 1rem;
+  .header__bottom,
+  .header__top {
+    padding: var(--header-padding);
   }
 
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 500;
+  .header__top {
+    > *:not(:last-child) {
+      margin-bottom: var(--header-padding);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 500;
+    }
+  }
+
+  .header__bottom {
+    bottom: 0;
+    position: sticky;
+    background-color: var(--background);
   }
 }

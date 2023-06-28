@@ -1,11 +1,8 @@
-# Init environment variables
-from typing import Optional
-from dotenv import load_dotenv, find_dotenv
-
-load_dotenv(find_dotenv())
-
+# Import utils
+from utils import (VerifyToken, logger, VERSION)
 
 # Import modules
+from typing import Annotated, List, Optional
 import azure.ai.contentsafety as azure_cs
 from azure.core.credentials import AzureKeyCredential
 from azure.identity import DefaultAzureCredential
@@ -15,40 +12,31 @@ from fastapi import (
     HTTPException,
     status,
     Request,
+    Depends,
 )
+from persistence.redis import (RedisStore, RedisStream, STREAM_STOPWORD)
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer
+from models.conversation import GetConversationModel, BaseConversationModel, SearchConversationModel
 from models.message import MessageModel, MessageRole
-from models.conversation import ConversationModel, SearchConversationModel
-from redis import Redis
+from models.user import UserModel
+from pydantic import ValidationError
 from sse_starlette.sse import EventSourceResponse
 from tenacity import retry, stop_after_attempt
 from uuid import UUID
-from pydantic import ValidationError
-from yarl import URL
+from uuid import uuid4
 import asyncio
 import azure.core.exceptions as azure_exceptions
-import logging
 import openai
 import os
-from uuid import uuid4
 
 
 ###
-# Init misc
+# Init Redis
 ###
 
-VERSION = os.environ.get("VERSION")
-
-###
-# Init logging
-###
-
-LOGGING_SYS_LEVEL = os.environ.get("MS_LOGGING_SYS_LEVEL", logging.WARN)
-logging.basicConfig(level=LOGGING_SYS_LEVEL)
-
-LOGGING_APP_LEVEL = os.environ.get("MS_LOGGING_APP_LEVEL", logging.INFO)
-logger = logging.getLogger(__name__)
-logger.setLevel(LOGGING_APP_LEVEL)
+redis_store = RedisStore()
+redis_stream = RedisStream()
 
 ###
 # Init OpenAI
@@ -115,6 +103,7 @@ api = FastAPI(
     title="conversation-api",
     version=VERSION,
 )
+auth_scheme = HTTPBearer()
 
 # Setup CORS
 api.add_middleware(
@@ -124,17 +113,6 @@ api.add_middleware(
     allow_origins=["*"],
 )
 
-###
-# Init Redis
-###
-
-GLOBAL_CACHE_TTL_SECS = 60 * 60  # 1 hour
-REDIS_HOST = os.environ.get("MS_REDIS_HOST")
-REDIS_PORT = 6379
-REDIS_STREAM_STOPWORD = "STOP"
-REDIS_CONVERSATION_PREFIX = "conversation"
-REDIS_MESSAGE_PREFIX = "message"
-redis_client_api = Redis(db=0, host=REDIS_HOST, port=REDIS_PORT)
 
 ###
 # Init Generative AI
@@ -168,6 +146,7 @@ The title MUST be:
 - Shorter than 10 words
 """
 
+
 @api.get(
     "/health/liveness",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -177,160 +156,110 @@ async def health_liveness_get() -> None:
     return None
 
 
+async def get_current_user(token: Annotated[str, Depends(auth_scheme)]) -> UserModel:
+    res = VerifyToken(token.credentials).verify()
+
+    user = redis_store.user_get(res.get("sub"))
+    if user:
+        return user
+
+    user = UserModel(external_id=res.get("sub"), id=uuid4())
+    redis_store.user_set(user)
+    return user
+
+
 @api.get("/conversation/{id}")
-async def conversation_get(id: UUID) -> ConversationModel:
-    # Get the conversation from Redis
-    conversation_raw = redis_client_api.get(conversation_cache_key(id.hex))
-    if not conversation_raw:
+async def conversation_get(id: UUID, current_user: Annotated[UserModel, Depends(get_current_user)]) -> GetConversationModel:
+    conversation = redis_store.conversation_get(id, current_user.id)
+    if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
-    conversation = ConversationModel.parse_raw(conversation_raw)
     return conversation
 
 
 @api.get("/conversation")
-async def conversation_list() -> SearchConversationModel:
-    # Get all conversations from Redis
-    conversations_raw = redis_client_api.keys(f"${REDIS_CONVERSATION_PREFIX}:*")
-
-    conversations = []
-    for c in conversations_raw:
-        try:
-            conversation = ConversationModel.parse_raw(redis_client_api.get(c))
-            conversations.append(conversation)
-        except ValidationError:
-            logger.warn(f"Invalid conversation found in Redis: {c}")
-
-    # Sort by created_at desc
-    conversations.sort(key=lambda x: x.created_at, reverse=True)
-
+async def conversation_list(current_user: Annotated[UserModel, Depends(get_current_user)]) -> SearchConversationModel:
+    conversations = redis_store.conversation_list(current_user.id)
     return SearchConversationModel(conversations=conversations)
 
 
 @api.post("/message")
-async def message_post(content: str, conversation_id: Optional[UUID] = None) -> ConversationModel:
-    message = MessageModel(content=content, created_at=datetime.now(), role=MessageRole.USER, id=uuid4())
+async def message_post(content: str, current_user: Annotated[UserModel, Depends(get_current_user)], conversation_id: Optional[UUID] = None) -> GetConversationModel:
+    message = MessageModel(content=content, created_at=datetime.now(), role=MessageRole.USER, id=uuid4(), token=uuid4())
 
     if conversation_id:
         logger.info(f"Adding message to conversation (conversation_id={conversation_id})")
-        # Get the conversation from Redis
-        conversation_raw = redis_client_api.get(conversation_cache_key(conversation_id.hex))
-        if not conversation_raw:
+        if not redis_store.conversation_exists(conversation_id, current_user.id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
             )
-        conversation = ConversationModel.parse_raw(conversation_raw)
-        # Add the message to the conversation
-        conversation.messages.append(message)
-        # Update the conversation in Redis
-        redis_client_api.set(conversation_cache_key(conversation.id.hex), conversation.json(), ex=GLOBAL_CACHE_TTL_SECS)
+        redis_store.message_set(message, conversation_id)
+        conversation = redis_store.conversation_get(conversation_id, current_user.id)
     else:
-        # Create a new conversation
-        conversation = ConversationModel(id=uuid4(), created_at=datetime.now(), messages=[message])
-        # Store the conversation in Redis
-        redis_client_api.set(conversation_cache_key(conversation.id.hex), conversation.json(), ex=GLOBAL_CACHE_TTL_SECS)
+        conversation = GetConversationModel(id=uuid4(), created_at=datetime.now(), messages=[message], user_id=current_user.id)
+        redis_store.conversation_set(conversation)
+        redis_store.message_set(message, conversation.id)
 
     if conversation.title is None:
-        # Guess the title
         asyncio.get_running_loop().run_in_executor(
-            None, lambda: guess_title(conversation)
+            None, lambda: guess_title(conversation, current_user)
         )
 
     # Execute the message completion
     asyncio.get_running_loop().run_in_executor(
-        None, lambda: completion_from_message(conversation, message_cache_key(message.id.hex))
+        None, lambda: completion_from_message(conversation, message, current_user)
     )
 
     return conversation
 
 
 @api.get("/message/{id}")
-async def message_get(id: UUID, req: Request) -> EventSourceResponse:
-    cache_key = message_cache_key(id.hex)
-
-    # # Test if message_key is in redis
-    # if not redis_client_api.exists(cache_key):
-    #     raise HTTPException(
-    #         status_code=status.HTTP_404_NOT_FOUND,
-    #         detail="Message not found",
-    #     )
-
-    return EventSourceResponse(read_message_sse(req, cache_key))
+async def message_get(id: UUID, token: UUID, req: Request) -> EventSourceResponse:
+    return EventSourceResponse(read_message_sse(req, token))
 
 
-async def read_message_sse(req: Request, message_key: str):
-    stream_id = 0
+async def read_message_sse(req: Request, message_id: UUID):
+    def clean():
+        logger.info(f"Cleared message cache (message_id={message_id})")
+        redis_stream.clean(message_id)
 
     def client_disconnect():
         logger.info(f"Disconnected from client (via refresh/close) (req={req.client})")
-        logger.debug("Deleting cache key")
-        redis_client_api.delete(message_key)
+        clean()
+
+    async def loop_func() -> bool:
+        if await req.is_disconnected():
+            client_disconnect()
+            return True
+        return False
 
     try:
-        is_end = False
-
-        while True:
-            # If client closes connection, stop sending events
-            if await req.is_disconnected():
-                client_disconnect()
-                break
-
-            if is_end:
-                break
-
-            # Read the redis stream with key cache_key
-            messages_raw = redis_client_api.xread(
-                streams={message_key: stream_id}
-            )
-            message_loop = ""
-
-            if messages_raw:
-                for message_content in messages_raw[0][1]:
-                    stream_id = message_content[0]
-
-                    try:
-                        message = message_content[1][b"message"].decode("utf-8")
-                        if message == REDIS_STREAM_STOPWORD:
-                            is_end = True
-                            break
-                        message_loop += message
-                    except Exception:
-                        logger.exception("Error decoding message", exc_info=True)
-
-                # Send the message to the client after the loop
-                if message_loop:
-                    logger.debug(f"Sending message: {message_loop}")
-                    yield message_loop
-
-            await asyncio.sleep(0.25)
-
-    except asyncio.CancelledError as e:
-        client_disconnect()
-        raise e
-
-    # Delete the cache key
-    logger.debug(f"Deleting cache key {message_key}")
-    redis_client_api.delete(message_key)
+        async for data in redis_stream.get(message_id, loop_func):
+            yield data
+    except Exception:
+        logger.exception("Error while streaming message", exc_info=True)
+        clean()
 
 
 @retry(stop=stop_after_attempt(3))
-def completion_from_message(conversation: ConversationModel, cache_key: str) -> None:
+def completion_from_message(conversation: GetConversationModel, message: MessageModel, current_user: UserModel) -> None:
     logger.debug(f"Getting completion for conversation {conversation.id}")
 
     # Create messages object from conversation
-    messages = [{"role": MessageRole.SYSTEM, "content": AI_SYS_CONVERSATION_PROMPT}]
-    messages += [{"role": m.role, "content": m.content} for m in conversation.messages]
+    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_SYS_CONVERSATION_PROMPT}]
+    completion_messages += [{"role": m.role, "content": m.content} for m in conversation.messages]
 
     try:
         # Use chat completion to get a more natural response and lower the usage cost
         chunks = openai.ChatCompletion.create(
             **OAI_COMPLETION_ARGS,
-            messages=messages,
+            messages=completion_messages,
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
             stream=True,
+            user=current_user.id.hex,
         )
     except openai.error.AuthenticationError as e:
         logger.exception(e)
@@ -342,19 +271,18 @@ def completion_from_message(conversation: ConversationModel, cache_key: str) -> 
         if content is not None:
             logger.debug(f"Completion result: {content}")
             # Add content to the redis stream cache_key
-            redis_client_api.xadd(cache_key, {"message": content})
+            redis_stream.push(content, message.token)
             content_full += content
 
-    logger.debug(f"Completion result: {REDIS_STREAM_STOPWORD}")
-    redis_client_api.xadd(cache_key, {"message": REDIS_STREAM_STOPWORD})
+    # First, store the updated conversation in Redis
+    redis_store.message_set(MessageModel(content=content_full, created_at=datetime.now(), role=MessageRole.SYSTEM, id=uuid4()), conversation.id)
 
-    # Store the updated conversation in Redis
-    conversation.messages.append(MessageModel(content=content_full, created_at=datetime.now(), role=MessageRole.SYSTEM, id=uuid4()))
-    redis_client_api.set(conversation_cache_key(conversation.id.hex), conversation.json(), ex=GLOBAL_CACHE_TTL_SECS)
+    # Then, send the end of stream message
+    redis_stream.push(STREAM_STOPWORD, message.token)
 
 
 @retry(stop=stop_after_attempt(3))
-def guess_title(conversation: ConversationModel) -> None:
+def guess_title(conversation: GetConversationModel, current_user: UserModel) -> None:
     logger.debug(f"Guessing title for conversation {conversation.id}")
 
     try:
@@ -366,20 +294,17 @@ def guess_title(conversation: ConversationModel) -> None:
                 {"role": conversation.messages[0].role, "content": conversation.messages[0].content},
             ],
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
+            user=current_user.id.hex,
         )
+        content = completion["choices"][0].message.content
     except openai.error.AuthenticationError as e:
         logger.exception(e)
         return
 
-    # Update the conversation title
-    content = completion["choices"][0].message.content
-
     # Store the updated conversation in Redis
-    conversation_json = redis_client_api.get(conversation_cache_key(conversation.id.hex))
-    if conversation_json is not None:
-        conversation = ConversationModel.parse_raw(conversation_json)
+    conversation = redis_store.conversation_get(conversation.id, current_user.id)
     conversation.title = content
-    redis_client_api.set(conversation_cache_key(conversation.id.hex), conversation.json(), ex=GLOBAL_CACHE_TTL_SECS)
+    redis_store.conversation_set(conversation)
 
 
 @retry(stop=stop_after_attempt(3))
@@ -412,11 +337,3 @@ async def is_moderated(prompt: str) -> bool:
             res.violence_result,
         ]
     )
-
-
-def conversation_cache_key(str: str) -> str:
-    return f"${REDIS_CONVERSATION_PREFIX}:{str}"
-
-
-def message_cache_key(str: str) -> str:
-    return f"${REDIS_MESSAGE_PREFIX}:{str}"

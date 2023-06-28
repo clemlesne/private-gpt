@@ -1,6 +1,6 @@
 import "./conversations.scss"
-import PropTypes from "prop-types";
 import Button from "./Button";
+import PropTypes from "prop-types";
 
 function Conversations({ conversations, selectedConversation, setSelectedConversation }) {
   return (
@@ -8,7 +8,7 @@ function Conversations({ conversations, selectedConversation, setSelectedConvers
       <Button onClick={() => setSelectedConversation(null)} text="New conversation" emoji="+" disabled={selectedConversation == null} />
       <p>Conversation history:</p>
       {conversations.map((conversation) => (
-        <Button key={conversation.id} onClick={() => setSelectedConversation(conversation.id)} text={conversation.title ? conversation.title : "No title yet"} disabled={conversation.id == selectedConversation} />
+        <Button key={conversation.id} onClick={() => setSelectedConversation(conversation.id)} text={conversation.title ? conversation.title : "No title yet"} disabled={selectedConversation && conversation.id == selectedConversation} />
       ))}
     </div>
   )

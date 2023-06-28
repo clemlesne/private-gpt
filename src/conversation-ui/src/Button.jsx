@@ -13,7 +13,7 @@ function Button({ disabled, onClick, text, loading, emoji, type }) {
 
 Button.propTypes = {
   disabled: PropTypes.bool,
-  emoji: PropTypes.string.isRequired,
+  emoji: PropTypes.string,
   loading: PropTypes.bool,
   onClick: PropTypes.func,
   text: PropTypes.string.isRequired,

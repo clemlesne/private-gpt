@@ -1,15 +1,30 @@
 .conversation {
+  --conversation-padding-h: 2rem;
+  --conversation-padding-v: 1rem;
+
   align-items: center;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   margin-left: var(--header-width);
   min-height: 100vh;
-  padding: 1rem 1rem 0 1rem;
+  padding: 0 var(--conversation-padding-h);
 
   .conversation__messages {
+    padding: var(--conversation-padding-v) var(--conversation-padding-h) 0 var(--conversation-padding-h);
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+
     > *:not(:last-child) {
-      margin-bottom: .5rem;
+      margin-bottom: var(--conversation-padding-v);
+    }
+
+    .conversation__messages__empty {
+      align-self: center;
+      margin: auto 0;
+      font-size: 3rem;
+      font-weight: 500;
     }
   }
 
@@ -17,24 +32,19 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    margin: 0 2rem;
-    max-width: 42rem;
+    margin: 0 calc(var(--conversation-padding-h) * 2);
+    max-width: 48rem;
     width: 100%;
   }
 
-  .conversation__messages {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-  }
-
   .conversation__input {
-    align-items: flex-start;
+    align-items: flex-end;
     background-color: var(--background);
     bottom: 0;
     display: flex;
     flex-direction: row;
-    padding: 1rem 0;
+    margin-top: var(--conversation-padding-v);
+    padding: var(--conversation-padding-v) var(--conversation-padding-h);
     position: sticky;
 
     > *:not(:last-child) {
