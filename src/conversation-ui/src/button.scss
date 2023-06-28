@@ -1,0 +1,17 @@
+.button {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+
+  > *:not(:last-child) {
+    margin-right: 1rem;
+  }
+
+  > :not(.button__emoji) {
+    // Disable line wrapping
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

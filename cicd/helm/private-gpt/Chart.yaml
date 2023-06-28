@@ -1,0 +1,8 @@
+name: private-gpt
+description: Private GPT is a local version of Chat GPT, using Azure OpenAI.
+version: 0.0.0
+apiVersion: v1
+dependencies:
+  - name: redis
+    version: 17.11.3
+    repository: oci://registry-1.docker.io/bitnamicharts

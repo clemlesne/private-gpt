@@ -1,0 +1,8 @@
+ingress:
+  host: example.com
+api:
+  acs:
+    base: example.com
+    token: xxx
+  oai:
+    base: example.com

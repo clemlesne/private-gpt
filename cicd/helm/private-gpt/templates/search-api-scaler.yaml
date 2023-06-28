@@ -1,0 +1,20 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-api
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-api
+spec:
+  scaleTargetRef:
+    name: {{ include "private-gpt.fullname" . }}-conversation-api
+  minReplicaCount: {{ .Values.replicaCount | int | required "A value for .Values.replicaCount is required" }}
+  triggers:
+    - type: cpu
+      metadata:
+        type: Utilization
+        value: "50"
+    - type: memory
+      metadata:
+        type: Utilization
+        value: "50"

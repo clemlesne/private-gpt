@@ -1,0 +1,55 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}`)
+      kind: Rule
+      services:
+        - name: {{ include "private-gpt.fullname" . }}-conversation-ui
+          port: 8080
+      middlewares:
+        - name: {{ include "private-gpt.fullname" . }}-conversation-ui-security
+        - name: {{ include "private-gpt.fullname" . }}-conversation-ui-ratelimit
+        - name: {{ include "private-gpt.fullname" . }}-conversation-ui-compress
+  tls:
+    {{- toYaml .Values.ingress.tls | nindent 4 }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui-security
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+spec:
+  headers:
+    browserXssFilter: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui-ratelimit
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+spec:
+  rateLimit:
+    average: 10
+    burst: 50
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui-compress
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+spec:
+  compress: {}

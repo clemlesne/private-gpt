@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+data:
+  default.conf: |
+    server {
+      listen 8080;
+      server_name conversation-ui;
+
+      location = /health/liveness {
+        return 204;
+      }
+
+      location / {
+        # Use static files
+        root /usr/share/nginx/html;
+        try_files $uri /index.html;
+
+        # Rewrite the API URL
+        sub_filter 'http://127.0.0.1:8081' 'https://{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}/{{ include "private-gpt.fullname" . }}-conversation-api';
+        sub_filter_once off;
+        sub_filter_types *;
+
+        # Cache static files
+        location /assets/ {
+          expires max;
+          add_header Cache-Control "public";
+        }
+      }
+    }

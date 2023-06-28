@@ -1,0 +1,13 @@
+apiVersion: crd.projectcalico.org/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "private-gpt.fullname" . }}
+spec:
+  egress:
+    - action: Allow
+  ingress:
+    - action: Allow
+  selector: all()
+  types:
+    - Egress
+    - Ingress

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "private-gpt.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui

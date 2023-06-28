@@ -1,0 +1,10 @@
+aiohttp==3.8.4
+azure-ai-contentsafety==1.0.0b1
+azure-identity==1.13.0
+fastapi==0.95.2
+openai==0.27.7
+python-dotenv==1.0.0
+redis==4.5.5
+sse-starlette==1.6.1
+tenacity==8.2.2
+uvicorn==0.22.0

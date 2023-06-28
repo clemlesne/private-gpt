@@ -1,0 +1,21 @@
+#root {
+  --header-width: 24rem;
+}
+
+.header {
+  box-sizing: border-box;
+  height: 100vh;
+  overflow-x: auto;
+  padding: 1rem;
+  position: fixed;
+  width: var(--header-width);
+
+  > *:not(:last-child) {
+    margin-bottom: 1rem;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+}

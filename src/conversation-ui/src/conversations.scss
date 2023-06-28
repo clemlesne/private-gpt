@@ -1,0 +1,8 @@
+.conversations {
+  display: flex;
+  flex-direction: column;
+
+  > *:not(:last-child) {
+    margin-bottom: 1rem;
+  }
+}

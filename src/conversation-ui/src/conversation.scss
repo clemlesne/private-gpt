@@ -1,0 +1,48 @@
+.conversation {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--header-width);
+  min-height: 100vh;
+  padding: 1rem 1rem 0 1rem;
+
+  .conversation__messages {
+    > *:not(:last-child) {
+      margin-bottom: .5rem;
+    }
+  }
+
+  .conversation__container {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    margin: 0 2rem;
+    max-width: 42rem;
+    width: 100%;
+  }
+
+  .conversation__messages {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+  }
+
+  .conversation__input {
+    align-items: flex-start;
+    background-color: var(--background);
+    bottom: 0;
+    display: flex;
+    flex-direction: row;
+    padding: 1rem 0;
+    position: sticky;
+
+    > *:not(:last-child) {
+      margin-right: 1rem;
+    }
+
+    > textarea {
+      flex-grow: 1;
+    }
+  }
+}
