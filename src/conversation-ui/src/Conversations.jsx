@@ -5,10 +5,10 @@ import PropTypes from "prop-types";
 function Conversations({ conversations, selectedConversation, setSelectedConversation, conversationLoading }) {
   return (
     <div className="conversations">
-      <Button onClick={() => setSelectedConversation(null)} text="New conversation" emoji="+" disabled={selectedConversation == null} />
+      <Button onClick={() => setSelectedConversation(null)} text="New chat" emoji="+" disabled={selectedConversation == null} />
       <p>Conversation history:</p>
       {conversations.map((conversation) => (
-        <Button key={conversation.id} onClick={() => setSelectedConversation(conversation.id)} text={conversation.title ? conversation.title : "No title yet"} disabled={conversation.id == selectedConversation} loading={conversation.id == selectedConversation && conversationLoading} />
+        <Button key={conversation.id} onClick={() => setSelectedConversation(conversation.id)} text={conversation.title ? conversation.title : "New chat"} disabled={conversation.id == selectedConversation} loading={conversation.id == selectedConversation && conversationLoading} />
       ))}
     </div>
   )
