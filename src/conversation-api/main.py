@@ -193,10 +193,9 @@ async def get_current_user(token: Annotated[Optional[HTTPAuthorizationCredential
         logger.error("Token does not contain a sub claim")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    logger.info(f"User {sub} logged in")
-    logger.debug(jwt)
-
     user = store.user_get(sub)
+    logger.info(f"User logged in: {user}")
+    logger.debug(f"JWT: {jwt}")
     if user:
         return user
 
