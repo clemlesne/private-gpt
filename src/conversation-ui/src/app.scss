@@ -1,5 +1,5 @@
 #root {
-  --header-width: 24rem;
+  --header-width: min(24rem, 33vw);
 }
 
 .header {
