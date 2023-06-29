@@ -1,5 +1,5 @@
 # Import utils
-from utils import logger
+from utils import build_logger
 
 # Import misc
 from .isearch import ISearch
@@ -19,6 +19,7 @@ import textwrap
 import time
 
 
+logger = build_logger(__name__)
 QD_COLLECTION = "messages"
 QD_DIMENSION = 1536
 QD_HOST = os.environ.get("PG_QD_HOST")

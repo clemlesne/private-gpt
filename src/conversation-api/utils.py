@@ -22,11 +22,16 @@ VERSION = os.environ.get("VERSION")
 # Init logging
 ###
 
+def build_logger(name: str) -> logging.Logger:
+    logger = logging.getLogger(name)
+    logger.setLevel(LOGGING_APP_LEVEL)
+    return logger
+
+
 LOGGING_SYS_LEVEL = os.environ.get("PG_LOGGING_SYS_LEVEL", logging.WARN)
 logging.basicConfig(level=LOGGING_SYS_LEVEL)
 LOGGING_APP_LEVEL = os.environ.get("PG_LOGGING_APP_LEVEL", logging.INFO)
-logger = logging.getLogger(__name__)
-logger.setLevel(LOGGING_APP_LEVEL)
+logger = build_logger(__name__)
 
 ###
 # Init OIDC

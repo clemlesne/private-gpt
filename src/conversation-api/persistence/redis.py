@@ -1,5 +1,5 @@
 # Import utils
-from utils import logger
+from utils import build_logger
 
 # Import misc
 from .istore import IStore
@@ -14,6 +14,7 @@ import asyncio
 import os
 
 
+logger = build_logger(__name__)
 CONVERSATION_PREFIX = "conversation"
 MESSAGE_PREFIX = "message"
 REDIS_HOST = os.environ.get("PG_REDIS_HOST")

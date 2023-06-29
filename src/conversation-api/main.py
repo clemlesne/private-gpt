@@ -1,5 +1,5 @@
 # Import utils
-from utils import VerifyToken, logger, VERSION
+from utils import VerifyToken, build_logger, VERSION
 
 # Import misc
 from azure.core.credentials import AzureKeyCredential
@@ -28,6 +28,12 @@ import time
 
 
 ###
+# Init misc
+###
+
+logger = build_logger(__name__)
+
+###
 # Init Redis
 ###
 
@@ -49,7 +55,7 @@ async def refresh_oai_token():
     See: https://github.com/openai/openai-python/pull/350#issuecomment-1489813285
     """
     while True:
-        logger.info("(OpenAI) Refreshing token")
+        logger.info("Refreshing OpenAI token")
         oai_cred = DefaultAzureCredential()
         oai_token = oai_cred.get_token("https://cognitiveservices.azure.com/.default")
         openai.api_key = oai_token.token
@@ -62,7 +68,7 @@ OAI_COMPLETION_ARGS = {
     "model": "gpt-3.5-turbo",
 }
 
-logger.info(f"(OpenAI) Using Aure private service ({openai.api_base})")
+logger.info(f"Using Aure private service ({openai.api_base})")
 openai.api_type = "azure_ad"
 openai.api_version = "2023-05-15"
 asyncio.create_task(refresh_oai_token())
@@ -76,7 +82,7 @@ asyncio.create_task(refresh_oai_token())
 ACS_SEVERITY_THRESHOLD = 2
 ACS_API_BASE = os.environ.get("PG_ACS_API_BASE")
 ACS_API_TOKEN = os.environ.get("PG_ACS_API_TOKEN")
-logger.info(f"(Azure Content Safety) Using Aure private service ({ACS_API_BASE})")
+logger.info(f"Connected Azure Content Safety to {ACS_API_BASE}")
 acs_client = azure_cs.ContentSafetyClient(
     ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
 )
