@@ -76,15 +76,23 @@ function Search({ setHideConversation }) {
             fetchSearch();
             e.preventDefault();
           }}
+          onKeyDown={(e) => {
+            // Ability to close search with escape
+            if (e.key === "Escape") {
+              setMessages([]);
+              setHideConversation(false);
+              e.preventDefault();
+            }
+          }}
         >
           <input
             placeholder="Search messages across all conversations"
             value={input || ""}
             onChange={(e) => {
-              setMessages([]);
               setInput(e.target.value);
             }}
             onKeyDown={(e) => {
+              // Ability to insert new line with shift + enter
               if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
                 fetchSearch();
                 e.preventDefault();
@@ -104,10 +112,11 @@ function Search({ setHideConversation }) {
             <h2 className="search__title">Search results</h2>
             {messages.map((message) => (
               <Message
-                key={message.data.id}
                 content={message.data.content}
-                role={message.data.role}
                 date={message.data.created_at}
+                defaultDisplaySub={true}
+                key={message.data.id}
+                role={message.data.role}
               />
             ))}
           </div>

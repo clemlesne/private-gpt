@@ -5,9 +5,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useState, useRef } from "react";
 
-function Message({ content, role, date }) {
+function Message({ content, role, date, defaultDisplaySub = false}) {
   // State
-  const [displaySub, setDisplaySub] = useState(false);
+  const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   // Refs
   const httpContent = useRef(null);
 
@@ -49,8 +49,9 @@ function Message({ content, role, date }) {
 
 Message.propTypes = {
   content: PropTypes.string.isRequired,
-  role: PropTypes.string.isRequired,
   date: PropTypes.string.isRequired,
+  defaultDisplaySub: PropTypes.bool,
+  role: PropTypes.string.isRequired,
 };
 
 export default Message;
