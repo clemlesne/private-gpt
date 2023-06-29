@@ -7,17 +7,20 @@ import Button from "./Button";
 import Message from "./Message";
 import PropTypes from "prop-types";
 
-function Conversation({ conversationId, refreshConversations }) {
+function Conversation({ conversationId, refreshConversations, setConversationLoading }) {
   // Constants
   const API_BASE_URL = "http://127.0.0.1:8081";
   // State
   const [input, setInput] = useState(null);
   const [conversation, setConversation] = useState({ messages: [] });
+  const [loading, setLoading] = useState(false);
   // Dynamic
   const auth = useAuth();
 
   useEffect(() => {
     const fetchConversation = async () => {
+      if (!auth.userData) return;
+
       if (!conversationId) {
         setConversation({ messages: [] });
         return;
@@ -41,7 +44,10 @@ function Conversation({ conversationId, refreshConversations }) {
         });
     };
 
-    fetchConversation();
+    setConversationLoading(true);
+    fetchConversation().finally(() => {
+      setConversationLoading(false);
+    });
   }, [auth, conversationId]);
 
   const sendMessage = () => {
@@ -60,6 +66,10 @@ function Conversation({ conversationId, refreshConversations }) {
     };
 
     const fetchMessage = async () => {
+      if (!auth.userData) return;
+
+      setLoading(true);
+
       // First, create the message
       await axios
         .post(`${API_BASE_URL}/message`, null, {
@@ -75,6 +85,12 @@ function Conversation({ conversationId, refreshConversations }) {
         .then((res) => {
           if (!res.data) return;
 
+          const cleanup = () => {
+            source.close();
+            if (!conversation.id) refreshConversations();
+            setLoading(false);
+          };
+
           // Then, fetch the message
           const lastMessage = res.data.messages[res.data.messages.length - 1];
           let stream = "";
@@ -83,8 +99,7 @@ function Conversation({ conversationId, refreshConversations }) {
           );
           source.onmessage = (e) => {
             if (e.data === "STOP") {
-              source.close();
-              if (!conversation.id) refreshConversations();
+              cleanup();
               return;
             }
 
@@ -98,13 +113,12 @@ function Conversation({ conversationId, refreshConversations }) {
             });
           };
           source.onerror = (e) => {
-            if (e.eventPhase === EventSource.CLOSED) {
-              source.close();
-            }
+            if (e.eventPhase === EventSource.CLOSED) cleanup();
           };
         })
         .catch((error) => {
           console.error(error);
+          setLoading(false);
         });
     };
 
@@ -129,21 +143,25 @@ function Conversation({ conversationId, refreshConversations }) {
     setInput("");
   };
 
+  useEffect(() => {
+    window.scrollTo(0, document.body.scrollHeight);
+  }, [conversation]);
+
   return (
     <div className="conversation">
       <div className="conversation__container">
         <div className="conversation__messages">
-          {conversation.messages.length == 0 && <p className="conversation__messages__empty">🔒 Private GPT</p>}
-          {conversation.messages.map((message) =>
-            message.content ? (
-              <Message
-                key={message.id}
-                content={message.content}
-                role={message.role}
-                date={message.created_at}
-              />
-            ) : null
+          {conversation.messages.length == 0 && (
+            <big className="conversation__messages__empty">🔒 Private GPT</big>
           )}
+          {conversation.messages.map((message) => (
+            <Message
+              key={message.id}
+              content={message.content}
+              role={message.role}
+              date={message.created_at}
+            />
+          ))}
         </div>
         <form
           className="conversation__input"
@@ -164,10 +182,12 @@ function Conversation({ conversationId, refreshConversations }) {
             }}
           />
           <Button
-            text="Send"
-            emoji="⬆️"
-            type="submit"
+            active={true}
             disabled={!(input && input.length > 0)}
+            emoji="⬆️"
+            loading={loading}
+            text="Send"
+            type="submit"
           />
         </form>
       </div>
@@ -178,6 +198,7 @@ function Conversation({ conversationId, refreshConversations }) {
 Conversation.propTypes = {
   conversationId: PropTypes.string,
   refreshConversations: PropTypes.func.isRequired,
+  setConversationLoading: PropTypes.func.isRequired,
 };
 
 export default Conversation;

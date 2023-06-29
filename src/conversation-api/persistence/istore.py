@@ -1,14 +1,14 @@
 from models.conversation import GetConversationModel, BaseConversationModel
-from models.message import MessageModel
+from models.message import MessageModel, IndexMessageModel
 from models.user import UserModel
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Union
 from uuid import UUID
 
 
 class IStore(ABC):
     @abstractmethod
-    def user_get(self, user_external_id: str) -> UserModel:
+    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         pass
 
     @abstractmethod
@@ -16,7 +16,11 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> GetConversationModel:
+    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> Union[GetConversationModel, None]:
+        pass
+
+    @abstractmethod
+    def message_get_index(self, messages: List[IndexMessageModel]) -> List[MessageModel]:
         pass
 
     @abstractmethod
@@ -32,7 +36,7 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def message_get(self, message_id: UUID, conversation_id: UUID) -> MessageModel:
+    def message_get(self, message_id: UUID, conversation_id: UUID) -> Union[MessageModel, None]:
         pass
 
     @abstractmethod

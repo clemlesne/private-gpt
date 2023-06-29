@@ -6,13 +6,16 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import Conversation from "./Conversation";
 import Conversations from "./Conversations";
+import Search from "./Search";
 
 function App() {
   // Constants
   const API_BASE_URL = "http://127.0.0.1:8081";
   // State
+  const [hideConversation, setHideConversation] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
+  const [conversationLoading, setConversationLoading] = useState(false);
   // Dynamic
   const auth = useAuth();
 
@@ -91,21 +94,26 @@ function App() {
             conversations={conversations}
             selectedConversation={selectedConversation}
             setSelectedConversation={setSelectedConversation}
+            conversationLoading={conversationLoading}
           />
         </div>
         <div className="header__bottom">
           {auth.userData && (
-            <p>
+            <small>
               Logged as {auth.userData.profile.name} (
               {auth.userData.profile.email}).
-            </p>
+            </small>
           )}
         </div>
       </div>
-      <Conversation
-        conversationId={selectedConversation}
-        refreshConversations={refreshConversations}
-      />
+      <div className="main">
+        <Search setHideConversation={setHideConversation} />
+        {!hideConversation && <Conversation
+          conversationId={selectedConversation}
+          refreshConversations={refreshConversations}
+          setConversationLoading={setConversationLoading}
+        />}
+      </div>
     </>
   );
 }

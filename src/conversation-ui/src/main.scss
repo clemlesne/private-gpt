@@ -21,19 +21,40 @@ body {
   font-synthesis: none;
   font-weight: 400;
   hyphens: manual;
-  line-height: 1.7rem;
+  line-height: 1.7;
   text-rendering: optimizeLegibility;
   word-break: break-word;
 
   p,
+  big,
   h1,
   h2,
   h3,
   h4,
   h5,
-  h6 {
+  h6,
+  small {
     font: inherit;
     margin: 0;
+  }
+
+  small {
+    font-size: 0.8rem;
+  }
+
+  big {
+    font-size: 3rem;
+    font-weight: 500;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 500;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
   }
 
   textarea,

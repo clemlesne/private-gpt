@@ -1,35 +1,36 @@
 # Import utils
 from utils import logger
 
-from models.conversation import GetConversationModel, BaseConversationModel
-from models.message import MessageModel
-from models.user import UserModel
+# Import misc
 from .istore import IStore
 from .istream import IStream
+from models.conversation import GetConversationModel, BaseConversationModel
+from models.message import MessageModel, IndexMessageModel
+from models.user import UserModel
 from redis import Redis
-from typing import AsyncGenerator, Callable, List, Literal, Optional
+from typing import Any, AsyncGenerator, Callable, Awaitable, List, Literal, Optional, Union
 from uuid import UUID
 import asyncio
 import os
 
 
-###
-# Init Redis
-###
-
-CACHE_TTL_SECS = 60 * 60  # 1 hour
 CONVERSATION_PREFIX = "conversation"
 MESSAGE_PREFIX = "message"
-STREAM_PREFIX = "stream"
-STREAM_STOPWORD = "STOP"
 REDIS_HOST = os.environ.get("MS_REDIS_HOST")
 REDIS_PORT = 6379
+STREAM_PREFIX = "stream"
+STREAM_STOPWORD = "STOP"
 USER_PREFIX = "user"
+
+if not REDIS_HOST:
+    raise Exception("Missing MS_REDIS_HOST environment variable")
+
 client = Redis(db=0, host=REDIS_HOST, port=REDIS_PORT)
+logger.info(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
 
 
 class RedisStore(IStore):
-    def user_get(self, user_external_id: str) -> UserModel:
+    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         raw = client.get(self._user_cache_key(user_external_id))
         if raw is None:
             return None
@@ -37,10 +38,10 @@ class RedisStore(IStore):
 
 
     def user_set(self, user: UserModel) -> None:
-        client.set(self._user_cache_key(user.external_id), user.json(), ex=CACHE_TTL_SECS)
+        client.set(self._user_cache_key(user.external_id), user.json())
 
 
-    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> GetConversationModel:
+    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> Union[GetConversationModel, None]:
         raw = client.get(self._conversation_cache_key(user_id, conversation_id))
         if raw is None:
             return None
@@ -52,12 +53,28 @@ class RedisStore(IStore):
         )
 
 
+    def message_get_index(self, message_indexs: List[IndexMessageModel]) -> List[MessageModel]:
+        keys = [self._message_cache_key(message_index.conversation_id, message_index.id) for message_index in message_indexs]
+        raws = client.mget(keys)
+        if raws is None:
+            return []
+        messages = []
+        for raw in raws:
+            if raw is None:
+                continue
+            try:
+                messages.append(MessageModel.parse_raw(raw))
+            except Exception:
+                logger.warn("Error parsing message", exc_info=True)
+        return messages
+
+
     def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
-        return client.exists(self._conversation_cache_key(user_id, conversation_id))
+        return client.exists(self._conversation_cache_key(user_id, conversation_id)) != 0
 
 
     def conversation_set(self, conversation: BaseConversationModel) -> None:
-        client.set(self._conversation_cache_key(conversation.user_id, conversation.id), conversation.json(), ex=CACHE_TTL_SECS)
+        client.set(self._conversation_cache_key(conversation.user_id, conversation.id), conversation.json())
 
 
     def conversation_list(self, user_id: UUID) -> List[BaseConversationModel]:
@@ -67,6 +84,8 @@ class RedisStore(IStore):
             return []
         conversations = []
         for raw in raws:
+            if raw is None:
+                continue
             try:
                 conversations.append(BaseConversationModel.parse_raw(raw))
             except Exception:
@@ -76,7 +95,7 @@ class RedisStore(IStore):
         return conversations
 
 
-    def message_get(self, message_id: UUID, conversation_id: UUID) -> MessageModel:
+    def message_get(self, message_id: UUID, conversation_id: UUID) -> Union[MessageModel, None]:
         raw = client.get(self._message_cache_key(conversation_id, message_id))
         if raw is None:
             return None
@@ -84,7 +103,7 @@ class RedisStore(IStore):
 
 
     def message_set(self, message: MessageModel, conversation_id: UUID) -> None:
-        client.set(self._message_cache_key(conversation_id, message.id), message.json(), ex=CACHE_TTL_SECS)
+        client.set(self._message_cache_key(conversation_id, message.id), message.json())
 
 
     def message_list(self, conversation_id: UUID) -> List[MessageModel]:
@@ -94,6 +113,8 @@ class RedisStore(IStore):
             return []
         messages = []
         for raw in raws:
+            if raw is None:
+                continue
             try:
                 messages.append(MessageModel.parse_raw(raw))
             except Exception:
@@ -124,7 +145,7 @@ class RedisStream(IStream):
         client.xadd(self._cache_key(token), {"message": content})
 
 
-    async def get(self, token: UUID, loop_func: Callable[[], bool]) -> AsyncGenerator[any | Literal["STOP"], None]:
+    async def get(self, token: UUID, loop_func: Callable[[], Awaitable[bool]]) -> AsyncGenerator[Any | Literal["STOP"], None]:
         stream_id = 0
         is_end = False
 

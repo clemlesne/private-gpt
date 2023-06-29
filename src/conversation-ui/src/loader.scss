@@ -1,4 +1,7 @@
 .loader {
+  flex-shrink: 0;
+
+  // Animate
   animation: rotating 2s linear infinite;
   display: inline-block;
 }

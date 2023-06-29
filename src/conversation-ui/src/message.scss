@@ -8,10 +8,6 @@
     .message__content {
       align-self: flex-start;
     }
-
-    .message__content {
-      background: var(--background-muted);
-    }
   }
 
   &:not(.message--system) {
@@ -22,13 +18,27 @@
   }
 
   .message__content {
-    background: var(--background-active);
+    backdrop-filter: blur(25vw) contrast(.75);
     border-radius: var(--radius);
     padding: 1rem;
+
+    > *:not(:last-child) {
+      margin-bottom: 1rem;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.25rem;
+      }
+    }
   }
 
   .message__sub {
-    font-size: 0.8rem;
     margin: 0 1rem;
     opacity: 0.75;
   }

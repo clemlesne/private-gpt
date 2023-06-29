@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
 from pydantic import BaseModel
 from uuid import UUID
 
@@ -16,3 +16,9 @@ class MessageModel(BaseModel):
     id: UUID
     role: MessageRole
     token: Optional[UUID] = None
+
+
+class IndexMessageModel(BaseModel):
+    conversation_id: UUID
+    id: UUID
+    user_id: UUID

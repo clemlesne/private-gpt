@@ -4,14 +4,18 @@
   flex-direction: row;
   flex-shrink: 0;
 
-  > *:not(:last-child) {
-    margin-right: 0.5rem;
+  &.button--active {
+    background-color: var(--background-active);
   }
 
-  > :not(.button__emoji) {
+  > * {
     // Disable line wrapping
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  > *:not(:last-child) {
+    margin-right: 0.5rem;
   }
 }

@@ -4,7 +4,9 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
 # Import modules
-from fastapi import (HTTPException, status)
+from fastapi import HTTPException, status
+from tenacity import retry, stop_after_attempt
+from typing import Dict
 import jwt
 import logging
 import os
@@ -33,26 +35,21 @@ logger.setLevel(LOGGING_APP_LEVEL)
 OIDC_API_AUDIENCE = os.environ.get("MS_OIDC_API_AUDIENCE")
 OIDC_JWKS = os.environ.get("MS_OIDC_JWKS")
 OIDC_AUTHORITY = os.environ.get("MS_OIDC_AUTHORITY")
-OIDC_ALGORITHMS = os.environ.get("MS_OIDC_ALGORITHMS").split(",")
+OIDC_ALGORITHMS = os.environ.get("MS_OIDC_ALGORITHMS", "").split(",")
 
 
-class VerifyToken():
-    """Does all the token verification using PyJWT"""
-
+class VerifyToken:
     def __init__(self, token):
         self.token = token
         self.jwks_client = jwt.PyJWKClient(OIDC_JWKS)
 
-    def verify(self) -> dict[str, str]:
-        # This gets the "kid" from the passed token
+
+    def verify(self) -> Dict[str, str]:
         try:
-            self.signing_key = self.jwks_client.get_signing_key_from_jwt(self.token)
+            self._load_jwks()
         except Exception:
-            logger.debug("JWT token is invalid", exc_info=True)
-            raise HTTPException(
-              status_code=status.HTTP_401_UNAUTHORIZED,
-              detail="JWT token is invalid",
-            )
+            logger.error("Cannot load signing key from JWT", exc_info=True)
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         try:
             payload = jwt.decode(
@@ -64,10 +61,15 @@ class VerifyToken():
                 options={"require": ["exp", "iss", "sub"]},
             )
         except Exception:
-            logger.debug("JWT token is invalid", exc_info=True)
+            logger.info("JWT token is invalid", exc_info=True)
             raise HTTPException(
-              status_code=status.HTTP_401_UNAUTHORIZED,
-              detail="JWT token is invalid",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="JWT token is invalid",
             )
 
         return payload
+
+
+    @retry(stop=stop_after_attempt(3))
+    def _load_jwks(self) -> None:
+        self.signing_key = self.jwks_client.get_signing_key_from_jwt(self.token)

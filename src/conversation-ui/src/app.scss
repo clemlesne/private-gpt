@@ -23,11 +23,6 @@
     > *:not(:last-child) {
       margin-bottom: var(--header-padding);
     }
-
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 500;
-    }
   }
 
   .header__bottom {
@@ -35,4 +30,12 @@
     position: sticky;
     background-color: var(--background);
   }
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  margin-left: var(--header-width);
+  min-height: 100vh;
+  padding: 0 2rem;
 }
