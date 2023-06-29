@@ -232,6 +232,13 @@ async def message_post(
     current_user: Annotated[UserModel, Depends(get_current_user)],
     conversation_id: Optional[UUID] = None,
 ) -> GetConversationModel:
+    if await is_moderated(content):
+        logger.info("Message is moderated")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message is moderated",
+        )
+
     message = MessageModel(
         content=content,
         created_at=datetime.now(),
@@ -403,7 +410,7 @@ def guess_title(conversation: GetConversationModel, current_user: UserModel) -> 
 
 @retry(stop=stop_after_attempt(3))
 async def is_moderated(prompt: str) -> bool:
-    logger.info(f"Checking moderation for text: {prompt}")
+    logger.debug(f"Checking moderation for text: {prompt}")
 
     req = azure_cs.models.AnalyzeTextOptions(
         text=prompt,
@@ -421,8 +428,7 @@ async def is_moderated(prompt: str) -> bool:
         logger.exception(e)
         return False
 
-    logger.debug(f"Moderation result: {res}")
-    return any(
+    is_moderated = any(
         cat.severity >= ACS_SEVERITY_THRESHOLD
         for cat in [
             res.hate_result,
@@ -431,3 +437,8 @@ async def is_moderated(prompt: str) -> bool:
             res.violence_result,
         ]
     )
+    if is_moderated:
+        logger.info(f"Message is moderated: {prompt}")
+        logger.debug(f"Moderation result: {res}")
+
+    return is_moderated
