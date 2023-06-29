@@ -167,6 +167,10 @@ User: xxx
 Unknown subject
 
 EXAMPLE #5
+User: hello boy
+Unknown subject
+
+EXAMPLE #6
 User: write a poem
 A poem
 """
