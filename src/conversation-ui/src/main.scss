@@ -38,8 +38,25 @@ body {
     margin: 0;
   }
 
-  small {
-    font-size: 0.8rem;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 500;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
   }
 
   big {
@@ -47,14 +64,37 @@ body {
     font-weight: 500;
   }
 
-  h1 {
-    font-size: 1.5rem;
-    font-weight: 500;
+  small {
+    font-size: 0.8rem;
   }
 
-  h2 {
-    font-size: 1.25rem;
-    font-weight: 500;
+  textarea,
+  input {
+    cursor: text;
+  }
+
+  a,
+  button {
+    cursor: pointer;
+  }
+
+  textarea,
+  button,
+  input,
+  a {
+    &,
+    &::placeholder,
+    &:disabled,
+    &[disabled] {
+      color: var(--color);
+    }
+
+    &::placeholder,
+    &:disabled,
+    &[disabled] {
+      cursor: default;
+      opacity: 0.75;
+    }
   }
 
   textarea,
@@ -63,20 +103,10 @@ body {
     background: var(--background-muted);
     border-radius: var(--radius);
     border: unset;
+    min-width: 0;
     padding: 0.75rem 1rem;
 
-    &,
-    &::placeholder,
-    &:disabled {
-      color: var(--color);
-    }
-
-    &::placeholder,
-    &:disabled {
-      opacity: 0.75;
-    }
-
-    &:not(:disabled) {
+    &:not(:disabled):not([disabled]) {
       &:hover {
         outline: 1px solid var(--border);
       }
@@ -88,32 +118,18 @@ body {
     }
   }
 
-  button {
-    &:not(:disabled) {
-      cursor: pointer;
-    }
-  }
-
-  input {
-    &:not(:disabled) {
-      cursor: text;
-    }
-  }
-
   a {
     color: var(--color-active);
     text-decoration: none;
 
-    &:not(:disabled) {
-      cursor: pointer;
-    }
+    &:not(:disabled):not([disabled]) {
+      &:hover {
+        text-decoration: underline;
+      }
 
-    &:hover {
-      text-decoration: underline;
-    }
-
-    &:visited {
-      color: var(--color-visited);
+      &:visited {
+        color: var(--color-visited);
+      }
     }
   }
 
