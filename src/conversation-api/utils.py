@@ -39,7 +39,7 @@ logger = build_logger(__name__)
 
 OIDC_API_AUDIENCE = os.environ.get("PG_OIDC_API_AUDIENCE")
 OIDC_JWKS = os.environ.get("PG_OIDC_JWKS")
-OIDC_AUTHORITY = os.environ.get("PG_OIDC_AUTHORITY")
+OIDC_ISSUERS = os.environ.get("PG_OIDC_ISSUERS", "").split(",")
 OIDC_ALGORITHMS = os.environ.get("PG_OIDC_ALGORITHMS", "").split(",")
 
 
@@ -56,21 +56,36 @@ class VerifyToken:
             logger.error("Cannot load signing key from JWT", exc_info=True)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
-        try:
-            payload = jwt.decode(
-                self.token,
-                algorithms=OIDC_ALGORITHMS,
-                audience=OIDC_API_AUDIENCE,
-                issuer=OIDC_AUTHORITY,
-                key=self.signing_key.key,
-                options={"require": ["exp", "iss", "sub"]},
-            )
-        except Exception:
-            logger.info("JWT token is invalid", exc_info=True)
+        succeed = False
+        last_error = None
+        payload = None
+        for issuer in OIDC_ISSUERS:
+            try:
+                payload = jwt.decode(
+                    self.token,
+                    algorithms=OIDC_ALGORITHMS,
+                    audience=OIDC_API_AUDIENCE,
+                    issuer=issuer,
+                    key=self.signing_key.key,
+                    options={"require": ["exp", "iss", "sub"]},
+                )
+                succeed = True
+                logger.debug(f"Successfully validate JWT with issuer: {issuer}")
+                break
+            except Exception as e:
+                logger.debug(f"Fails validate JWT with issuer: {issuer}")
+                last_error = e
+
+        if not succeed:
+            logger.info("JWT token is invalid", last_error)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="JWT token is invalid",
             )
+
+        if not payload:
+            logger.error("Incoherent payload, shouldn't be None")
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return payload
 

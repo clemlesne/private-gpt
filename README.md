@@ -20,7 +20,7 @@ PG_LOGGING_SYS_LEVEL=INFO
 # Here, example with Azure Active Directory
 PG_OIDC_ALGORITHMS=RS256
 PG_OIDC_API_AUDIENCE=[aad_app_id]
-PG_OIDC_AUTHORITY=https://login.microsoftonline.com/[azure_tenant_id]
+PG_OIDC_ISSUERS=https://login.microsoftonline.com/[azure_tenant_id]
 PG_OIDC_JWKS=https://login.microsoftonline.com/common/discovery/v2.0/keys
 
 # Azure Cognitive Services
