@@ -47,20 +47,20 @@ spec:
             tcpSocket:
               port: http
           env:
-            - name: MS_ROOT_PATH
+            - name: PG_ROOT_PATH
               value: /{{ include "private-gpt.fullname" . }}-conversation-api
-            - name: MS_ACS_API_TOKEN
+            - name: PG_ACS_API_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "private-gpt.fullname" . }}-conversation-api
-                  key: MS_ACS_API_TOKEN
-            - name: MS_ACS_API_BASE
+                  key: PG_ACS_API_TOKEN
+            - name: PG_ACS_API_BASE
               value: "{{ .Values.api.acs.base | required "A value for .Values.api.acs.base is required" }}"
-            - name: MS_LOGGING_APP_LEVEL
+            - name: PG_LOGGING_APP_LEVEL
               value: {{ .Values.api.logging.app | required "A value for .Values.api.logging.app is required" }}
-            - name: MS_LOGGING_SYS_LEVEL
+            - name: PG_LOGGING_SYS_LEVEL
               value: {{ .Values.api.logging.sys | required "A value for .Values.api.logging.sys is required" }}
-            - name: MS_OAI_GPT_DEPLOY_ID
+            - name: PG_OAI_GPT_DEPLOY_ID
               value: {{ .Values.api.oai.gpt_deploy_id | required "A value for .Values.api.oai.gpt_deploy_id is required" }}
             - name: OPENAI_API_BASE
               value: "{{ .Values.api.oai.base | required "A value for .Values.api.oai.base is required" }}"

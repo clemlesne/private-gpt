@@ -22,9 +22,9 @@ VERSION = os.environ.get("VERSION")
 # Init logging
 ###
 
-LOGGING_SYS_LEVEL = os.environ.get("MS_LOGGING_SYS_LEVEL", logging.WARN)
+LOGGING_SYS_LEVEL = os.environ.get("PG_LOGGING_SYS_LEVEL", logging.WARN)
 logging.basicConfig(level=LOGGING_SYS_LEVEL)
-LOGGING_APP_LEVEL = os.environ.get("MS_LOGGING_APP_LEVEL", logging.INFO)
+LOGGING_APP_LEVEL = os.environ.get("PG_LOGGING_APP_LEVEL", logging.INFO)
 logger = logging.getLogger(__name__)
 logger.setLevel(LOGGING_APP_LEVEL)
 
@@ -32,10 +32,10 @@ logger.setLevel(LOGGING_APP_LEVEL)
 # Init OIDC
 ###
 
-OIDC_API_AUDIENCE = os.environ.get("MS_OIDC_API_AUDIENCE")
-OIDC_JWKS = os.environ.get("MS_OIDC_JWKS")
-OIDC_AUTHORITY = os.environ.get("MS_OIDC_AUTHORITY")
-OIDC_ALGORITHMS = os.environ.get("MS_OIDC_ALGORITHMS", "").split(",")
+OIDC_API_AUDIENCE = os.environ.get("PG_OIDC_API_AUDIENCE")
+OIDC_JWKS = os.environ.get("PG_OIDC_JWKS")
+OIDC_AUTHORITY = os.environ.get("PG_OIDC_AUTHORITY")
+OIDC_ALGORITHMS = os.environ.get("PG_OIDC_ALGORITHMS", "").split(",")
 
 
 class VerifyToken:

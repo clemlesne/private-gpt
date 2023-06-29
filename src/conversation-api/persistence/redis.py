@@ -16,14 +16,14 @@ import os
 
 CONVERSATION_PREFIX = "conversation"
 MESSAGE_PREFIX = "message"
-REDIS_HOST = os.environ.get("MS_REDIS_HOST")
+REDIS_HOST = os.environ.get("PG_REDIS_HOST")
 REDIS_PORT = 6379
 STREAM_PREFIX = "stream"
 STREAM_STOPWORD = "STOP"
 USER_PREFIX = "user"
 
 if not REDIS_HOST:
-    raise Exception("Missing MS_REDIS_HOST environment variable")
+    raise Exception("Missing PG_REDIS_HOST environment variable")
 
 client = Redis(db=0, host=REDIS_HOST, port=REDIS_PORT)
 logger.info(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
