@@ -40,7 +40,7 @@ function Message({ content, role, date }) {
       </div>
       {displaySub && (
         <small className="message__sub">
-          <span>{moment(date).format("lll")}</span>
+          <span>{moment(date).fromNow()}</span>
         </small>
       )}
     </div>

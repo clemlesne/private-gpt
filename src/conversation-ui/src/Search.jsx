@@ -78,7 +78,7 @@ function Search({ setHideConversation }) {
           }}
         >
           <input
-            placeholder="Search for a message"
+            placeholder="Search messages across all conversations"
             value={input || ""}
             onChange={(e) => {
               setMessages([]);

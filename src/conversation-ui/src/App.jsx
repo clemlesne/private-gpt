@@ -89,7 +89,6 @@ function App() {
       <div className="header">
         <div className="header__top">
           <h1>🔒 Private GPT</h1>
-          <p>Private GPT is a local version of Chat GPT, using Azure OpenAI.</p>
           <Conversations
             conversations={conversations}
             selectedConversation={selectedConversation}

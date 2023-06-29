@@ -1,8 +1,10 @@
 .conversations {
+  --conversations-padding: 1rem;
+
   display: flex;
   flex-direction: column;
 
   > *:not(:last-child) {
-    margin-bottom: 1rem;
+    margin-bottom: var(--conversations-padding);
   }
 }
