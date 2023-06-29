@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { useState, useRef } from "react";
 
-function Message({ content, role, date, defaultDisplaySub = false}) {
+function Message({ content, role, date, secret, defaultDisplaySub = false}) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   // Refs
@@ -40,6 +40,7 @@ function Message({ content, role, date, defaultDisplaySub = false}) {
       </div>
       {displaySub && (
         <small className="message__sub">
+          {secret && <span>Temporary, </span>}
           <span>{moment(date).fromNow()}</span>
         </small>
       )}
@@ -52,6 +53,7 @@ Message.propTypes = {
   date: PropTypes.string.isRequired,
   defaultDisplaySub: PropTypes.bool,
   role: PropTypes.string.isRequired,
+  secret: PropTypes.bool.isRequired,
 };
 
 export default Message;

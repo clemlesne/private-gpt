@@ -15,6 +15,7 @@ import os
 
 
 logger = build_logger(__name__)
+SECRET_TTL_SECS = 60*60*24 # 1 day
 CONVERSATION_PREFIX = "conversation"
 MESSAGE_PREFIX = "message"
 REDIS_HOST = os.environ.get("PG_REDIS_HOST")
@@ -104,7 +105,8 @@ class RedisStore(IStore):
 
 
     def message_set(self, message: MessageModel, conversation_id: UUID) -> None:
-        client.set(self._message_cache_key(conversation_id, message.id), message.json())
+        expiry = SECRET_TTL_SECS if message.secret else None
+        client.set(self._message_cache_key(conversation_id, message.id), message.json(), ex=expiry)
 
 
     def message_list(self, conversation_id: UUID) -> List[MessageModel]:

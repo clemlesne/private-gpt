@@ -233,6 +233,7 @@ async def conversation_list(
 async def message_post(
     content: str,
     current_user: Annotated[UserModel, Depends(get_current_user)],
+    secret: bool = False,
     conversation_id: Optional[UUID] = None,
 ) -> GetConversationModel:
     if await is_moderated(content):
@@ -245,8 +246,9 @@ async def message_post(
     message = MessageModel(
         content=content,
         created_at=datetime.now(),
-        role=MessageRole.USER,
         id=uuid4(),
+        role=MessageRole.USER,
+        secret=secret,
         token=uuid4(),
     )
 
@@ -380,8 +382,9 @@ def completion_from_message(
     res_message = MessageModel(
         content=content_full,
         created_at=datetime.now(),
-        role=MessageRole.ASSISTANT,
         id=uuid4(),
+        role=MessageRole.ASSISTANT,
+        secret=in_message.secret,
     )
     store.message_set(res_message, conversation.id)
     index.message_index(res_message, conversation.id, current_user.id)

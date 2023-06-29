@@ -117,6 +117,7 @@ function Search({ setHideConversation }) {
                 defaultDisplaySub={true}
                 key={message.data.id}
                 role={message.data.role}
+                secret={message.secret}
               />
             ))}
           </div>

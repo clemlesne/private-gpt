@@ -14,6 +14,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
   const [input, setInput] = useState(null);
   const [conversation, setConversation] = useState({ messages: [] });
   const [loading, setLoading] = useState(false);
+  const [secret, setSecret] = useState(false);
   // Dynamic
   const auth = useAuth();
 
@@ -76,6 +77,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
+            secret: secret,
           },
           timeout: 30000,
           headers: {
@@ -110,6 +112,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
               created_at: new Date().toISOString(),
               id: uuidv4(),
               role: "assistant",
+              secret: secret,
             });
           };
           source.onerror = (e) => {
@@ -128,12 +131,14 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
         created_at: new Date().toISOString(),
         id: uuidv4(),
         role: "user",
+        secret: secret,
       },
       {
         content: "Loading…",
         created_at: new Date().toISOString(),
         id: uuidv4(),
         role: "assistant",
+        secret: secret,
       },
     ]);
 
@@ -156,10 +161,12 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
           )}
           {conversation.messages.map((message) => (
             <Message
-              key={message.id}
               content={message.content}
-              role={message.role}
               date={message.created_at}
+              defaultDisplaySub={message.secret}
+              key={message.id}
+              role={message.role}
+              secret={message.secret}
             />
           ))}
         </div>
@@ -188,6 +195,12 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
             loading={loading}
             text="Send"
             type="submit"
+          />
+          <Button
+            active={secret}
+            emoji={secret ? "🙈" : "💾"}
+            onClick={() => setSecret(!secret)}
+            text={secret ? "Temporary" : "Stored"}
           />
         </form>
       </div>

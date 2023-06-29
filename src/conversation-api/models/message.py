@@ -16,6 +16,7 @@ class MessageModel(BaseModel):
     created_at: datetime
     id: UUID
     role: MessageRole
+    secret: bool
     token: Optional[UUID] = None
 
 
