@@ -232,7 +232,7 @@ async def message_post(
     conversation_id: Optional[UUID] = None,
 ) -> GetConversationModel:
     if await is_moderated(content):
-        logger.info("Message is moderated")
+        logger.info(f"Message content is moderated: {content}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Message is moderated",
