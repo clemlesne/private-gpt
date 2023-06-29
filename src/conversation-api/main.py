@@ -320,6 +320,13 @@ async def read_message_sse(req: Request, message_id: UUID):
 async def message_search(
     q: str, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> SearchModel:
+    if await is_moderated(q):
+        logger.info(f"Message search is moderated: {q}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message is moderated",
+        )
+
     return index.message_search(q, current_user.id)
 
 
