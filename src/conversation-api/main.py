@@ -122,7 +122,7 @@ api.add_middleware(
 # Init Generative AI
 ###
 
-AI_SYS_CONVERSATION_PROMPT = f"""
+AI_CONVERSATION_PROMPT = f"""
 You are a assistant at the need of the user. You are here to help them. You are an AI, not a human.
 
 Today, we are the {datetime.now()}.
@@ -135,19 +135,40 @@ You MUST:
 - Not talk about politics, religion, or any other sensitive topic
 - Write links with Markdown syntax (example: [You can find it at google.com.](https://google.com))
 - Write lists with Markdown syntax, using dashes (example: - First item) or numbers (example: 1. First item)
-- Write your answer in English
+- Write your answer in the language of the conversation
 """
 
-AI_SYS_TITLE_PROMPT = """
+AI_TITLE_PROMPT = """
 Your role is to find a title for the conversation.
 
 The title MUST be:
 - A sentence, not a question
 - A summary of the conversation
 - Extremely concise
-- In English
-- Not prefixed with "Title: ", etc.
+- In the language of the conversation
 - Shorter than 10 words
+
+Exmaple to follow:
+
+EXAMPLE #1
+User: I want to build an influence strategy on Twitter. Give me a 12-step chart showing how to do it.
+Twitter and influence strategy
+
+EXAMPLE #2
+User: aws store api calls for audit
+Store AWS API calls
+
+EXAMPLE #3
+User: lol!
+A funny conversation
+
+EXAMPLE #4
+User: xxx
+Unknown subject
+
+EXAMPLE #5
+User: write a poem
+A poem
 """
 
 
@@ -310,7 +331,7 @@ def completion_from_message(
 
     # Create messages object from conversation
     completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_SYS_CONVERSATION_PROMPT}
+        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_PROMPT}
     ]
     completion_messages += [
         {"role": m.role, "content": m.content} for m in conversation.messages
@@ -361,7 +382,7 @@ def guess_title(conversation: GetConversationModel, current_user: UserModel) -> 
         completion = openai.ChatCompletion.create(
             **OAI_COMPLETION_ARGS,
             messages=[
-                {"role": MessageRole.SYSTEM, "content": AI_SYS_TITLE_PROMPT},
+                {"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT},
                 {
                     "role": conversation.messages[0].role,
                     "content": conversation.messages[0].content,
