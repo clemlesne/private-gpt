@@ -2,6 +2,17 @@
 
 Private GPT is a local version of Chat GPT, using Azure OpenAI.
 
+Includes:
+
+- A dead simple interface
+- An enterprise grade platform to deploy a ChatGPT-like interface for your employees
+- Can be configured to use any Azure OpenAI completion API, including GPT-4
+- Manage users effortlessly with OpenID Connect
+- Possibility to send temporary messages, for confidentiality
+- Salable system based on stateless APIs, cache, progressive web app and events
+- Search engine for conversations, based on semantic similarity and AI embeddings
+- Unlimited conversation history
+
 ![Application screenshot](docs/main.png)
 
 ## How to use
