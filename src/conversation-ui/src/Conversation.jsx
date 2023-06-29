@@ -109,7 +109,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
               content: stream,
               created_at: new Date().toISOString(),
               id: uuidv4(),
-              role: "system",
+              role: "assistant",
             });
           };
           source.onerror = (e) => {
@@ -133,7 +133,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
         content: "Loading…",
         created_at: new Date().toISOString(),
         id: uuidv4(),
-        role: "system",
+        role: "assistant",
       },
     ]);
 

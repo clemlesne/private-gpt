@@ -363,7 +363,7 @@ def completion_from_message(
     res_message = MessageModel(
         content=content_full,
         created_at=datetime.now(),
-        role=MessageRole.SYSTEM,
+        role=MessageRole.ASSISTANT,
         id=uuid4(),
     )
     store.message_set(res_message, conversation.id)

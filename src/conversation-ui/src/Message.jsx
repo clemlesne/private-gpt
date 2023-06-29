@@ -24,9 +24,7 @@ function Message({ content, role, date }) {
   };
 
   return (
-    <div
-      className={`message ${role == "system" ? "message--system" : undefined}`}
-    >
+    <div className={`message message--${role}`}>
       <div
         ref={httpContent}
         className="message__content"

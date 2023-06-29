@@ -6,6 +6,7 @@ from uuid import UUID
 
 
 class MessageRole(str, Enum):
+    ASSISTANT = "assistant"
     SYSTEM = "system"
     USER = "user"
 

@@ -3,14 +3,14 @@
   flex-direction: column;
   max-width: 70%;
 
-  &.message--system {
+  &.message--assistant {
     &,
     .message__content {
       align-self: flex-start;
     }
   }
 
-  &:not(.message--system) {
+  &:not(.message--assistant) {
     &,
     .message__content {
       align-self: flex-end;
