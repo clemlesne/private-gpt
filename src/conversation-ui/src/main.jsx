@@ -29,6 +29,7 @@ const oidcConfig = {
   authority: 'https://login.microsoftonline.com/common/v2.0',
   clientId: 'e9d5f20f-7f14-4204-a9a2-0d91d6af5c82',
   redirectUri: 'https://127.0.0.1:8080/auth',
+  silentRedirectUri: 'https://127.0.0.1:8080/auth',
 };
 
 ReactDOM.createRoot(document.getElementById("root")).render(
