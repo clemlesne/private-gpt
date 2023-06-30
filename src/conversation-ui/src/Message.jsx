@@ -16,7 +16,7 @@ function Message({ content, role, date, secret, defaultDisplaySub = false }) {
   // Refs
   const httpContent = useRef(null);
 
-  const copyToClipboard = (e) => {
+  const clipboardHandler = (e) => {
     e.preventDefault();
     // Copy to clipboard
     navigator.clipboard.writeText(content);
@@ -34,7 +34,7 @@ function Message({ content, role, date, secret, defaultDisplaySub = false }) {
         ref={httpContent}
         className="message__content"
         onClick={() => setDisplaySub(!displaySub)}
-        onDoubleClick={copyToClipboard}
+        onDoubleClick={clipboardHandler}
       >
         {/* eslint-disable-next-line react/no-children-prop */}
         <ReactMarkdown

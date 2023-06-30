@@ -1,6 +1,6 @@
 import "./button.scss";
 import Loader from "./Loader";
-import PropTypes from "prop-types"
+import PropTypes from "prop-types";
 
 function Button({ disabled, onClick, text, loading, emoji, type, active }) {
   return (

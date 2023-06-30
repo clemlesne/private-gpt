@@ -67,6 +67,14 @@ function Search({ setHideConversation }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [self]);
 
+  const inputKeyHandler = (e) => {
+    // Ability to search with enter, and add a new line with shift+enter
+    if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
+      fetchSearch();
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="search">
       <div ref={self} className="search__container">
@@ -88,16 +96,8 @@ function Search({ setHideConversation }) {
           <input
             placeholder="Search messages across all conversations"
             value={input || ""}
-            onChange={(e) => {
-              setInput(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              // Ability to insert new line with shift + enter
-              if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
-                fetchSearch();
-                e.preventDefault();
-              }
-            }}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={inputKeyHandler}
           />
           <Button
             disabled={!(input && input.length > 0)}
