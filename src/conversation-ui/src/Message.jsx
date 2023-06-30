@@ -4,11 +4,11 @@ import moment from "moment";
 import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
-import remarkMath from "remark-math";
 import remarkGemoji from "remark-gemoji";
-import remarkNormalizeHeadings from "remark-normalize-headings";
-import remarkImages from "remark-images";
 import remarkGfm from "remark-gfm";
+import remarkImages from "remark-images";
+import remarkMath from "remark-math";
+import remarkNormalizeHeadings from "remark-normalize-headings";
 
 function Message({ content, role, date, secret, defaultDisplaySub = false }) {
   // State
