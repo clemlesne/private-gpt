@@ -23,6 +23,13 @@ resources:
     cpu: .5
     memory: 512Mi
 
+oidc:
+  algorithms: []
+  api_audience: null
+  authority: null
+  issuers: []
+  jwks: null
+
 api:
   acs:
     # https://[deployment].cognitiveservices.azure.com

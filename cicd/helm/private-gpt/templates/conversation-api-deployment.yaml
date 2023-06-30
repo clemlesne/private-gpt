@@ -35,12 +35,6 @@ spec:
             httpGet:
               path: /health/liveness
               port: http
-          readinessProbe:
-            periodSeconds: 15
-            timeoutSeconds: 5
-            httpGet:
-              path: /health/readiness
-              port: http
           startupProbe:
             periodSeconds: 5
             failureThreshold: 30
@@ -64,3 +58,11 @@ spec:
               value: {{ .Values.api.oai.gpt_deploy_id | required "A value for .Values.api.oai.gpt_deploy_id is required" }}
             - name: OPENAI_API_BASE
               value: "{{ .Values.api.oai.base | required "A value for .Values.api.oai.base is required" }}"
+            - name: PG_OIDC_ALGORITHMS
+              value: "{{ join "," .Values.oidc.algorithms | required "A value for .Values.oidc.algorithms is required" }}"
+            - name: PG_OIDC_API_AUDIENCE
+              value: "{{ .Values.oidc.api_audience | required "A value for .Values.oidc.api_audience is required" }}"
+            - name: PG_OIDC_ISSUERS
+              value: "{{ join "," .Values.oidc.issuers | required "A value for .Values.oidc.issuers is required" }}"
+            - name: PG_OIDC_JWKS
+              value: "{{ .Values.oidc.jwks | required "A value for .Values.oidc.jwks is required" }}"

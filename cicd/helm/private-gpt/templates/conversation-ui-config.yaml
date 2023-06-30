@@ -8,24 +8,44 @@ metadata:
 data:
   default.conf: |
     server {
+      client_max_body_size 0;
       listen 8080;
       server_name conversation-ui;
+      server_tokens off;
 
       location = /health/liveness {
         return 204;
       }
 
       location / {
+        ###
         # Use static files
+        ###
+
         root /usr/share/nginx/html;
         try_files $uri /index.html;
 
+        ###
+        # Rewrite the API URL
+        ###
+
         # Rewrite the API URL
         sub_filter 'http://127.0.0.1:8081' 'https://{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}/{{ include "private-gpt.fullname" . }}-conversation-api';
+        # Rewrite the UI URL
+        sub_filter 'https://127.0.0.1:8080' 'https://{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}';
+        # Rewrite the OIDC authority
+        sub_filter 'https://login.microsoftonline.com/common/v2.0' '{{ .Values.oidc.authority | required "A value for .Values.oidc.authority is required" }}';
+        # Rewrite the OIDC API audience
+        sub_filter 'e9d5f20f-7f14-4204-a9a2-0d91d6af5c82' '{{ .Values.oidc.api_audience | required "A value for .Values.oidc.api_audience is required" }}';
+        # Rewrite recursively
         sub_filter_once off;
+        # Rewrite every content type
         sub_filter_types *;
 
+        ###
         # Cache static files
+        ###
+
         location /assets/ {
           expires max;
           add_header Cache-Control "public";
