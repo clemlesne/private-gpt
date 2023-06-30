@@ -6,3 +6,9 @@ api:
     token: xxx
   oai:
     base: example.com
+oidc:
+  algorithms: [RS256]
+  api_audience: 00000000-0000-0000-0000-000000000000
+  authority: https://login.example.com/common/v2.0
+  issuers: [https://login.example.com/00000000-0000-0000-0000-000000000000/v2.0]
+  jwks: https://login.example.com/common/discovery/v2.0/keys
