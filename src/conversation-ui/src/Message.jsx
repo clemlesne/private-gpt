@@ -4,6 +4,7 @@ import moment from "moment";
 import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import remarkMath from "remark-math";
 import remarkGfm from "remark-gfm";
 
 function Message({ content, role, date, secret, defaultDisplaySub = false }) {
@@ -35,7 +36,7 @@ function Message({ content, role, date, secret, defaultDisplaySub = false }) {
         {/* eslint-disable-next-line react/no-children-prop */}
         <ReactMarkdown
           linkTarget="_blank"
-          remarkPlugins={[remarkGfm, remarkBreaks]}
+          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath]}
           children={content}
         />
       </div>

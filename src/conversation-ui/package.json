@@ -25,6 +25,7 @@
     "react-schemaorg": "^2.0.0",
     "remark-breaks": "^3.0.3",
     "remark-gfm": "^3.0.1",
+    "remark-math": "^5.1.1",
     "use-local-storage-state": "^18.3.3",
     "uuid": "^9.0.0"
   },
