@@ -410,7 +410,7 @@ def completion_from_conversation(
             messages=completion_messages,
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
             stream=True,
-            user=current_user.id.hex,
+            user=hash_token(current_user.id.bytes).hex,
         )
     except openai.error.AuthenticationError as e:
         logger.exception(e)
@@ -457,7 +457,7 @@ def guess_title(conversation: StoredConversationModel, messages: List[MessageMod
             **OAI_COMPLETION_ARGS,
             messages=completion_messages,
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
-            user=current_user.id.hex,
+            user=hash_token(current_user.id.bytes).hex,
         )
         content = completion["choices"][0].message.content
     except openai.error.AuthenticationError as e:
