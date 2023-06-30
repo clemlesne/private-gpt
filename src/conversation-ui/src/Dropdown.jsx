@@ -22,11 +22,11 @@ function Dropdown({ options, disabled, onChange, selected, defaultTitle }) {
 }
 
 Dropdown.propTypes = {
-  options: PropTypes.arrayOf({
+  options: PropTypes.arrayOf(PropTypes.shape({
     disabled: PropTypes.bool,
     id: PropTypes.string.isRequired,
     label: PropTypes.string.isRequired,
-  }),
+  })),
   defaultTitle: PropTypes.string.isRequired,
   disabled: PropTypes.bool,
   onChange: PropTypes.func.isRequired,
