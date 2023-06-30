@@ -61,15 +61,17 @@ function Conversations({
 
   return (
     <div className="conversations">
-      {/* This button is never disabled and this is on purpose.
+      <div className="conversations__actions">
+        {/* This button is never disabled and this is on purpose.
 
-      It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
-      <Button
-        onClick={() => setSelectedConversation(null)}
-        text="New chat"
-        emoji="+"
-        active={true}
-      />
+        It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
+        <Button
+          onClick={() => setSelectedConversation(null)}
+          text="New chat"
+          emoji="+"
+          active={true}
+        />
+      </div>
       <h2>Your conversations</h2>
       {displayConversations("Today", groupedConversations.today)}
       {displayConversations("This week", groupedConversations.thisWeek)}

@@ -58,9 +58,11 @@
     align-items: center;
     display: flex;
     flex-direction: row;
-    flex-wrap: wrap;
     justify-content: end;
-    margin-bottom: calc(var(--conversation-padding-h) / 3);
+
+    &:not(:last-child) {
+      margin-bottom: calc(var(--conversation-padding-h) / 3);
+    }
 
     > *:not(:last-child) {
       margin-right: calc(var(--conversation-padding-h) / 2);

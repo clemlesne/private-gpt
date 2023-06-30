@@ -1,5 +1,5 @@
 #root {
-  --header-width: min(24rem, 33vw);
+  --header-width: min(26rem, 33vw);
 }
 
 .header {
@@ -16,10 +16,6 @@
 
   .header__top {
     padding: var(--header-padding);
-
-    > *:not(:last-child) {
-      margin-bottom: var(--header-padding);
-    }
   }
 
   .header__bottom {
