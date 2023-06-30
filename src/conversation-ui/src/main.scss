@@ -1,20 +1,31 @@
-:root {
-  --background-active: #003054;
-  --background-muted: #323232;
-  --background: #000000;
-  --border-active: #003054;
-  --border: #737373;
-  --color-active: #99c9ed; // Constrast ratio of 7.69:1 with "background-active"
-  --color-visited: #d7c3e3; // Constrast ratio of 8.25:1 with "background-active"
-  --color: #e6e6e6; // Constrast ratio of 10.84:1 with "background-active"
+html {
   --radius: 1.5rem;
-}
 
-html,
-body {
+  &.theme--light,
+  &:not(.theme--dark) {
+    --background-active: #e6f4ff;
+    --background-muted: #f5f5f5;
+    --background: #ffffff;
+    --border-active: #e6f4ff;
+    --border: #c7c7c7;
+    --color-active: #194f80; // Contrast ratio of 7.58:1 with "background-active"
+    --color-visited: #58357f; // Contrast ratio of 8.4:1 with "background-active"
+    --color: #3b3b3b; // Contrast ratio of 10:1 with "background-active"
+  }
+
+  &.theme--dark {
+    --background-active: #003054;
+    --background-muted: #323232;
+    --background: #000000;
+    --border-active: #003054;
+    --border: #737373;
+    --color-active: #99c9ed; // Constrast ratio of 7.69:1 with "background-active"
+    --color-visited: #d7c3e3; // Constrast ratio of 8.25:1 with "background-active"
+    --color: #e6e6e6; // Constrast ratio of 10.84:1 with "background-active"
+  }
+
   appearance: none;
   background-color: var(--background);
-  color-scheme: dark;
   color: var(--color);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Cantarell,
     "Noto Sans", Helvetica, Arial, sans-serif;

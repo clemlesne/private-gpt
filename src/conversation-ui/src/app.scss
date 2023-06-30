@@ -14,21 +14,29 @@
   position: fixed;
   width: var(--header-width);
 
-  .header__bottom,
   .header__top {
     padding: var(--header-padding);
-  }
 
-  .header__top {
     > *:not(:last-child) {
       margin-bottom: var(--header-padding);
     }
   }
 
   .header__bottom {
+    background-color: var(--background);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: calc(var(--header-padding) - (var(--header-padding) / 3));
+
+    // Stays at the bottom
     bottom: 0;
     position: sticky;
-    background-color: var(--background);
+    z-index: 1000;
+
+    > * {
+      margin: calc(var(--header-padding) / 3);
+    }
   }
 }
 
