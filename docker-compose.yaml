@@ -14,27 +14,27 @@ services:
       - 6333:6333
     volumes:
       - qdrant-data:/qdrant/storage
-  # conversation-api:
-  #   image: ghcr.io/clemlesne/private-gpt/conversation-api:latest
-  #   environment:
-  #     MS_QD_HOST: qdrant
-  #     MS_REDIS_HOST: redis
-  #   networks:
-  #     - private-gpt
-  #   ports:
-  #     - 8081:8080
-  #   depends_on:
-  #     - qdrant
-  #   volumes:
-  #     - .env:/app/.env
-  # conversation-ui:
-  #   image: ghcr.io/clemlesne/private-gpt/conversation-ui:latest
-  #   networks:
-  #     - private-gpt
-  #   ports:
-  #     - 8080:8080
-  #   volumes:
-  #     - /tmp
+  conversation-api:
+    image: ghcr.io/clemlesne/private-gpt/conversation-api:latest
+    environment:
+      PG_QD_HOST: qdrant
+      PG_REDIS_HOST: redis
+    networks:
+      - private-gpt
+    ports:
+      - 8081:8080
+    depends_on:
+      - qdrant
+    volumes:
+      - .env:/app/.env
+  conversation-ui:
+    image: ghcr.io/clemlesne/private-gpt/conversation-ui:latest
+    networks:
+      - private-gpt
+    ports:
+      - 8080:8080
+    volumes:
+      - /tmp
 networks:
   private-gpt:
     driver: bridge
