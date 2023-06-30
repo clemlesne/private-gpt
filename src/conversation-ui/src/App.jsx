@@ -99,12 +99,12 @@ function App() {
       <div className="header">
         <div className="header__top">
           <h1>🔒 Private GPT</h1>
-          <Conversations
+          {auth.userData && <Conversations
             conversationLoading={conversationLoading}
             conversations={conversations}
             selectedConversation={selectedConversation}
             setSelectedConversation={setSelectedConversation}
-          />
+          />}
         </div>
         <small className="header__bottom">
           {auth.userData && (
@@ -113,7 +113,8 @@ function App() {
               {auth.userData.profile.email}).
             </p>
           )}
-          <Button onClick={() => auth.signOutRedirect()} text="Logout" disabled={!auth.userData} />
+          {auth.isLoading && <p>Connecting...</p>}
+          <Button onClick={() => auth.userData ? auth.signOut() : auth.signIn()} text={auth.userData ? "Signout" : "Signin"} loading={auth.isLoading} />
           <Button
             emoji={darkTheme ? "🌕" : "☀️"}
             onClick={() => setDarkTheme(!darkTheme)}
@@ -122,7 +123,7 @@ function App() {
         </small>
       </div>
       <div className="main">
-        <Search setHideConversation={setHideConversation} />
+        {auth.userData && <Search setHideConversation={setHideConversation} />}
         {!hideConversation && (
           <Conversation
             conversationId={selectedConversation}

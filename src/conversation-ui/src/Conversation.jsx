@@ -157,7 +157,10 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
       <div className="conversation__container">
         <div className="conversation__messages">
           {conversation.messages.length == 0 && (
-            <big className="conversation__messages__empty">🔒 Private GPT</big>
+            <div className="conversation__messages__empty">
+              <big>🔒 Private GPT</big>
+              {!auth.userData && <Button onClick={() => auth.signIn()} text="Signin" active={true} loading={auth.isLoading} />}
+            </div>
           )}
           {conversation.messages.map((message) => (
             <Message
@@ -170,7 +173,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
             />
           ))}
         </div>
-        <form
+        {auth.userData && <form
           className="conversation__input"
           onSubmit={(e) => {
             sendMessage();
@@ -202,7 +205,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
             onClick={() => setSecret(!secret)}
             text={secret ? "Temporary" : "Stored"}
           />
-        </form>
+        </form>}
       </div>
     </div>
   );
