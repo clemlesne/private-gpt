@@ -13,15 +13,14 @@ function Conversations({
   const groupedConversations = conversations.reduce((acc, conversation) => {
     const now = moment();
     const created_at = moment(conversation.created_at);
-    const diff = now.diff(created_at, "days");
 
-    if (diff === 0) {
+    if (now.isSame(created_at, "day")) {
       acc.today.push(conversation);
-    } else if (diff <= 7) {
+    } else if (now.isSame(created_at, "week")) {
       acc.thisWeek.push(conversation);
-    } else if (diff <= 30) {
+    } else if (now.isSame(created_at, "month")) {
       acc.thisMonth.push(conversation);
-    } else if (diff <= 365) {
+    } else if (now.isSame(created_at, "year")) {
       acc.thisYear.push(conversation);
     } else {
       acc.older.push(conversation);
