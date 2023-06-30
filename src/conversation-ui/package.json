@@ -27,6 +27,7 @@
     "remark-gemoji": "^7.0.1",
     "remark-gfm": "^3.0.1",
     "remark-math": "^5.1.1",
+    "remark-normalize-headings": "^3.0.1",
     "use-local-storage-state": "^18.3.3",
     "uuid": "^9.0.0"
   },

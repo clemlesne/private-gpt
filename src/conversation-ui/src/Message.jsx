@@ -6,6 +6,7 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkMath from "remark-math";
 import remarkGemoji from "remark-gemoji";
+import remarkNormalizeHeadings from "remark-normalize-headings";
 import remarkGfm from "remark-gfm";
 
 function Message({ content, role, date, secret, defaultDisplaySub = false }) {
@@ -37,7 +38,7 @@ function Message({ content, role, date, secret, defaultDisplaySub = false }) {
         {/* eslint-disable-next-line react/no-children-prop */}
         <ReactMarkdown
           linkTarget="_blank"
-          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkGemoji]}
+          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkGemoji, remarkNormalizeHeadings]}
           children={content}
         />
       </div>
