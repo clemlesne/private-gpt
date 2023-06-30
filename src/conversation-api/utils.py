@@ -6,9 +6,11 @@ load_dotenv(find_dotenv())
 # Import modules
 from fastapi import HTTPException, status
 from tenacity import retry, stop_after_attempt
-from typing import Dict
+from typing import Dict, Union, Hashable
+from uuid import UUID
 import jwt
 import logging
+import mmh3
 import os
 
 
@@ -41,6 +43,12 @@ OIDC_API_AUDIENCE = os.environ.get("PG_OIDC_API_AUDIENCE")
 OIDC_JWKS = os.environ.get("PG_OIDC_JWKS")
 OIDC_ISSUERS = os.environ.get("PG_OIDC_ISSUERS", "").split(",")
 OIDC_ALGORITHMS = os.environ.get("PG_OIDC_ALGORITHMS", "").split(",")
+
+
+def hash_token(str: Union[str, Hashable]) -> Union[UUID, None]:
+    if not str:
+        return None
+    return UUID(bytes=mmh3.hash_bytes(str))
 
 
 class VerifyToken:

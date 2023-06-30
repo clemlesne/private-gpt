@@ -1,5 +1,5 @@
 # Import utils
-from utils import VerifyToken, build_logger, VERSION
+from utils import VerifyToken, build_logger, VERSION, hash_token
 
 # Import misc
 from azure.core.credentials import AzureKeyCredential
@@ -10,22 +10,22 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models.conversation import GetConversationModel, ListConversationsModel, StoredConversationModel
 from models.message import MessageModel, MessageRole
+from models.prompt import StoredPromptModel, ListPromptsModel
 from models.search import SearchModel
 from models.user import UserModel
-from models.prompt import StoredPromptModel, ListPromptsModel
 from persistence.qdrant import QdrantSearch
 from persistence.redis import RedisStore, RedisStream, STREAM_STOPWORD
 from sse_starlette.sse import EventSourceResponse
 from tenacity import retry, stop_after_attempt
-from typing import Annotated, List, Optional
+from typing import Annotated, Dict, List, Optional
 from uuid import UUID
 from uuid import uuid4
 import asyncio
 import azure.ai.contentsafety as azure_cs
 import azure.core.exceptions as azure_exceptions
+import csv
 import openai
 import os
-import csv
 
 
 ###
@@ -123,14 +123,23 @@ api.add_middleware(
 # Init Generative AI
 ###
 
-# Load prompt file
-AI_PROMPTS = {}
-with open("data/prompts.csv", newline="") as f:
-    rows = csv.reader(f)
-    next(rows, None) # Skip header
-    for row in rows:
-        prompt = StoredPromptModel(id=uuid4(), name=row[0], content=row[1])
-        AI_PROMPTS[prompt.id] = prompt
+
+def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
+    prompts = {}
+    with open("data/prompts.csv", newline="") as f:
+        rows = csv.reader(f)
+        next(rows, None) # Skip header
+        for row in rows:
+            name = row[0]
+            content = row[1]
+            prompt = StoredPromptModel(id=hash_token(name), name=name, content=content)
+            prompts[prompt.id] = prompt
+    logger.info(f"Loaded {len(prompts)} prompts")
+    # Sort by name asc
+    return dict(sorted(prompts.items(), key=lambda i: i[1].name))
+
+
+AI_PROMPTS = get_ai_prompt()
 
 AI_CONVERSATION_DEFAULT_PROMPT = f"""
 Today, we are the {datetime.now()}.
