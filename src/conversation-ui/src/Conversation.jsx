@@ -120,7 +120,7 @@ function Conversation({
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
-            prompt_id: selectedPrompt ? selectedPrompt.id : null,
+            prompt_id: !conversationId && selectedPrompt ? selectedPrompt.id : null,
             secret: secret,
           },
           timeout: 30000,
