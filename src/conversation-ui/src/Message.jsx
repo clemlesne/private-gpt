@@ -1,11 +1,12 @@
 import "./message.scss";
+import { useState, useRef } from "react";
 import moment from "moment";
 import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
+import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
-import { useState, useRef } from "react";
 
-function Message({ content, role, date, secret, defaultDisplaySub = false}) {
+function Message({ content, role, date, secret, defaultDisplaySub = false }) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   // Refs
@@ -34,7 +35,7 @@ function Message({ content, role, date, secret, defaultDisplaySub = false}) {
         {/* eslint-disable-next-line react/no-children-prop */}
         <ReactMarkdown
           linkTarget="_blank"
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkBreaks]}
           children={content}
         />
       </div>
