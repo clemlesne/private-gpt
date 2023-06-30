@@ -84,11 +84,13 @@ html {
     cursor: text;
   }
 
+  select,
   a,
   button {
     cursor: pointer;
   }
 
+  select,
   textarea,
   button,
   input,
@@ -108,6 +110,7 @@ html {
     }
   }
 
+  select,
   textarea,
   button,
   input {

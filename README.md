@@ -9,6 +9,7 @@ Includes:
 - Can be configured to use any Azure OpenAI completion API, including GPT-4
 - Manage users effortlessly with OpenID Connect
 - Possibility to send temporary messages, for confidentiality
+- Pre-configured tones and personalities (accountant, advisor, debater, excel sheet, instructor, logistician, etc.)
 - Salable system based on stateless APIs, cache, progressive web app and events
 - Search engine for conversations, based on semantic similarity and AI embeddings
 - Unlimited conversation history

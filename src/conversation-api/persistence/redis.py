@@ -4,7 +4,7 @@ from utils import build_logger
 # Import misc
 from .istore import IStore
 from .istream import IStream
-from models.conversation import GetConversationModel, BaseConversationModel
+from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel
 from models.user import UserModel
 from redis import Redis
@@ -43,16 +43,11 @@ class RedisStore(IStore):
         client.set(self._user_cache_key(user.external_id), user.json())
 
 
-    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> Union[GetConversationModel, None]:
+    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> Union[StoredConversationModel, None]:
         raw = client.get(self._conversation_cache_key(user_id, conversation_id))
         if raw is None:
             return None
-        base_conversation = BaseConversationModel.parse_raw(raw)
-        messages = self.message_list(conversation_id)
-        return GetConversationModel(
-            **base_conversation.dict(),
-            messages=messages,
-        )
+        return StoredConversationModel.parse_raw(raw)
 
 
     def message_get_index(self, message_indexs: List[IndexMessageModel]) -> List[MessageModel]:
@@ -75,11 +70,11 @@ class RedisStore(IStore):
         return client.exists(self._conversation_cache_key(user_id, conversation_id)) != 0
 
 
-    def conversation_set(self, conversation: BaseConversationModel) -> None:
+    def conversation_set(self, conversation: StoredConversationModel) -> None:
         client.set(self._conversation_cache_key(conversation.user_id, conversation.id), conversation.json())
 
 
-    def conversation_list(self, user_id: UUID) -> List[BaseConversationModel]:
+    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         keys = client.keys(f"{self._conversation_cache_key(user_id)}:*")
         raws = client.mget(keys)
         if raws is None:
@@ -89,7 +84,7 @@ class RedisStore(IStore):
             if raw is None:
                 continue
             try:
-                conversations.append(BaseConversationModel.parse_raw(raw))
+                conversations.append(StoredConversationModel.parse_raw(raw))
             except Exception:
                 logger.warn("Error parsing conversation", exc_info=True)
         # Sort by created_at desc

@@ -8,15 +8,16 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models.conversation import GetConversationModel, SearchConversationModel
+from models.conversation import GetConversationModel, ListConversationsModel, StoredConversationModel
 from models.message import MessageModel, MessageRole
 from models.search import SearchModel
 from models.user import UserModel
+from models.prompt import StoredPromptModel, ListPromptsModel
 from persistence.qdrant import QdrantSearch
 from persistence.redis import RedisStore, RedisStream, STREAM_STOPWORD
 from sse_starlette.sse import EventSourceResponse
 from tenacity import retry, stop_after_attempt
-from typing import Annotated, Optional
+from typing import Annotated, List, Optional
 from uuid import UUID
 from uuid import uuid4
 import asyncio
@@ -24,7 +25,7 @@ import azure.ai.contentsafety as azure_cs
 import azure.core.exceptions as azure_exceptions
 import openai
 import os
-import time
+import csv
 
 
 ###
@@ -122,18 +123,20 @@ api.add_middleware(
 # Init Generative AI
 ###
 
-AI_CONVERSATION_PROMPT = f"""
-You are a assistant at the need of the user. You are here to help them. You are an AI, not a human.
+# Load prompt file
+AI_PROMPTS = {}
+with open("data/prompts.csv", newline="") as f:
+    rows = csv.reader(f)
+    next(rows, None) # Skip header
+    for row in rows:
+        prompt = StoredPromptModel(id=uuid4(), name=row[0], content=row[1])
+        AI_PROMPTS[prompt.id] = prompt
 
+AI_CONVERSATION_DEFAULT_PROMPT = f"""
 Today, we are the {datetime.now()}.
 
 You MUST:
-- Be concise and precise
-- Be kind and respectful
 - Cite sources and examples as footnotes (example: [^1])
-- If you don't know, don't answer
-- Limit your answer few sentences
-- Not talk about politics, religion, or any other sensitive topic
 - Write emojis as gemoji shortcodes (example: :smile:)
 - Write links with Markdown syntax (example: [You can find it at google.com.](https://google.com))
 - Write lists with Markdown syntax, using dashes (example: - First item) or numbers (example: 1. First item)
@@ -196,7 +199,9 @@ async def health_liveness_get() -> None:
     return None
 
 
-async def get_current_user(token: Annotated[Optional[HTTPAuthorizationCredentials], Depends(auth_scheme)]) -> UserModel:
+async def get_current_user(
+    token: Annotated[Optional[HTTPAuthorizationCredentials], Depends(auth_scheme)]
+) -> UserModel:
     if not token:
         logger.error("No token provided by Starlette framework")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -219,6 +224,11 @@ async def get_current_user(token: Annotated[Optional[HTTPAuthorizationCredential
     return user
 
 
+@api.get("/prompt")
+async def prompt_list() -> ListPromptsModel:
+    return ListPromptsModel(prompts=list(AI_PROMPTS.values()))
+
+
 @api.get("/conversation/{id}")
 async def conversation_get(
     id: UUID, current_user: Annotated[UserModel, Depends(get_current_user)]
@@ -229,23 +239,30 @@ async def conversation_get(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
-    return conversation
+    messages = store.message_list(conversation.id)
+    return GetConversationModel(
+        **conversation.dict(),
+        messages=messages,
+    )
 
 
 @api.get("/conversation")
 async def conversation_list(
     current_user: Annotated[UserModel, Depends(get_current_user)]
-) -> SearchConversationModel:
+) -> ListConversationsModel:
     conversations = store.conversation_list(current_user.id)
-    return SearchConversationModel(conversations=conversations)
+    return ListConversationsModel(conversations=conversations)
 
 
-@api.post("/message", description="Moderation check in place, as the content is persisted.")
+@api.post(
+    "/message", description="Moderation check in place, as the content is persisted."
+)
 async def message_post(
     content: str,
     current_user: Annotated[UserModel, Depends(get_current_user)],
     secret: bool = False,
     conversation_id: Optional[UUID] = None,
+    prompt_id: Optional[UUID] = None,
 ) -> GetConversationModel:
     if await is_moderated(content):
         logger.info(f"Message content is moderated: {content}")
@@ -264,6 +281,11 @@ async def message_post(
     )
 
     if conversation_id:
+        if prompt_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Prompt ID cannot be provided when conversation ID is provided",
+            )
         logger.info(
             f"Adding message to conversation (conversation_id={conversation_id})"
         )
@@ -282,27 +304,37 @@ async def message_post(
                 detail="Conversation not found",
             )
     else:
-        conversation = GetConversationModel(
-            id=uuid4(),
+        if prompt_id and prompt_id not in AI_PROMPTS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Prompt ID not found",
+            )
+        conversation = StoredConversationModel(
             created_at=datetime.now(),
-            messages=[message],
+            id=uuid4(),
+            prompt=AI_PROMPTS[prompt_id] if prompt_id else None,
             user_id=current_user.id,
         )
         store.conversation_set(conversation)
         store.message_set(message, conversation.id)
         index.message_index(message, conversation.id, current_user.id)
 
+    messages = store.message_list(conversation.id)
+
     if conversation.title is None:
         asyncio.get_running_loop().run_in_executor(
-            None, lambda: guess_title(conversation, current_user)
+            None, lambda: guess_title(conversation, messages, current_user)
         )
 
     # Execute the message completion
     asyncio.get_running_loop().run_in_executor(
-        None, lambda: completion_from_message(conversation, message, current_user)
+        None, lambda: completion_from_conversation(conversation, messages, current_user)
     )
 
-    return conversation
+    return GetConversationModel(
+        **conversation.dict(),
+        messages=messages,
+    )
 
 
 @api.get("/message/{id}")
@@ -341,24 +373,26 @@ async def message_search(
 
 
 @retry(stop=stop_after_attempt(3))
-def completion_from_message(
-    conversation: GetConversationModel,
-    in_message: MessageModel,
+def completion_from_conversation(
+    conversation: StoredConversationModel,
+    messages: List[MessageModel],
     current_user: UserModel,
 ) -> None:
     logger.info(f"Getting completion for conversation {conversation.id}")
 
-    if not in_message.token:
+    last_message = messages[-1]
+
+    if not last_message.token:
         logger.error("No token provided")
         return
 
     # Create messages object from conversation
-    completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_PROMPT}
-    ]
-    completion_messages += [
-        {"role": m.role, "content": m.content} for m in conversation.messages
-    ]
+    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}]
+    if conversation.prompt:
+        completion_messages += [{"role": MessageRole.SYSTEM, "content": conversation.prompt.content}]
+    completion_messages += [{"role": m.role, "content": m.content} for m in messages]
+
+    logger.debug(f"Completion messages: {completion_messages}")
 
     try:
         # Use chat completion to get a more natural response and lower the usage cost
@@ -379,7 +413,7 @@ def completion_from_message(
         if content is not None:
             logger.debug(f"Completion result: {content}")
             # Add content to the redis stream cache_key
-            stream.push(content, in_message.token)
+            stream.push(content, last_message.token)
             content_full += content
 
     # First, store the updated conversation in Redis
@@ -388,30 +422,31 @@ def completion_from_message(
         created_at=datetime.now(),
         id=uuid4(),
         role=MessageRole.ASSISTANT,
-        secret=in_message.secret,
+        secret=last_message.secret,
     )
     store.message_set(res_message, conversation.id)
     index.message_index(res_message, conversation.id, current_user.id)
 
     # Then, send the end of stream message
-    stream.push(STREAM_STOPWORD, in_message.token)
+    stream.push(STREAM_STOPWORD, last_message.token)
 
 
 @retry(stop=stop_after_attempt(3))
-def guess_title(conversation: GetConversationModel, current_user: UserModel) -> None:
+def guess_title(conversation: StoredConversationModel, messages: List[MessageModel], current_user: UserModel) -> None:
     logger.info(f"Guessing title for conversation {conversation.id}")
+
+    # Create messages object from conversation
+    # We don't include the custom prompt, as it will false the title response (espacially with ASCI art prompt)
+    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}]
+    completion_messages += [{"role": m.role, "content": m.content} for m in messages]
+
+    logger.debug(f"Completion messages: {completion_messages}")
 
     try:
         # Use chat completion to get a more natural response and lower the usage cost
         completion = openai.ChatCompletion.create(
             **OAI_COMPLETION_ARGS,
-            messages=[
-                {"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT},
-                {
-                    "role": conversation.messages[0].role,
-                    "content": conversation.messages[0].content,
-                },
-            ],
+            messages=completion_messages,
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
             user=current_user.id.hex,
         )

@@ -1,4 +1,5 @@
 from .message import MessageModel
+from .prompt import StoredPromptModel, BasePromptModel
 from datetime import datetime
 from pydantic import BaseModel
 from typing import List, Optional
@@ -12,9 +13,14 @@ class BaseConversationModel(BaseModel):
     user_id: UUID
 
 
+class StoredConversationModel(BaseConversationModel):
+    prompt: Optional[StoredPromptModel] = None
+
+
 class GetConversationModel(BaseConversationModel):
     messages: List[MessageModel]
+    prompt: Optional[BasePromptModel] = None
 
 
-class SearchConversationModel(BaseModel):
+class ListConversationsModel(BaseModel):
     conversations: List[BaseConversationModel]

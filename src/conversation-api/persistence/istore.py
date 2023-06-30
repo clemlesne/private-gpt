@@ -1,4 +1,4 @@
-from models.conversation import GetConversationModel, BaseConversationModel
+from models.conversation import GetConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel
 from models.user import UserModel
 from abc import ABC, abstractmethod
@@ -28,11 +28,11 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def conversation_set(self, conversation: BaseConversationModel) -> None:
+    def conversation_set(self, conversation: StoredConversationModel) -> None:
         pass
 
     @abstractmethod
-    def conversation_list(self, user_id: UUID) -> List[BaseConversationModel]:
+    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         pass
 
     @abstractmethod

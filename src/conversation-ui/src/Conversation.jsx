@@ -1,13 +1,18 @@
 import "./conversation.scss";
 import { useAuth } from "oidc-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import axios from "axios";
 import Button from "./Button";
+import Dropdown from "./Dropdown";
 import Message from "./Message";
 import PropTypes from "prop-types";
 
-function Conversation({ conversationId, refreshConversations, setConversationLoading }) {
+function Conversation({
+  conversationId,
+  refreshConversations,
+  setConversationLoading,
+}) {
   // Constants
   const API_BASE_URL = "http://127.0.0.1:8081";
   // State
@@ -15,8 +20,48 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
   const [conversation, setConversation] = useState({ messages: [] });
   const [loading, setLoading] = useState(false);
   const [secret, setSecret] = useState(false);
+  const [prompts, setPrompts] = useState({});
+  const [selectedPrompt, setSelectedPrompt] = useState(null);
+  const [optionsPrompt, setOptionsPrompt] = useState([]);
   // Dynamic
   const auth = useAuth();
+
+  useEffect(() => {
+    const fetchPrompts = async () => {
+      if (!auth.userData) return;
+      if (conversationId) return;
+
+      await axios
+        .get(`${API_BASE_URL}/prompt`, {
+          timeout: 30000,
+          headers: {
+            Authorization: `Bearer ${auth.userData.id_token}`,
+          },
+        })
+        .then((res) => {
+          if (!res.data) return;
+          const localPrompts = res.data.prompts.reduce((map, obj) => {
+            map[obj.id] = obj;
+            return map;
+          }, {});
+          setPrompts(localPrompts);
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    };
+
+    fetchPrompts();
+  }, [auth, conversationId]);
+
+  useMemo(() => {
+    if (conversationId) return;
+    const options = [];
+    for (const [id, prompt] of Object.entries(prompts)) {
+      options.push({ label: prompt.name, id: id });
+    }
+    setOptionsPrompt(options);
+  }, [prompts, conversationId]);
 
   useEffect(() => {
     const fetchConversation = async () => {
@@ -36,8 +81,6 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
         })
         .then((res) => {
           if (!res.data) return;
-
-          // Save current context
           setConversation(res.data);
         })
         .catch((error) => {
@@ -77,6 +120,7 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
+            prompt_id: selectedPrompt ? selectedPrompt.id : null,
             secret: secret,
           },
           timeout: 30000,
@@ -152,6 +196,14 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
     window.scrollTo(0, document.body.scrollHeight);
   }, [conversation]);
 
+  const inputKeyHandler = (e) => {
+    // Ability to search with enter, and add a new line with shift+enter
+    if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
+      sendMessage();
+      e.preventDefault();
+    }
+  };
+
   return (
     <div className="conversation">
       <div className="conversation__container">
@@ -159,7 +211,14 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
           {conversation.messages.length == 0 && (
             <div className="conversation__messages__empty">
               <big>🔒 Private GPT</big>
-              {!auth.userData && <Button onClick={() => auth.signIn()} text="Signin" active={true} loading={auth.isLoading} />}
+              {!auth.userData && (
+                <Button
+                  onClick={() => auth.signIn()}
+                  text="Signin"
+                  active={true}
+                  loading={auth.isLoading}
+                />
+              )}
             </div>
           )}
           {conversation.messages.map((message) => (
@@ -173,39 +232,53 @@ function Conversation({ conversationId, refreshConversations, setConversationLoa
             />
           ))}
         </div>
-        {auth.userData && <form
-          className="conversation__input"
-          onSubmit={(e) => {
-            sendMessage();
-            e.preventDefault();
-          }}
-        >
-          <textarea
-            placeholder="Message"
-            value={input || ""}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
-                sendMessage();
-                e.preventDefault();
-              }
+        {auth.userData && (
+          <form
+            className="conversation__input"
+            onSubmit={(e) => {
+              sendMessage();
+              e.preventDefault();
             }}
-          />
-          <Button
-            active={true}
-            disabled={!(input && input.length > 0)}
-            emoji="⬆️"
-            loading={loading}
-            text="Send"
-            type="submit"
-          />
-          <Button
-            active={secret}
-            emoji={secret ? "🙈" : "💾"}
-            onClick={() => setSecret(!secret)}
-            text={secret ? "Temporary" : "Stored"}
-          />
-        </form>}
+          >
+            <div className="conversation__input__block">
+              {!conversationId && (
+                <Dropdown
+                  defaultTitle="Default tone"
+                  onChange={(id) => setSelectedPrompt(prompts[id])}
+                  options={optionsPrompt}
+                  selected={selectedPrompt ? selectedPrompt.id : null}
+                  disabled={loading}
+                />
+              )}
+              {conversation.prompt && <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>}
+              <Button
+                active={secret}
+                disabled={loading}
+                emoji={secret ? "🙈" : "💾"}
+                onClick={() => setSecret(!secret)}
+                text={secret ? "Temporary" : "Stored"}
+              />
+            </div>
+            <div className="conversation__input__block">
+              <textarea
+                placeholder="Message"
+                value={input || ""}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={inputKeyHandler}
+              />
+            </div>
+            <div className="conversation__input__block">
+              <Button
+                active={true}
+                disabled={!(input && input.length > 0)}
+                emoji="⬆️"
+                loading={loading}
+                text="Send"
+                type="submit"
+              />
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
