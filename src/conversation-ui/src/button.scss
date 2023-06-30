@@ -3,6 +3,7 @@
   display: flex;
   flex-direction: row;
   flex-shrink: 0;
+  height: fit-content;
 
   &.button--active {
     background-color: var(--background-active);

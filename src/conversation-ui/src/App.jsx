@@ -4,11 +4,18 @@ import { helmetJsonLdProp } from "react-schemaorg";
 import { useAuth } from "oidc-react";
 import { useState, useEffect } from "react";
 import axios from "axios";
+import Button from "./Button";
 import Conversation from "./Conversation";
 import Conversations from "./Conversations";
 import Search from "./Search";
+import useLocalStorageState from "use-local-storage-state";
 
 function App() {
+  // Browser context
+  const getPreferredScheme = () =>
+    window?.matchMedia?.("(prefers-color-scheme:dark)")?.matches
+      ? "dark"
+      : "light";
   // Constants
   const API_BASE_URL = "http://127.0.0.1:8081";
   // State
@@ -16,6 +23,8 @@ function App() {
   const [conversations, setConversations] = useState([]);
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [conversationLoading, setConversationLoading] = useState(false);
+  // Persistance
+  const [darkTheme, setDarkTheme] = useLocalStorageState("darkTheme", { defaultValue: () => getPreferredScheme() == "dark" });
   // Dynamic
   const auth = useAuth();
 
@@ -85,33 +94,42 @@ function App() {
             },
           }),
         ]}
+        htmlAttributes={{ class: darkTheme ? "theme--dark" : "theme--light" }}
       />
       <div className="header">
         <div className="header__top">
           <h1>🔒 Private GPT</h1>
           <Conversations
+            conversationLoading={conversationLoading}
             conversations={conversations}
             selectedConversation={selectedConversation}
             setSelectedConversation={setSelectedConversation}
-            conversationLoading={conversationLoading}
           />
         </div>
-        <div className="header__bottom">
+        <small className="header__bottom">
           {auth.userData && (
-            <small>
+            <p>
               Logged as {auth.userData.profile.name} (
               {auth.userData.profile.email}).
-            </small>
+            </p>
           )}
-        </div>
+          <Button onClick={() => auth.signOutRedirect()} text="Logout" disabled={!auth.userData} />
+          <Button
+            emoji={darkTheme ? "🌕" : "☀️"}
+            onClick={() => setDarkTheme(!darkTheme)}
+            text={darkTheme ? "Dark" : "Light"}
+          />
+        </small>
       </div>
       <div className="main">
         <Search setHideConversation={setHideConversation} />
-        {!hideConversation && <Conversation
-          conversationId={selectedConversation}
-          refreshConversations={refreshConversations}
-          setConversationLoading={setConversationLoading}
-        />}
+        {!hideConversation && (
+          <Conversation
+            conversationId={selectedConversation}
+            refreshConversations={refreshConversations}
+            setConversationLoading={setConversationLoading}
+          />
+        )}
       </div>
     </>
   );
