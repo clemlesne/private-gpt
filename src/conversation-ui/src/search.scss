@@ -31,14 +31,16 @@
   }
 
   .search__input {
-    z-index: 1000;
     align-items: flex-end;
     background-color: var(--background);
-    bottom: 0;
     display: flex;
     flex-direction: row;
     padding: calc(var(--search-padding-v) * 2) var(--search-padding-h);
+
+    // Stays at the bottom
+    bottom: 0;
     position: sticky;
+    z-index: 1000;
 
     > *:not(:last-child) {
       margin-right: calc(var(--search-padding-h) / 2);

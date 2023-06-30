@@ -35,14 +35,16 @@
   }
 
   .conversation__input {
-    z-index: 1000;
     align-items: flex-end;
     background-color: var(--background);
-    bottom: 0;
     display: flex;
     flex-direction: row;
     padding: var(--conversation-padding-v) var(--conversation-padding-h);
+
+    // Stays at the bottom
+    bottom: 0;
     position: sticky;
+    z-index: 1000;
 
     > *:not(:last-child) {
       margin-right: calc(var(--conversation-padding-h) / 2);
