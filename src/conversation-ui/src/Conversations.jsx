@@ -29,15 +29,6 @@ function Conversations({
     return acc;
   }, { today: [], thisWeek: [], thisMonth: [], thisYear: [], older: [] });
 
-  // Sort conversations by date, from newest to oldest
-  const sortedConversations = [
-    ...groupedConversations.today,
-    ...groupedConversations.thisWeek,
-    ...groupedConversations.thisMonth,
-    ...groupedConversations.thisYear,
-    ...groupedConversations.older,
-  ];
-
   const displayConversations = (title, arr) => {
     if (arr.length === 0) return;
     return (
