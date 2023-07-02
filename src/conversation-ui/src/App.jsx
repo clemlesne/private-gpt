@@ -28,7 +28,7 @@ function App() {
   // Dynamic
   const auth = useAuth();
 
-  const fetchConversations = async (refresh = false) => {
+  const fetchConversations = async (idToSelect = null) => {
     if (!auth.userData) return;
 
     await axios
@@ -42,15 +42,30 @@ function App() {
         if (!res.data) return;
         const localConversations = res.data.conversations;
         setConversations(localConversations);
-        if (refresh) setSelectedConversation(localConversations[0].id);
+
+        if (idToSelect) {
+          let found = null;
+          // Search for the conversation ID
+          for (const conversation of localConversations) {
+            if (conversation.id == idToSelect) {
+              found = conversation.id;
+              break;
+            }
+          }
+          // If ID not found, select the first one
+          if (!found) {
+            found = localConversations[0].id;
+          }
+          setSelectedConversation(found);
+        }
       })
       .catch((error) => {
         console.error(error);
       });
   };
 
-  const refreshConversations = async () => {
-    fetchConversations(true);
+  const refreshConversations = async (id) => {
+    fetchConversations(id);
   };
 
   // Fetch the conversations

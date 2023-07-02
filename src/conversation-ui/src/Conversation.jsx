@@ -133,7 +133,8 @@ function Conversation({
 
           const cleanup = () => {
             source.close();
-            if (!conversation.id) refreshConversations();
+            // Ask to refresh the conversation, if it is not loaded, or if the title is not either
+            if (!conversationId || !conversation.title) refreshConversations(res.data.id);
             setLoading(false);
           };
 
