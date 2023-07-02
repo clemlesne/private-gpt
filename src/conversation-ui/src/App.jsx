@@ -126,10 +126,10 @@ function App() {
         </div>
         <small className="header__bottom">
           {auth.userData && (
-            <p>
-              Logged as {auth.userData.profile.name} (
-              {auth.userData.profile.email}).
-            </p>
+              <p>
+                Logged as {auth.userData.profile.name ? auth.userData.profile.name : "unknown name"} (
+                {auth.userData.profile.email ? auth.userData.profile.email : "unknown email"}).
+              </p>
           )}
           {auth.isLoading && <p>Connecting...</p>}
           <Button
