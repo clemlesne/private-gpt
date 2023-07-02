@@ -1,39 +1,100 @@
-#root {
-  --header-width: min(26rem, 33vw);
+html {
+  &:not(.header--open) {
+    @media (max-width: 48rem) {
+      // Fix the header to the top
+      .header {
+        // Stays at the top
+        top: 0;
+        position: sticky;
+        z-index: 1000;
+      }
+
+      // Hide the header content
+      .header__content,
+      .header__bottom {
+        display: none;
+      }
+    }
+  }
+
+  &.header--open {
+    @media (max-width: 48rem) {
+      // Hide the main content
+      .main {
+        display: none;
+      }
+    }
+  }
+
+  @media (min-width: 48rem) {
+    // Header always open, so we need to make sure it is full height
+    .header {
+      min-height: 100vh;
+    }
+
+    // Hide the toggle button
+    .header__top__toggle {
+      display: none;
+    }
+  }
 }
 
 .header {
-  --header-padding: 1rem;
-
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: 100vh;
   justify-content: space-between;
+  max-height: 100vh;
   overflow-x: auto;
-  position: fixed;
-  width: var(--header-width);
+
+  @media (min-width: 48rem) {
+    position: fixed;
+    width: var(--header-width);
+  }
 
   .header__top {
-    padding: var(--header-padding);
+    align-items: center;
+    backdrop-filter: blur(8vw);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: calc(var(--header-padding-v) / 2) var(--header-padding-h);
+
+    // Add spaces around title and toggle button
+    > *:not(:last-child) {
+      margin-right: var(--header-padding-h);
+    }
+  }
+
+  .header__content {
+    padding: 0 var(--header-padding-h);
   }
 
   .header__bottom {
     background-color: var(--background);
-    padding: calc(var(--header-padding) - (var(--header-padding) / 3));
+    padding: calc(var(--header-padding-v) - (var(--header-padding-v) / 3))
+      var(--header-padding-h);
 
     // Stays at the bottom
     bottom: 0;
     position: sticky;
-    z-index: 1000;
+    z-index: 900;
 
+    // Delimit the content to limit wrapping
     .header__bottom__block {
       display: flex;
       flex-direction: row;
       flex-wrap: wrap;
 
-      > * {
-        margin: calc(var(--header-padding) / 3);
+      // Add spaces blocks
+      &:not(:last-child) {
+        margin-bottom: calc(var(--header-padding-h) / 3);
+      }
+
+      // Add spaces around buttons
+      > *:not(:last-child) {
+        margin-right: calc(var(--header-padding-h) / 3);
       }
     }
   }
@@ -42,7 +103,9 @@
 .main {
   display: flex;
   flex-direction: column;
-  margin-left: var(--header-width);
   min-height: 100vh;
-  padding: 0 2rem;
+
+  @media (min-width: 48rem) {
+    margin-left: var(--header-width);
+  }
 }

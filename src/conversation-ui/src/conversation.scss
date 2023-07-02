@@ -1,7 +1,4 @@
 .conversation {
-  --conversation-padding-h: 2rem;
-  --conversation-padding-v: 1rem;
-
   align-items: center;
   display: flex;
   flex-direction: column;
@@ -13,7 +10,7 @@
     flex-grow: 1;
     justify-content: flex-end;
     margin: 0 calc(var(--conversation-padding-h) * 2);
-    max-width: 56rem;
+    max-width: var(--content-max-width);
     width: 100%;
   }
 
@@ -23,7 +20,7 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    min-height: 12rem;
+    min-height: 8rem;
 
     > *:not(:last-child) {
       margin-bottom: var(--conversation-padding-v);
@@ -46,28 +43,35 @@
 
   .conversation__input {
     background-color: var(--background);
-    padding: var(--conversation-padding-v) var(--conversation-padding-h);
+    padding: calc(
+        var(--conversation-padding-v) - (var(--conversation-padding-v) / 3)
+      )
+      var(--conversation-padding-h);
 
     // Stays at the bottom
     bottom: 0;
     position: sticky;
-    z-index: 1000;
+    z-index: 900;
   }
 
+  // Delimit the content to limit wrapping
   .conversation__input__block {
     align-items: center;
     display: flex;
     flex-direction: row;
     justify-content: flex-end;
 
+    // Add spaces blocks
     &:not(:last-child) {
       margin-bottom: calc(var(--conversation-padding-h) / 3);
     }
 
+    // Add spaces around buttons
     > *:not(:last-child) {
-      margin-right: calc(var(--conversation-padding-h) / 2);
+      margin-right: calc(var(--conversation-padding-h) / 3);
     }
 
+    // Make the input take all the available space
     > textarea {
       width: 100%;
     }

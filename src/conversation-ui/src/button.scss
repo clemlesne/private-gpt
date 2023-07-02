@@ -9,13 +9,6 @@
     background-color: var(--background-active);
   }
 
-  > * {
-    // Disable line wrapping
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   > *:not(:last-child) {
     margin-right: 0.5rem;
   }

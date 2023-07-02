@@ -115,6 +115,16 @@ function App() {
       <div className="header">
         <div className="header__top">
           <h1>🔒 Private GPT</h1>
+          <Button
+            className="header__top__toggle"
+            emoji="="
+            text="Menu"
+            onClick={() =>
+              document.documentElement.classList.toggle("header--open")
+            }
+          />
+        </div>
+        <div className="header__content">
           {auth.userData && (
             <Conversations
               conversationLoading={conversationLoading}

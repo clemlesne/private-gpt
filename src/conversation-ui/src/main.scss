@@ -1,7 +1,25 @@
 html {
-  --radius: 1.5rem;
-  --font-size: 0.875rem;
+  --content-max-width: 56rem;
+  --conversation-padding-v: 1rem;
+  --conversations-padding: 0.5rem;
   --font-size-small: 0.75rem;
+  --font-size: 0.875rem;
+  --header-padding-v: 1rem;
+  --header-width: min(26rem, 33vw);
+  --radius: 1.5rem;
+  --search-padding-v: 1rem;
+
+  @media (max-width: 48rem) {
+    --conversation-padding-h: 1rem;
+    --header-padding-h: 1rem;
+    --search-padding-h: 1rem;
+  }
+
+  @media (min-width: 48rem) {
+    --conversation-padding-h: 2rem;
+    --header-padding-h: 2rem;
+    --search-padding-h: 2rem;
+  }
 
   &.theme--light,
   &:not(.theme--dark) {
@@ -135,6 +153,14 @@ body {
       &:focus {
         outline: 3px solid var(--border-active);
       }
+    }
+
+    &,
+    > * {
+      // Disable line wrapping
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     &,

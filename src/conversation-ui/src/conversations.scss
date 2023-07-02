@@ -1,7 +1,7 @@
 .conversations {
-  --conversations-padding: .5rem;
-
-  margin-top: var(--conversations-padding);
+  > *:not(:last-child) {
+    margin-bottom: var(--conversations-padding);
+  }
 
   &,
   .conversations__actions {
@@ -11,19 +11,17 @@
 
   .conversations__actions {
     background-color: var(--background);
-    padding: var(--conversations-padding) 0;
+    padding: calc(var(--header-padding-v) / 2) 0;
 
     // Stays at the top
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 900;
   }
 
   > a,
   > h2,
   > h3 {
-    padding: var(--conversations-padding) 0;
-
     // Disable line wrapping
     white-space: nowrap;
     overflow: hidden;

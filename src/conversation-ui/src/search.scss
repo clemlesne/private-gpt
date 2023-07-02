@@ -1,7 +1,4 @@
 .search {
-  --search-padding-h: 2rem;
-  --search-padding-v: 0.5rem;
-
   align-items: center;
   display: flex;
   flex-direction: column;
@@ -10,8 +7,10 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    margin: 0 calc(var(--search-padding-h) * 2);
-    max-width: 56rem;
+    // Use the same padding as the header to align horizontally the search with the header
+    margin: calc(var(--header-padding-v) / 2) calc(var(--search-padding-h) * 2)
+      0 calc(var(--search-padding-h) * 2);
+    max-width: var(--content-max-width);
     width: 100%;
   }
 
@@ -35,12 +34,13 @@
     background-color: var(--background);
     display: flex;
     flex-direction: row;
-    padding: calc(var(--search-padding-v) * 2) var(--search-padding-h);
+    padding: 0 var(--search-padding-h) calc(var(--search-padding-v) * 2)
+      var(--search-padding-h);
 
     // Stays at the bottom
     bottom: 0;
     position: sticky;
-    z-index: 1000;
+    z-index: 900;
 
     > *:not(:last-child) {
       margin-right: calc(var(--search-padding-h) / 2);
