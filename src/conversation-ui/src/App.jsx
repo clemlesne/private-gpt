@@ -125,23 +125,27 @@ function App() {
           )}
         </div>
         <small className="header__bottom">
-          {auth.userData && (
+          <div className="header__bottom__block">
+            {auth.userData && (
               <p>
                 Logged as {auth.userData.profile.name ? auth.userData.profile.name : "unknown name"} (
                 {auth.userData.profile.email ? auth.userData.profile.email : "unknown email"}).
               </p>
-          )}
-          {auth.isLoading && <p>Connecting...</p>}
-          <Button
-            onClick={() => (auth.userData ? auth.signOut() : auth.signIn())}
-            text={auth.userData ? "Signout" : "Signin"}
-            loading={auth.isLoading}
-          />
-          <Button
-            emoji={darkTheme ? "🌕" : "☀️"}
-            onClick={() => setDarkTheme(!darkTheme)}
-            text={darkTheme ? "Dark" : "Light"}
-          />
+            )}
+            {auth.isLoading && <p>Connecting...</p>}
+          </div>
+          <div className="header__bottom__block">
+            <Button
+              onClick={() => (auth.userData ? auth.signOut() : auth.signIn())}
+              text={auth.userData ? "Signout" : "Signin"}
+              loading={auth.isLoading}
+            />
+            <Button
+              emoji={darkTheme ? "🌕" : "☀️"}
+              onClick={() => setDarkTheme(!darkTheme)}
+              text={darkTheme ? "Dark" : "Light"}
+            />
+          </div>
         </small>
       </div>
       <div className="main">

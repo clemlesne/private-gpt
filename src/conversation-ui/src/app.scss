@@ -20,9 +20,6 @@
 
   .header__bottom {
     background-color: var(--background);
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
     padding: calc(var(--header-padding) - (var(--header-padding) / 3));
 
     // Stays at the bottom
@@ -30,8 +27,14 @@
     position: sticky;
     z-index: 1000;
 
-    > * {
-      margin: calc(var(--header-padding) / 3);
+    .header__bottom__block {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+
+      > * {
+        margin: calc(var(--header-padding) / 3);
+      }
     }
   }
 }
