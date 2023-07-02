@@ -39,7 +39,14 @@ function Message({ content, role, date, secret, defaultDisplaySub = false }) {
         {/* eslint-disable-next-line react/no-children-prop */}
         <ReactMarkdown
           linkTarget="_blank"
-          remarkPlugins={[remarkGfm, remarkBreaks, remarkMath, remarkGemoji, remarkNormalizeHeadings, remarkImages]}
+          remarkPlugins={[
+            remarkGfm,
+            remarkBreaks,
+            remarkMath,
+            remarkGemoji,
+            remarkNormalizeHeadings,
+            remarkImages,
+          ]}
           children={content}
         />
       </div>
@@ -58,7 +65,7 @@ Message.propTypes = {
   date: PropTypes.string.isRequired,
   defaultDisplaySub: PropTypes.bool,
   role: PropTypes.string.isRequired,
-  secret: PropTypes.bool.isRequired,
+  secret: PropTypes.bool,
 };
 
 export default Message;

@@ -10,24 +10,27 @@ function Conversations({
   setSelectedConversation,
   conversationLoading,
 }) {
-  const groupedConversations = conversations.reduce((acc, conversation) => {
-    const now = moment();
-    const created_at = moment(conversation.created_at);
+  const groupedConversations = conversations.reduce(
+    (acc, conversation) => {
+      const now = moment();
+      const created_at = moment(conversation.created_at);
 
-    if (now.isSame(created_at, "day")) {
-      acc.today.push(conversation);
-    } else if (now.isSame(created_at, "week")) {
-      acc.thisWeek.push(conversation);
-    } else if (now.isSame(created_at, "month")) {
-      acc.thisMonth.push(conversation);
-    } else if (now.isSame(created_at, "year")) {
-      acc.thisYear.push(conversation);
-    } else {
-      acc.older.push(conversation);
-    }
+      if (now.isSame(created_at, "day")) {
+        acc.today.push(conversation);
+      } else if (now.isSame(created_at, "week")) {
+        acc.thisWeek.push(conversation);
+      } else if (now.isSame(created_at, "month")) {
+        acc.thisMonth.push(conversation);
+      } else if (now.isSame(created_at, "year")) {
+        acc.thisYear.push(conversation);
+      } else {
+        acc.older.push(conversation);
+      }
 
-    return acc;
-  }, { today: [], thisWeek: [], thisMonth: [], thisYear: [], older: [] });
+      return acc;
+    },
+    { today: [], thisWeek: [], thisMonth: [], thisYear: [], older: [] }
+  );
 
   const displayConversations = (title, arr) => {
     if (arr.length === 0) return;
@@ -48,7 +51,7 @@ function Conversations({
         ))}
       </>
     );
-  }
+  };
 
   return (
     <div className="conversations">

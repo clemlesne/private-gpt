@@ -120,7 +120,8 @@ function Conversation({
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
-            prompt_id: !conversationId && selectedPrompt ? selectedPrompt.id : null,
+            prompt_id:
+              !conversationId && selectedPrompt ? selectedPrompt.id : null,
             secret: secret,
           },
           timeout: 30000,
@@ -134,7 +135,8 @@ function Conversation({
           const cleanup = () => {
             source.close();
             // Ask to refresh the conversation, if it is not loaded, or if the title is not either
-            if (!conversationId || !conversation.title) refreshConversations(res.data.id);
+            if (!conversationId || !conversation.title)
+              refreshConversations(res.data.id);
             setLoading(false);
           };
 
@@ -251,7 +253,9 @@ function Conversation({
                   disabled={loading}
                 />
               )}
-              {conversation.prompt && <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>}
+              {conversation.prompt && (
+                <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>
+              )}
               <Button
                 active={secret}
                 disabled={loading}

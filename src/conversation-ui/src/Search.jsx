@@ -57,8 +57,7 @@ function Search({ setHideConversation }) {
   // Hide search when clicking outside of the container
   useMemo(() => {
     const handleClickOutside = (e) => {
-      if (self.current &&
-      !self.current.contains(e.target)) {
+      if (self.current && !self.current.contains(e.target)) {
         setMessages([]);
         setHideConversation(false);
       }

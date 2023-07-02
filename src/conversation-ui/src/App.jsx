@@ -138,8 +138,15 @@ function App() {
           <div className="header__bottom__block">
             {auth.userData && (
               <p>
-                Logged as {auth.userData.profile.name ? auth.userData.profile.name : "unknown name"} (
-                {auth.userData.profile.email ? auth.userData.profile.email : "unknown email"}).
+                Logged as{" "}
+                {auth.userData.profile.name
+                  ? auth.userData.profile.name
+                  : "unknown name"}{" "}
+                (
+                {auth.userData.profile.email
+                  ? auth.userData.profile.email
+                  : "unknown email"}
+                ).
               </p>
             )}
             {auth.isLoading && <p>Connecting...</p>}
