@@ -121,7 +121,6 @@ body {
   textarea,
   button,
   input {
-    background: var(--background-muted);
     border-radius: var(--radius);
     border: unset;
     min-width: 0;
@@ -136,6 +135,13 @@ body {
       &:focus {
         outline: 3px solid var(--border-active);
       }
+    }
+
+    &,
+    select {
+      background-color: var(--background-muted);
+      color: inherit;
+      font-family: inherit;
     }
   }
 
