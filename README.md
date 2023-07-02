@@ -58,7 +58,16 @@ AZURE_CLIENT_SECRET=[client_secret]
 AZURE_TENANT_ID=[tenant_id]
 ```
 
-This will build locally the containers, start them, and display the logs:
+Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.
+
+With live reload:
+
+```bash
+# In each "src/[...]" directory, example "src/conversation-api"
+make install start
+```
+
+As container:
 
 ```bash
 make build start logs
