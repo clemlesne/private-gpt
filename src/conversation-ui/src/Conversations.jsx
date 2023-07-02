@@ -40,7 +40,12 @@ function Conversations({
         {arr.map((conversation) => (
           <a
             key={conversation.id}
-            onClick={() => setSelectedConversation(conversation.id)}
+            onClick={() => {
+              // Close the header on mobile, if any
+              document.documentElement.classList.remove("header--open");
+              // Set the conversation
+              setSelectedConversation(conversation.id);
+            }}
             disabled={conversation.id == selectedConversation}
           >
             {conversation.id == selectedConversation && conversationLoading && (
