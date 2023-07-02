@@ -24,7 +24,9 @@ function App() {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [conversationLoading, setConversationLoading] = useState(false);
   // Persistance
-  const [darkTheme, setDarkTheme] = useLocalStorageState("darkTheme", { defaultValue: () => getPreferredScheme() == "dark" });
+  const [darkTheme, setDarkTheme] = useLocalStorageState("darkTheme", {
+    defaultValue: () => getPreferredScheme() == "dark",
+  });
   // Dynamic
   const auth = useAuth();
 
@@ -68,7 +70,6 @@ function App() {
     fetchConversations(id);
   };
 
-  // Fetch the conversations
   useEffect(() => {
     fetchConversations();
   }, [auth]);
@@ -114,12 +115,14 @@ function App() {
       <div className="header">
         <div className="header__top">
           <h1>🔒 Private GPT</h1>
-          {auth.userData && <Conversations
-            conversationLoading={conversationLoading}
-            conversations={conversations}
-            selectedConversation={selectedConversation}
-            setSelectedConversation={setSelectedConversation}
-          />}
+          {auth.userData && (
+            <Conversations
+              conversationLoading={conversationLoading}
+              conversations={conversations}
+              selectedConversation={selectedConversation}
+              setSelectedConversation={setSelectedConversation}
+            />
+          )}
         </div>
         <small className="header__bottom">
           {auth.userData && (
@@ -129,7 +132,11 @@ function App() {
             </p>
           )}
           {auth.isLoading && <p>Connecting...</p>}
-          <Button onClick={() => auth.userData ? auth.signOut() : auth.signIn()} text={auth.userData ? "Signout" : "Signin"} loading={auth.isLoading} />
+          <Button
+            onClick={() => (auth.userData ? auth.signOut() : auth.signIn())}
+            text={auth.userData ? "Signout" : "Signin"}
+            loading={auth.isLoading}
+          />
           <Button
             emoji={darkTheme ? "🌕" : "☀️"}
             onClick={() => setDarkTheme(!darkTheme)}
