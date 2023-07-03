@@ -22,6 +22,9 @@
     border-radius: var(--radius);
     padding: 1rem;
 
+    // Fix overflow with non wrapping content like code and tables
+    max-width: 100%;
+
     > *:not(:last-child) {
       margin-bottom: 1rem;
     }
