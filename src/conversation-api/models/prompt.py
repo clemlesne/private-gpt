@@ -4,6 +4,7 @@ from uuid import UUID
 
 
 class BasePromptModel(BaseModel):
+    group: str
     id: UUID
     name: str
 

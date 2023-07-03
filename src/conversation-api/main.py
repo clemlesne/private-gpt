@@ -132,7 +132,8 @@ def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
         for row in rows:
             name = row[0]
             content = row[1]
-            prompt = StoredPromptModel(id=hash_token(name), name=name, content=content)
+            group = row[2]
+            prompt = StoredPromptModel(id=hash_token(name), name=name, content=content, group=group)
             prompts[prompt.id] = prompt
     logger.info(f"Loaded {len(prompts)} prompts")
     # Sort by name asc

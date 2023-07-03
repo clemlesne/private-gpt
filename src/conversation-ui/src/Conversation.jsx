@@ -58,7 +58,7 @@ function Conversation({
     if (conversationId) return;
     const options = [];
     for (const [id, prompt] of Object.entries(prompts)) {
-      options.push({ label: prompt.name, id: id });
+      options.push({ label: prompt.name, group: prompt.group, id: id });
     }
     setOptionsPrompt(options);
   }, [prompts, conversationId]);
