@@ -170,6 +170,7 @@ function App() {
         {!hideConversation && (
           <Conversation
             conversationId={selectedConversation}
+            darkTheme={darkTheme}
             refreshConversations={refreshConversations}
             setConversationLoading={setConversationLoading}
           />

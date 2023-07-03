@@ -10,6 +10,7 @@ import PropTypes from "prop-types";
 
 function Conversation({
   conversationId,
+  darkTheme,
   refreshConversations,
   setConversationLoading,
 }) {
@@ -227,6 +228,7 @@ function Conversation({
           {conversation.messages.map((message) => (
             <Message
               content={message.content}
+              darkTheme={darkTheme}
               date={message.created_at}
               defaultDisplaySub={message.secret}
               key={message.id}
@@ -291,6 +293,7 @@ function Conversation({
 
 Conversation.propTypes = {
   conversationId: PropTypes.string,
+  darkTheme: PropTypes.bool,
   refreshConversations: PropTypes.func.isRequired,
   setConversationLoading: PropTypes.func.isRequired,
 };
