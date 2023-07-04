@@ -6,9 +6,9 @@ import PropTypes from "prop-types";
 
 function Conversations({
   conversations,
+  loadingConversation,
   selectedConversation,
   setSelectedConversation,
-  conversationLoading,
 }) {
   const groupedConversations = conversations.reduce(
     (acc, conversation) => {
@@ -48,7 +48,7 @@ function Conversations({
             }}
             disabled={conversation.id == selectedConversation}
           >
-            {conversation.id == selectedConversation && conversationLoading && (
+            {conversation.id == selectedConversation && loadingConversation && (
               <Loader />
             )}{" "}
             {conversation.title ? conversation.title : "New chat"}{" "}
@@ -72,6 +72,7 @@ function Conversations({
         />
       </div>
       <h2>Your conversations</h2>
+      { conversations.length === 0 && <p>No conversations yet.</p>}
       {displayConversations("Today", groupedConversations.today)}
       {displayConversations("This week", groupedConversations.thisWeek)}
       {displayConversations("This month", groupedConversations.thisMonth)}
@@ -82,8 +83,8 @@ function Conversations({
 }
 
 Conversations.propTypes = {
-  conversationLoading: PropTypes.bool.isRequired,
   conversations: PropTypes.array.isRequired,
+  loadingConversation: PropTypes.bool.isRequired,
   selectedConversation: PropTypes.string,
   setSelectedConversation: PropTypes.func.isRequired,
 };

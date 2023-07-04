@@ -17,10 +17,10 @@ function App() {
       ? "dark"
       : "light";
   // State
-  const [hideConversation, setHideConversation] = useState(false);
   const [conversations, setConversations] = useState([]);
+  const [hideConversation, setHideConversation] = useState(false);
+  const [loadingConversation, setLoadingConversation] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState(null);
-  const [conversationLoading, setConversationLoading] = useState(false);
   // Persistance
   const [darkTheme, setDarkTheme] = useLocalStorageState("darkTheme", {
     defaultValue: () => getPreferredScheme() == "dark",
@@ -40,6 +40,7 @@ function App() {
       })
       .then((res) => {
         if (!res.data) return;
+
         const localConversations = res.data.conversations;
         setConversations(localConversations);
 
@@ -125,7 +126,7 @@ function App() {
         <div className="header__content">
           {auth.userData && (
             <Conversations
-              conversationLoading={conversationLoading}
+              loadingConversation={loadingConversation}
               conversations={conversations}
               selectedConversation={selectedConversation}
               setSelectedConversation={setSelectedConversation}
@@ -170,7 +171,7 @@ function App() {
             conversationId={selectedConversation}
             darkTheme={darkTheme}
             refreshConversations={refreshConversations}
-            setConversationLoading={setConversationLoading}
+            setLoadingConversation={setLoadingConversation}
           />
         )}
       </div>

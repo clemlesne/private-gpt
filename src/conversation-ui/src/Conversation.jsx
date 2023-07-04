@@ -12,7 +12,7 @@ function Conversation({
   conversationId,
   darkTheme,
   refreshConversations,
-  setConversationLoading,
+  setLoadingConversation,
 }) {
   // State
   const [input, setInput] = useState(null);
@@ -87,9 +87,9 @@ function Conversation({
         });
     };
 
-    setConversationLoading(true);
+    setLoadingConversation(true);
     fetchConversation().finally(() => {
-      setConversationLoading(false);
+      setLoadingConversation(false);
     });
   }, [auth, conversationId]);
 
@@ -293,7 +293,7 @@ Conversation.propTypes = {
   conversationId: PropTypes.string,
   darkTheme: PropTypes.bool,
   refreshConversations: PropTypes.func.isRequired,
-  setConversationLoading: PropTypes.func.isRequired,
+  setLoadingConversation: PropTypes.func.isRequired,
 };
 
 export default Conversation;
