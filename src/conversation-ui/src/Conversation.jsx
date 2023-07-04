@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from "uuid";
 import Button from "./Button";
 import Message from "./Message";
 import PropTypes from "prop-types";
-import Select from "react-select";
+import Select, { createFilter } from "react-select";
 
 function Conversation({
   conversationId,
@@ -270,6 +270,11 @@ function Conversation({
                   options={optionsPrompt}
                   placeholder="Default tone"
                   unstyled={true}
+                  filterOption={createFilter({
+                    ignoreAccents: true,
+                    ignoreCase: true,
+                    matchFrom: "any",
+                  })}
                 />
               )}
               {conversation.prompt && (
