@@ -4,9 +4,9 @@ import { useAuth } from "oidc-react";
 import { useState, useEffect, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 import Button from "./Button";
-import Dropdown from "./Dropdown";
 import Message from "./Message";
 import PropTypes from "prop-types";
+import Select from "react-select";
 
 function Conversation({
   conversationId,
@@ -15,13 +15,13 @@ function Conversation({
   setLoadingConversation,
 }) {
   // State
-  const [input, setInput] = useState(null);
   const [conversation, setConversation] = useState({ messages: [] });
+  const [input, setInput] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [secret, setSecret] = useState(false);
-  const [prompts, setPrompts] = useState({});
-  const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [optionsPrompt, setOptionsPrompt] = useState([]);
+  const [prompts, setPrompts] = useState({});
+  const [secret, setSecret] = useState(false);
+  const [selectedPrompt, setSelectedPrompt] = useState(null);
   // Dynamic
   const auth = useAuth();
 
@@ -55,10 +55,24 @@ function Conversation({
 
   useMemo(() => {
     if (conversationId) return;
-    const options = [];
-    for (const [id, prompt] of Object.entries(prompts)) {
-      options.push({ label: prompt.name, group: prompt.group, id: id });
+    // Group prompts by group
+    const groups = {};
+    for (const prompt of Object.values(prompts)) {
+      if (!groups[prompt.group]) groups[prompt.group] = [];
+      groups[prompt.group].push(prompt);
     }
+    // Convert to options
+    const options = Object.entries(groups).map(([group, prompts]) => {
+      return {
+        label: group,
+        options: prompts.map((prompt) => {
+          return {
+            label: prompt.name,
+            value: prompt.id,
+          };
+        }),
+      };
+    });
     setOptionsPrompt(options);
   }, [prompts, conversationId]);
 
@@ -245,12 +259,17 @@ function Conversation({
           >
             <div className="conversation__input__block">
               {!conversationId && (
-                <Dropdown
-                  defaultTitle="Default tone"
-                  onChange={(id) => setSelectedPrompt(prompts[id])}
+                <Select
+                  className="react-select"
+                  classNamePrefix="react-select"
+                  defultValue={selectedPrompt ? selectedPrompt.id : null}
+                  isDisabled={loading}
+                  menuPlacement="auto"
+                  minMenuHeight={384}
+                  onChange={(e) => setSelectedPrompt(prompts[e.value])}
                   options={optionsPrompt}
-                  selected={selectedPrompt ? selectedPrompt.id : null}
-                  disabled={loading}
+                  placeholder="Default tone"
+                  unstyled={true}
                 />
               )}
               {conversation.prompt && (
