@@ -259,9 +259,9 @@ function Conversation({
               <Button
                 active={secret}
                 disabled={loading}
-                emoji={secret ? "🙈" : "💾"}
+                emoji={secret ? "💾" : "🙈"}
                 onClick={() => setSecret(!secret)}
-                text={secret ? "Temporary" : "Stored"}
+                text={secret ? "Stored" : "Temporary"}
               />
             </div>
             <div className="conversation__input__block">

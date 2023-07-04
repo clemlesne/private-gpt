@@ -157,9 +157,9 @@ function App() {
               loading={auth.isLoading}
             />
             <Button
-              emoji={darkTheme ? "🌕" : "☀️"}
+              emoji={darkTheme ? "☀️" : "🌕"}
               onClick={() => setDarkTheme(!darkTheme)}
-              text={darkTheme ? "Dark" : "Light"}
+              text={darkTheme ? "Light" : "Dark"}
             />
           </div>
         </small>
