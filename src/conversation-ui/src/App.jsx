@@ -1,5 +1,5 @@
 import "./app.scss";
-import { client } from "./Utils";
+import { client, header } from "./Utils";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
 import { useAuth } from "oidc-react";
@@ -118,9 +118,7 @@ function App() {
             className="header__top__toggle"
             emoji="="
             text="Menu"
-            onClick={() =>
-              document.documentElement.classList.toggle("header--open")
-            }
+            onClick={() => header() }
           />
         </div>
         <div className="header__content">
@@ -152,13 +150,19 @@ function App() {
           </div>
           <div className="header__bottom__block">
             <Button
-              onClick={() => (auth.userData ? auth.signOut() : auth.signIn())}
+              onClick={() => {
+                header(false);
+                auth.userData ? auth.signOut() : auth.signIn()
+              }}
               text={auth.userData ? "Signout" : "Signin"}
               loading={auth.isLoading}
             />
             <Button
               emoji={darkTheme ? "☀️" : "🌕"}
-              onClick={() => setDarkTheme(!darkTheme)}
+              onClick={() => {
+                header(false);
+                setDarkTheme(!darkTheme);
+              }}
               text={darkTheme ? "Light" : "Dark"}
             />
           </div>

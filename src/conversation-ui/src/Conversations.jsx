@@ -1,4 +1,5 @@
 import "./conversations.scss";
+import { header } from "./Utils";
 import Button from "./Button";
 import Loader from "./Loader";
 import moment from "moment";
@@ -41,9 +42,7 @@ function Conversations({
           <a
             key={conversation.id}
             onClick={() => {
-              // Close the header on mobile, if any
-              document.documentElement.classList.remove("header--open");
-              // Set the conversation
+              header(false);
               setSelectedConversation(conversation.id);
             }}
             disabled={conversation.id == selectedConversation}
@@ -65,7 +64,10 @@ function Conversations({
 
         It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
         <Button
-          onClick={() => setSelectedConversation(null)}
+          onClick={() => {
+            header(false);
+            setSelectedConversation(null);
+          }}
           text="New chat"
           emoji="+"
           active={true}
