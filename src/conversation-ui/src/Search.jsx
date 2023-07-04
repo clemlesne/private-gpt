@@ -1,14 +1,12 @@
 import "./search.scss";
+import { client } from "./Utils";
 import { useAuth } from "oidc-react";
 import { useState, useMemo, useRef } from "react";
-import axios from "axios";
 import Button from "./Button";
 import Message from "./Message";
 import PropTypes from "prop-types";
 
 function Search({ setHideConversation }) {
-  // Constants
-  const API_BASE_URL = "http://127.0.0.1:8081";
   // State
   const [input, setInput] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -24,12 +22,12 @@ function Search({ setHideConversation }) {
 
     setLoading(true);
 
-    await axios
-      .get(`${API_BASE_URL}/message`, {
+    await client
+      .get("/message", {
         params: {
           q: input,
         },
-        timeout: 30000,
+        timeout: 10_000,
         headers: {
           Authorization: `Bearer ${auth.userData.id_token}`,
         },

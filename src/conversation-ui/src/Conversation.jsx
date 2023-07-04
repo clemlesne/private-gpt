@@ -1,8 +1,8 @@
 import "./conversation.scss";
+import { client } from "./Utils";
 import { useAuth } from "oidc-react";
 import { useState, useEffect, useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
-import axios from "axios";
 import Button from "./Button";
 import Dropdown from "./Dropdown";
 import Message from "./Message";
@@ -14,8 +14,6 @@ function Conversation({
   refreshConversations,
   setConversationLoading,
 }) {
-  // Constants
-  const API_BASE_URL = "http://127.0.0.1:8081";
   // State
   const [input, setInput] = useState(null);
   const [conversation, setConversation] = useState({ messages: [] });
@@ -32,9 +30,9 @@ function Conversation({
       if (!auth.userData) return;
       if (conversationId) return;
 
-      await axios
-        .get(`${API_BASE_URL}/prompt`, {
-          timeout: 30000,
+      await client
+        .get("/prompt", {
+          timeout: 10_000,
           headers: {
             Authorization: `Bearer ${auth.userData.id_token}`,
           },
@@ -73,9 +71,9 @@ function Conversation({
         return;
       }
 
-      await axios
-        .get(`${API_BASE_URL}/conversation/${conversationId}`, {
-          timeout: 30000,
+      await client
+        .get(`/conversation/${conversationId}`, {
+          timeout: 10_000,
           headers: {
             Authorization: `Bearer ${auth.userData.id_token}`,
           },
@@ -116,8 +114,8 @@ function Conversation({
       setLoading(true);
 
       // First, create the message
-      await axios
-        .post(`${API_BASE_URL}/message`, null, {
+      await client
+        .post("/message", null, {
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
@@ -125,7 +123,7 @@ function Conversation({
               !conversationId && selectedPrompt ? selectedPrompt.id : null,
             secret: secret,
           },
-          timeout: 30000,
+          timeout: 10_000,
           headers: {
             Authorization: `Bearer ${auth.userData.id_token}`,
           },
@@ -145,7 +143,7 @@ function Conversation({
           const lastMessage = res.data.messages[res.data.messages.length - 1];
           let stream = "";
           const source = new EventSource(
-            `${API_BASE_URL}/message/${lastMessage.id}?token=${lastMessage.token}`
+            `${client.defaults.baseURL}/message/${lastMessage.id}?token=${lastMessage.token}`
           );
           source.onmessage = (e) => {
             if (e.data === "STOP") {

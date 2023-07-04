@@ -1,9 +1,9 @@
 import "./app.scss";
+import { client } from "./Utils";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
 import { useAuth } from "oidc-react";
 import { useState, useEffect } from "react";
-import axios from "axios";
 import Button from "./Button";
 import Conversation from "./Conversation";
 import Conversations from "./Conversations";
@@ -16,8 +16,6 @@ function App() {
     window?.matchMedia?.("(prefers-color-scheme:dark)")?.matches
       ? "dark"
       : "light";
-  // Constants
-  const API_BASE_URL = "http://127.0.0.1:8081";
   // State
   const [hideConversation, setHideConversation] = useState(false);
   const [conversations, setConversations] = useState([]);
@@ -33,9 +31,9 @@ function App() {
   const fetchConversations = async (idToSelect = null) => {
     if (!auth.userData) return;
 
-    await axios
-      .get(`${API_BASE_URL}/conversation`, {
-        timeout: 30000,
+    await client
+      .get("/conversation", {
+        timeout: 10_000,
         headers: {
           Authorization: `Bearer ${auth.userData.id_token}`,
         },
