@@ -5,13 +5,15 @@ load_dotenv(find_dotenv())
 
 # Import modules
 from fastapi import HTTPException, status
+from pathlib import Path
 from tenacity import retry, stop_after_attempt
-from typing import Dict, Union, Hashable
+from typing import Dict, Optional, TypeVar, Union, Hashable
 from uuid import UUID
 import jwt
 import logging
 import mmh3
 import os
+import tomllib
 
 
 ###
@@ -19,6 +21,77 @@ import os
 ###
 
 VERSION = os.environ.get("VERSION")
+
+###
+# Init config
+###
+
+T = TypeVar('T')
+
+class ConfigNotFound(Exception):
+    pass
+
+def get_config(section: Optional[str], key: str, validate: T, default: T = None, required: bool = False) -> T:
+    """
+    Get config from environment variable or config file.
+    """
+    def get_env(key: str, res_default: T) -> Union[str, T]:
+        """
+        Get config from environment variable.
+        """
+        key = f"pg_{key}".upper()
+        return os.environ.get(key, res_default)
+
+    # Get config from file
+    res = None
+    if section:
+        res = CONFIG.get(section, {}).get(key, get_env(f"{section}_{key}", default))
+    else:
+        res = CONFIG.get(key, get_env(key, default))
+
+    # Check if required
+    if required  and not res:
+        raise ConfigNotFound(f"Cannot find config \"{section}/{key}\"")
+
+    # Convert to res_type
+    try:
+        if validate is bool:
+            res = res.strip().lower() == "true"
+        elif validate is int:
+            res = int(res)
+        elif validate is float:
+            res = float(res)
+        elif validate is UUID:
+            res = UUID(res)
+    except Exception:
+        raise ConfigNotFound(f"Cannot convert config \"{section}/{key}\" ({validate.__name__}), found \"{res}\" ({type(res).__name__})")
+
+    # Check res type
+    if not isinstance(res, validate):
+        raise ConfigNotFound(f"Cannot validate config \"{section}/{key}\" ({validate.__name__}), found \"{res}\" ({type(res).__name__})")
+
+    return res
+
+
+CONFIG_FILE = "config.toml"
+CONFIG_FOLDER = Path(os.environ.get("PG_CONFIG_PATH", ".")).absolute()
+CONFIG_PATH = None
+CONFIG = None
+while CONFIG_FOLDER:
+    CONFIG_PATH = f"{CONFIG_FOLDER}/{CONFIG_FILE}"
+    print(f"Try to load config \"{CONFIG_PATH}\"")
+    try:
+        with open(CONFIG_PATH, "rb") as file:
+            CONFIG = tomllib.load(file)
+        break
+    except FileNotFoundError:
+        if CONFIG_FOLDER.parent == CONFIG_FOLDER:
+            raise ConfigNotFound("Cannot find config file")
+        CONFIG_FOLDER = CONFIG_FOLDER.parent.parent
+    except tomllib.TOMLDecodeError as e:
+        print(f"Cannot load config file \"{CONFIG_PATH}\"")
+        raise e
+print(f"Config \"{CONFIG_PATH}\" loaded")
 
 ###
 # Init logging
@@ -30,19 +103,19 @@ def build_logger(name: str) -> logging.Logger:
     return logger
 
 
-LOGGING_SYS_LEVEL = os.environ.get("PG_LOGGING_SYS_LEVEL", logging.WARN)
+LOGGING_SYS_LEVEL = get_config("logging", "sys_level", str, "WARN")
 logging.basicConfig(level=LOGGING_SYS_LEVEL)
-LOGGING_APP_LEVEL = os.environ.get("PG_LOGGING_APP_LEVEL", logging.INFO)
+LOGGING_APP_LEVEL = get_config("logging", "app_level", str, "INFO")
 logger = build_logger(__name__)
 
 ###
 # Init OIDC
 ###
 
-OIDC_API_AUDIENCE = os.environ.get("PG_OIDC_API_AUDIENCE")
-OIDC_JWKS = os.environ.get("PG_OIDC_JWKS")
-OIDC_ISSUERS = os.environ.get("PG_OIDC_ISSUERS", "").split(",")
-OIDC_ALGORITHMS = os.environ.get("PG_OIDC_ALGORITHMS", "").split(",")
+OIDC_ALGORITHMS = get_config("oidc", "algorithms", list, required=True)
+OIDC_API_AUDIENCE = get_config("oidc", "api_audience", str, required=True)
+OIDC_ISSUERS = get_config("oidc", "issuers", list, required=True)
+OIDC_JWKS = get_config("oidc", "jwks", str, required=True)
 
 
 def hash_token(str: Union[str, Hashable]) -> Union[UUID, None]:

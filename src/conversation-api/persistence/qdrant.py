@@ -1,5 +1,5 @@
 # Import utils
-from utils import build_logger
+from utils import build_logger, get_config
 
 # Import misc
 from .isearch import ISearch
@@ -22,14 +22,14 @@ import time
 logger = build_logger(__name__)
 QD_COLLECTION = "messages"
 QD_DIMENSION = 1536
-QD_HOST = os.environ.get("PG_QD_HOST")
+QD_HOST = get_config("qd", "host", str, required=True)
 QD_PORT = 6333
 QD_METRIC = qmodels.Distance.DOT
 client = QdrantClient(host=QD_HOST, port=6333)
 logger.info(f"Connected to Qdrant at {QD_HOST}:{QD_PORT}")
 
 OAI_EMBEDDING_ARGS = {
-    "deployment_id": os.environ.get("PG_OAI_ADA_DEPLOY_ID"),
+    "deployment_id": get_config("openai", "ada_deploy_id", str, required=True),
     "model": "text-embedding-ada-002",
 }
 

@@ -20,42 +20,36 @@ Includes:
 
 ### Run locally
 
-Create a local configuration file, a file named `.env` at the root of the project:
+Create a local configuration file, a file named `config.toml` at the root of the project. The TOML file can be placed anywhere in the folder or in any parent directory.
 
-```.env
-# Logging
-# Can be: NOTSET, DEBUG, INFO, WARN, ERROR, FATAL, CRITICAL
-PG_LOGGING_APP_LEVEL=DEBUG
-PG_LOGGING_SYS_LEVEL=INFO
+```toml
+# config.toml
+# Values are for example only, you should change them
+[openai]
+ada_deploy_id = "ada"
+api_base = "https://moaw-dev-clesne-moaw-search-oai.openai.azure.com"
+gpt_deploy_id = "gpt"
 
-# Authentication with OpenID Connect
-# Here, example with Azure Active Directory
-PG_OIDC_ALGORITHMS=RS256
-PG_OIDC_API_AUDIENCE=[aad_app_id]
-PG_OIDC_ISSUERS=https://login.microsoftonline.com/[azure_tenant_id]
-PG_OIDC_JWKS=https://login.microsoftonline.com/common/discovery/v2.0/keys
+[acs]
+api_base = "https://moaw-dev-clesne-moaw-search-acs.cognitiveservices.azure.com"
+api_token = "00000000000000000000000000000000"
 
-# Azure Cognitive Services
-PG_ACS_API_BASE=https://[resource_name].cognitiveservices.azure.com
-PG_ACS_API_TOKEN=[service_token]
-PG_OAI_ADA_DEPLOY_ID=ada
-PG_OAI_GPT_DEPLOY_ID=gpt
-OPENAI_API_BASE=https://[resource_name].openai.azure.com
+[logging]
+app_level = "DEBUG"
+sys_level = "INFO"
 
-# Qdrant
-PG_QD_HOST=localhost
+[oidc]
+algorithms = ["RS256"]
+api_audience = "00000000-0000-0000-0000-000000000000"
+issuers = ["https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0"]
+jwks = "https://login.microsoftonline.com/common/discovery/v2.0/keys"
 
-# Redis
-PG_REDIS_DB=0
-PG_REDIS_HOST=localhost
+[qd]
+host = "localhost"
 
-# Azure SDK
-# Here, example with a service principal with a client secret
-# See: https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity.environmentcredential?view=azure-python
-AZURE_AUTHORITY_HOST=https://login.microsoftonline.com
-AZURE_CLIENT_ID=[client_id]
-AZURE_CLIENT_SECRET=[client_secret]
-AZURE_TENANT_ID=[tenant_id]
+[redis]
+db = 0
+host = "localhost"
 ```
 
 Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.

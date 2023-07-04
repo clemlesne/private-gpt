@@ -1,5 +1,5 @@
 # Import utils
-from utils import VerifyToken, build_logger, VERSION, hash_token
+from utils import VerifyToken, build_logger, VERSION, hash_token, get_config
 
 # Import misc
 from azure.core.credentials import AzureKeyCredential
@@ -65,11 +65,12 @@ async def refresh_oai_token():
 
 
 OAI_COMPLETION_ARGS = {
-    "deployment_id": os.environ.get("PG_OAI_GPT_DEPLOY_ID"),
+    "deployment_id": get_config("openai", "gpt_deploy_id", str, required=True),
     "model": "gpt-3.5-turbo",
 }
 
 logger.info(f"Using Aure private service ({openai.api_base})")
+openai.api_base = get_config("openai", "api_base", str, required=True)
 openai.api_type = "azure_ad"
 openai.api_version = "2023-05-15"
 asyncio.create_task(refresh_oai_token())
@@ -81,8 +82,8 @@ asyncio.create_task(refresh_oai_token())
 # Score are following: 0 - Safe, 2 - Low, 4 - Medium, 6 - High
 # See: https://review.learn.microsoft.com/en-us/azure/cognitive-services/content-safety/concepts/harm-categories?branch=release-build-content-safety#severity-levels
 ACS_SEVERITY_THRESHOLD = 2
-ACS_API_BASE = os.environ.get("PG_ACS_API_BASE")
-ACS_API_TOKEN = os.environ.get("PG_ACS_API_TOKEN")
+ACS_API_BASE = get_config("acs", "api_base", str, required=True)
+ACS_API_TOKEN = get_config("acs", "api_token", str, required=True)
 logger.info(f"Connected Azure Content Safety to {ACS_API_BASE}")
 acs_client = azure_cs.ContentSafetyClient(
     ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
@@ -92,7 +93,7 @@ acs_client = azure_cs.ContentSafetyClient(
 # Init FastAPI
 ###
 
-ROOT_PATH = os.environ.get("PG_ROOT_PATH", "")
+ROOT_PATH = get_config("api", "root_path", str, default="")
 logger.info(f'Using root path: "{ROOT_PATH}"')
 
 api = FastAPI(

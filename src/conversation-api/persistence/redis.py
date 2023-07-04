@@ -1,5 +1,5 @@
 # Import utils
-from utils import build_logger
+from utils import build_logger, get_config
 
 # Import misc
 from .istore import IStore
@@ -18,7 +18,7 @@ logger = build_logger(__name__)
 SECRET_TTL_SECS = 60*60*24 # 1 day
 CONVERSATION_PREFIX = "conversation"
 MESSAGE_PREFIX = "message"
-REDIS_HOST = os.environ.get("PG_REDIS_HOST")
+REDIS_HOST = get_config("redis", "host", str, required=True)
 REDIS_PORT = 6379
 STREAM_PREFIX = "stream"
 STREAM_STOPWORD = "STOP"
