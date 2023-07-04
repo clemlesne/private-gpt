@@ -52,7 +52,6 @@ class QdrantSearch(ISearch):
                 ),
             )
 
-
     def message_search(self, q: str, user_id: UUID) -> SearchModel[MessageModel]:
         logger.debug(f"Searching for: {q}")
         start = time.monotonic()
@@ -78,7 +77,9 @@ class QdrantSearch(ISearch):
             search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
             query_filter=qmodels.Filter(
                 must=[
-                    qmodels.FieldCondition(key="user_id", match=qmodels.MatchValue(value=str(user_id)))
+                    qmodels.FieldCondition(
+                        key="user_id", match=qmodels.MatchValue(value=str(user_id))
+                    )
                 ]
             ),
         )
@@ -95,22 +96,31 @@ class QdrantSearch(ISearch):
         messages = self.store.message_get_index(index_messages)
 
         return SearchModel[MessageModel](
-            answers=[SearchAnswerModel[MessageModel](data=m, score=s) for m, s in zip(messages, [r.score for r in raws])],
+            answers=[
+                SearchAnswerModel[MessageModel](data=m, score=s)
+                for m, s in zip(messages, [r.score for r in raws])
+            ],
             query=q,
-            stats=SearchStatsModel(total=total, time=time.monotonic() - start)
+            stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
 
-
-    def message_index(self, message: MessageModel, conversation_id: UUID, user_id: UUID) -> None:
+    def message_index(
+        self, message: MessageModel, conversation_id: UUID, user_id: UUID
+    ) -> None:
         logger.debug(f"Indexing message: {message.id}")
-        self._loop.run_in_executor(None, lambda: self._index_worker(message, conversation_id, user_id))
+        self._loop.run_in_executor(
+            None, lambda: self._index_worker(message, conversation_id, user_id)
+        )
 
-
-    def _index_worker(self, message: MessageModel, conversation_id: UUID, user_id: UUID) -> None:
+    def _index_worker(
+        self, message: MessageModel, conversation_id: UUID, user_id: UUID
+    ) -> None:
         logger.debug(f"Starting indexing worker for message: {message.id}")
 
         vector = self._vector_from_text(message.content, user_id)
-        index = IndexMessageModel(conversation_id=conversation_id, id=message.id, user_id=user_id)
+        index = IndexMessageModel(
+            conversation_id=conversation_id, id=message.id, user_id=user_id
+        )
 
         client.upsert(
             collection_name=QD_COLLECTION,
@@ -120,7 +130,6 @@ class QdrantSearch(ISearch):
                 vectors=[vector],
             ),
         )
-
 
     @retry(stop=stop_after_attempt(3))
     def _vector_from_text(self, prompt: str, user_id: UUID) -> List[float]:

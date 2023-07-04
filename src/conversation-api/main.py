@@ -8,7 +8,11 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models.conversation import GetConversationModel, ListConversationsModel, StoredConversationModel
+from models.conversation import (
+    GetConversationModel,
+    ListConversationsModel,
+    StoredConversationModel,
+)
 from models.message import MessageModel, MessageRole
 from models.prompt import StoredPromptModel, ListPromptsModel
 from models.search import SearchModel
@@ -129,12 +133,14 @@ def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
     prompts = {}
     with open("data/prompts.csv", newline="") as f:
         rows = csv.reader(f)
-        next(rows, None) # Skip header
+        next(rows, None)  # Skip header
         for row in rows:
             name = row[0]
             content = row[1]
             group = row[2]
-            prompt = StoredPromptModel(id=hash_token(name), name=name, content=content, group=group)
+            prompt = StoredPromptModel(
+                id=hash_token(name), name=name, content=content, group=group
+            )
             prompts[prompt.id] = prompt
     logger.info(f"Loaded {len(prompts)} prompts")
     # Sort by name asc
@@ -398,9 +404,13 @@ def completion_from_conversation(
         return
 
     # Create messages object from conversation
-    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}]
+    completion_messages = [
+        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}
+    ]
     if conversation.prompt:
-        completion_messages += [{"role": MessageRole.SYSTEM, "content": conversation.prompt.content}]
+        completion_messages += [
+            {"role": MessageRole.SYSTEM, "content": conversation.prompt.content}
+        ]
     completion_messages += [{"role": m.role, "content": m.content} for m in messages]
 
     logger.debug(f"Completion messages: {completion_messages}")
@@ -443,12 +453,18 @@ def completion_from_conversation(
 
 
 @retry(stop=stop_after_attempt(3))
-def guess_title(conversation: StoredConversationModel, messages: List[MessageModel], current_user: UserModel) -> None:
+def guess_title(
+    conversation: StoredConversationModel,
+    messages: List[MessageModel],
+    current_user: UserModel,
+) -> None:
     logger.info(f"Guessing title for conversation {conversation.id}")
 
     # Create messages object from conversation
     # We don't include the custom prompt, as it will false the title response (espacially with ASCI art prompt)
-    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}]
+    completion_messages = [
+        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}
+    ]
     completion_messages += [{"role": m.role, "content": m.content} for m in messages]
 
     logger.debug(f"Completion messages: {completion_messages}")

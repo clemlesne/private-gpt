@@ -9,7 +9,9 @@ class IStream(ABC):
         pass
 
     @abstractmethod
-    async def get(self, token: UUID, loop_func: Callable[[], bool]) -> AsyncGenerator[any | Literal["STOP"], None]:
+    async def get(
+        self, token: UUID, loop_func: Callable[[], bool]
+    ) -> AsyncGenerator[any | Literal["STOP"], None]:
         pass
 
     @abstractmethod

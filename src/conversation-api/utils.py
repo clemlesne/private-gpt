@@ -26,15 +26,24 @@ VERSION = os.environ.get("VERSION")
 # Init config
 ###
 
-T = TypeVar('T')
+T = TypeVar("T")
+
 
 class ConfigNotFound(Exception):
     pass
 
-def get_config(section: Optional[str], key: str, validate: T, default: T = None, required: bool = False) -> T:
+
+def get_config(
+    section: Optional[str],
+    key: str,
+    validate: T,
+    default: T = None,
+    required: bool = False,
+) -> T:
     """
     Get config from environment variable or config file.
     """
+
     def get_env(key: str, res_default: T) -> Union[str, T]:
         """
         Get config from environment variable.
@@ -50,8 +59,8 @@ def get_config(section: Optional[str], key: str, validate: T, default: T = None,
         res = CONFIG.get(key, get_env(key, default))
 
     # Check if required
-    if required  and not res:
-        raise ConfigNotFound(f"Cannot find config \"{section}/{key}\"")
+    if required and not res:
+        raise ConfigNotFound(f'Cannot find config "{section}/{key}"')
 
     # Convert to res_type
     try:
@@ -64,11 +73,15 @@ def get_config(section: Optional[str], key: str, validate: T, default: T = None,
         elif validate is UUID:
             res = UUID(res)
     except Exception:
-        raise ConfigNotFound(f"Cannot convert config \"{section}/{key}\" ({validate.__name__}), found \"{res}\" ({type(res).__name__})")
+        raise ConfigNotFound(
+            f'Cannot convert config "{section}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
+        )
 
     # Check res type
     if not isinstance(res, validate):
-        raise ConfigNotFound(f"Cannot validate config \"{section}/{key}\" ({validate.__name__}), found \"{res}\" ({type(res).__name__})")
+        raise ConfigNotFound(
+            f'Cannot validate config "{section}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
+        )
 
     return res
 
@@ -79,7 +92,7 @@ CONFIG_PATH = None
 CONFIG = None
 while CONFIG_FOLDER:
     CONFIG_PATH = f"{CONFIG_FOLDER}/{CONFIG_FILE}"
-    print(f"Try to load config \"{CONFIG_PATH}\"")
+    print(f'Try to load config "{CONFIG_PATH}"')
     try:
         with open(CONFIG_PATH, "rb") as file:
             CONFIG = tomllib.load(file)
@@ -89,13 +102,14 @@ while CONFIG_FOLDER:
             raise ConfigNotFound("Cannot find config file")
         CONFIG_FOLDER = CONFIG_FOLDER.parent.parent
     except tomllib.TOMLDecodeError as e:
-        print(f"Cannot load config file \"{CONFIG_PATH}\"")
+        print(f'Cannot load config file "{CONFIG_PATH}"')
         raise e
-print(f"Config \"{CONFIG_PATH}\" loaded")
+print(f'Config "{CONFIG_PATH}" loaded')
 
 ###
 # Init logging
 ###
+
 
 def build_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
@@ -128,7 +142,6 @@ class VerifyToken:
     def __init__(self, token):
         self.token = token
         self.jwks_client = jwt.PyJWKClient(OIDC_JWKS)
-
 
     def verify(self) -> Dict[str, str]:
         try:
@@ -169,7 +182,6 @@ class VerifyToken:
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return payload
-
 
     @retry(stop=stop_after_attempt(3))
     def _load_jwks(self) -> None:

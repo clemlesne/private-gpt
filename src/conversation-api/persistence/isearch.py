@@ -14,5 +14,7 @@ class ISearch(ABC):
         pass
 
     @abstractmethod
-    def message_index(self, message: MessageModel, conversation_id: UUID, user_id: UUID) -> None:
+    def message_index(
+        self, message: MessageModel, conversation_id: UUID, user_id: UUID
+    ) -> None:
         pass

@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List, TypeVar, Generic
 
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class SearchAnswerModel(BaseModel, Generic[T]):

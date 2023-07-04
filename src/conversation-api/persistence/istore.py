@@ -16,11 +16,15 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def conversation_get(self, conversation_id: UUID, user_id: UUID) -> Union[GetConversationModel, None]:
+    def conversation_get(
+        self, conversation_id: UUID, user_id: UUID
+    ) -> Union[GetConversationModel, None]:
         pass
 
     @abstractmethod
-    def message_get_index(self, messages: List[IndexMessageModel]) -> List[MessageModel]:
+    def message_get_index(
+        self, messages: List[IndexMessageModel]
+    ) -> List[MessageModel]:
         pass
 
     @abstractmethod
@@ -36,7 +40,9 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def message_get(self, message_id: UUID, conversation_id: UUID) -> Union[MessageModel, None]:
+    def message_get(
+        self, message_id: UUID, conversation_id: UUID
+    ) -> Union[MessageModel, None]:
         pass
 
     @abstractmethod
