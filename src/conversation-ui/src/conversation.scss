@@ -73,6 +73,7 @@
 
     // Make the input take all the available space
     > textarea {
+      resize: vertical;
       width: 100%;
     }
   }
