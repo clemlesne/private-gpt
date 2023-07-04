@@ -149,6 +149,11 @@ function App() {
             {auth.isLoading && <p>Connecting...</p>}
           </div>
           <div className="header__bottom__block">
+            <span>
+              {import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
+            </span>
+          </div>
+          <div className="header__bottom__block">
             <Button
               onClick={() => {
                 header(false);
