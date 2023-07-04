@@ -165,18 +165,21 @@ body {
     }
 
     &,
+    select {
+      background-color: var(--background-muted);
+      color: inherit;
+      font-family: inherit;
+    }
+  }
+
+  select,
+  button {
+    &,
     > * {
       // Disable line wrapping
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    &,
-    select {
-      background-color: var(--background-muted);
-      color: inherit;
-      font-family: inherit;
     }
   }
 
