@@ -6,7 +6,7 @@ html {
   --font-size: 0.875rem;
   --header-padding-v: 1rem;
   --header-width: min(26rem, 33vw);
-  --radius: 1.5rem;
+  --radius: 1.5em; // Not relative, radius should be the same everywhere
   --search-padding-v: 1rem;
   --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   --font-family-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
