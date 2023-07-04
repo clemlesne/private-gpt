@@ -19,6 +19,11 @@ html {
 
   &.header--open {
     @media (max-width: 48rem) {
+      // Make the header full height
+      .header {
+        height: 100vh;
+      }
+
       // Hide the main content
       .main {
         display: none;
