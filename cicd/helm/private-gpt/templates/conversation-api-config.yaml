@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-api
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-api
+data:
+  config.toml: |
+    [api]
+    root_path = "/{{ include "private-gpt.fullname" . }}-conversation-api"
+
+    [openai]
+    ada_deploy_id = {{ .Values.api.openai.ada_deploy_id | quote }}
+    api_base = {{ .Values.api.openai.base | quote }}
+    gpt_deploy_id = {{ .Values.api.openai.gpt_deploy_id | quote }}
+
+    [acs]
+    api_base = {{ .Values.api.acs.base | quote }}
+
+    [logging]
+    app_level = {{ .Values.api.logging.app | quote }}
+    sys_level = {{ .Values.api.logging.sys | quote }}
+
+    [oidc]
+    algorithms = ["{{ join "\",\"" .Values.oidc.algorithms }}"]
+    api_audience = {{ .Values.oidc.api_audience | quote }}
+    issuers = ["{{ join "\",\"" .Values.oidc.issuers }}"]
+    jwks = {{ .Values.oidc.jwks | quote }}
+
+    [qd]
+    host = {{ include "qdrant.fullname" .Subcharts.qdrant | quote }}
+
+    [redis]
+    db = {{ .Values.redis.db | int }}
+    host = "{{ include "common.names.fullname" .Subcharts.redis }}-master"
