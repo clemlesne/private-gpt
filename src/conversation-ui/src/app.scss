@@ -1,6 +1,21 @@
 html {
-  &:not(.header--open) {
-    @media (max-width: 48rem) {
+  // Small width
+  @media (max-width: 48rem) {
+    #root {
+      display: grid;
+      grid-template-areas: "header" "main";
+      grid-template-rows: min-content auto;
+      min-height: 100vh;
+    }
+
+    &.header--open {
+      // Hide the main content
+      .main {
+        display: none;
+      }
+    }
+
+    &:not(.header--open) {
       // Fix the header to the top
       .header {
         // Stays at the top
@@ -17,45 +32,36 @@ html {
     }
   }
 
-  &.header--open {
-    @media (max-width: 48rem) {
-      // Make the header full height
-      .header {
-        height: 100vh;
-      }
-
-      // Hide the main content
-      .main {
-        display: none;
-      }
-    }
-  }
-
+  // Full width
   @media (min-width: 48rem) {
+    #root {
+      display: grid;
+      grid-template-areas: "header" "main";
+      grid-template-columns: var(--header-width) auto;
+    }
+
     // Header always open, so we need to make sure it is full height
     .header {
-      min-height: 100vh;
+      height: 100vh;
     }
 
     // Hide the toggle button
     .header__top__toggle {
       display: none;
     }
+
+    // Make content to scroll
+    .main {
+      height: 100vh;
+    }
   }
 }
 
 .header {
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  max-height: 100vh;
   overflow-x: auto;
-
-  @media (min-width: 48rem) {
-    position: fixed;
-    width: var(--header-width);
-  }
 
   .header__top {
     align-items: center;
@@ -109,9 +115,5 @@ html {
 .main {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-
-  @media (min-width: 48rem) {
-    margin-left: var(--header-width);
-  }
+  overflow-x: hidden; // Avoid horizontal scroll
 }
