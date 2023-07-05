@@ -4,6 +4,7 @@
   flex-direction: row;
   flex-shrink: 0;
   height: fit-content;
+  justify-content: center;
 
   &.button--active {
     background-color: var(--background-active);
