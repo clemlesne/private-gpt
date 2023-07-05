@@ -7,6 +7,7 @@ import Button from "./Button";
 import Message from "./Message";
 import PropTypes from "prop-types";
 import Select, { createFilter } from "react-select";
+import * as XLSX from "xlsx";
 
 function Conversation({
   conversationId,
@@ -220,6 +221,22 @@ function Conversation({
     }
   };
 
+  // Download the conversation to an Excel file
+  const downloadToExcel = () => {
+    // Convert the conversation to an array of objects
+    const data = conversation.messages.map((message) => {
+      return {
+        content: message.content,
+        date: message.created_at,
+        role: message.role,
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Conversation");
+    XLSX.writeFile(wb, `conversation-${conversation.id}.xlsx`);
+  };
+
   return (
     <div className="conversation">
       <div className="conversation__container">
@@ -280,6 +297,12 @@ function Conversation({
               {conversation.prompt && (
                 <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>
               )}
+              {conversationId && <Button
+                disabled={loading}
+                emoji="⬇️"
+                onClick={() => downloadToExcel()}
+                text="Download"
+              />}
               <Button
                 active={secret}
                 disabled={loading}
