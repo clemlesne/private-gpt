@@ -159,7 +159,7 @@ function App() {
                 header(false);
                 auth.userData ? auth.signOut() : auth.signIn()
               }}
-              emoji="🔑"
+              emoji={auth.userData ? "🚪" : "🔑"}
               loading={auth.isLoading}
               text={auth.userData ? "Signout" : "Signin"}
             />
