@@ -259,7 +259,6 @@ body {
 
   .react-select__menu {
     background-color: var(--background);
-    left: -25%; // Center the menu from the input
     outline: 1px solid var(--border);
     overflow: hidden; // Hide the horizontal scrollbar, it mess with the layout
     width: min(16rem, 150%); // 150% the width of the input, or 16rem, whichever is smaller
