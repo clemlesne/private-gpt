@@ -9,6 +9,11 @@ html {
     }
 
     &.header--open {
+      // Make the header full height
+      .header {
+        min-height: 100vh;
+      }
+
       // Hide the main content
       .main {
         display: none;
