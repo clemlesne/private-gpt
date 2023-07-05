@@ -247,9 +247,10 @@ function Conversation({
               {!auth.userData && (
                 <Button
                   onClick={() => auth.signIn()}
-                  text="Signin"
                   active={true}
+                  emoji="🔑"
                   loading={auth.isLoading}
+                  text="Signin"
                 />
               )}
             </div>

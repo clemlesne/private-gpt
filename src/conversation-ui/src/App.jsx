@@ -159,15 +159,16 @@ function App() {
                 header(false);
                 auth.userData ? auth.signOut() : auth.signIn()
               }}
-              text={auth.userData ? "Signout" : "Signin"}
+              emoji="🔑"
               loading={auth.isLoading}
+              text={auth.userData ? "Signout" : "Signin"}
             />
             <Button
-              emoji={darkTheme ? "☀️" : "🌕"}
               onClick={() => {
                 header(false);
                 setDarkTheme(!darkTheme);
               }}
+              emoji={darkTheme ? "☀️" : "🌕"}
               text={darkTheme ? "Light" : "Dark"}
             />
           </div>

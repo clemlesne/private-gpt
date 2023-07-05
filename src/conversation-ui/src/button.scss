@@ -9,7 +9,13 @@
     background-color: var(--background-active);
   }
 
-  > *:not(:last-child) {
-    margin-right: 0.5rem;
+  @media (max-width: 48rem) {
+    .button__text {
+      display: none;
+    }
+  }
+
+  .button__text {
+    margin-left: 0.5rem;
   }
 }
