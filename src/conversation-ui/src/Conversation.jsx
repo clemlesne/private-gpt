@@ -209,10 +209,12 @@ function Conversation({
     setInput("");
   };
 
+  // Scroll to the bottom of the page when the conversation changes
   useEffect(() => {
     window.scrollTo(0, document.body.scrollHeight);
   }, [conversation]);
 
+  // Handle the input, allow to send a message with enter
   const inputKeyHandler = (e) => {
     // Ability to search with enter, and add a new line with shift+enter
     if (e.key === "Enter" && !e.shiftKey && input.length > 0) {
