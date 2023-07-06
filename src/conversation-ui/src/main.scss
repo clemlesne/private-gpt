@@ -2,8 +2,9 @@ html {
   --content-max-width: 80rem;
   --conversation-padding-v: 1rem;
   --conversations-padding: 0.5rem;
-  --font-family-mono: ui-monospace, SFMono-Regular, SF Mono, Menlo, Consolas, Liberation Mono, monospace;
-  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  // Font families come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs)
+  --font-family-mono: 'Cascadia Code', Menlo, 'Courier New', Courier, monospace;
+  --font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
   --font-size-small: 0.75rem;
   --font-size: 0.875rem;
   --header-padding-v: 1rem;
@@ -73,7 +74,10 @@ body {
   code,
   kbd,
   samp {
-    font-family: var(--font-family-mono);
+    &,
+    * {
+      font-family: var(--font-family-mono);
+    }
   }
 
   p,
