@@ -18,6 +18,7 @@ spec:
         azure.workload.identity/use: "true"
       annotations:
         checksum/secret: {{ include (print $.Template.BasePath "/conversation-api-secret.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/conversation-api-config.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ .Values.serviceAccountName | required "A value for .Values.serviceAccountName is required" }}
       containers:
