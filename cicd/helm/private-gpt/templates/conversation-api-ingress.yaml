@@ -17,7 +17,7 @@ spec:
       middlewares:
         - name: {{ include "private-gpt.fullname" . }}-conversation-api-prefix
         - name: {{ include "private-gpt.fullname" . }}-conversation-api-security
-        - name: {{ include "private-gpt.fullname" . }}-conversation-api-ratelimit
+        - name: {{ include "private-gpt.fullname" . }}-conversation-api-ratelimit-auth
         - name: {{ include "private-gpt.fullname" . }}-conversation-api-compress
   tls:
     {{- toYaml .Values.ingress.tls | nindent 4 }}
@@ -49,7 +49,7 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-  name: {{ include "private-gpt.fullname" . }}-conversation-api-ratelimit
+  name: {{ include "private-gpt.fullname" . }}-conversation-api-ratelimit-auth
   labels:
     {{- include "private-gpt.labels" . | nindent 4 }}
     app.kubernetes.io/component: conversation-api
@@ -57,6 +57,9 @@ spec:
   rateLimit:
     average: 1
     burst: 5
+    period: 1s
+    sourceCriterion:
+      requestHeaderName: Authorization
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
