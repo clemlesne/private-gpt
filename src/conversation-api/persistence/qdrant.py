@@ -13,7 +13,6 @@ from typing import List
 from uuid import UUID
 import asyncio
 import openai
-import os
 import qdrant_client.http.models as qmodels
 import textwrap
 import time

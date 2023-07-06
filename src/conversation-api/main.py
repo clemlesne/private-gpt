@@ -29,7 +29,6 @@ import azure.ai.contentsafety as azure_cs
 import azure.core.exceptions as azure_exceptions
 import csv
 import openai
-import os
 
 
 ###

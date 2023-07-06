@@ -20,7 +20,6 @@ from typing import (
 )
 from uuid import UUID
 import asyncio
-import os
 
 
 logger = build_logger(__name__)
@@ -32,10 +31,6 @@ REDIS_PORT = 6379
 STREAM_PREFIX = "stream"
 STREAM_STOPWORD = "STOP"
 USER_PREFIX = "user"
-
-if not REDIS_HOST:
-    raise Exception("Missing PG_REDIS_HOST environment variable")
-
 client = Redis(db=0, host=REDIS_HOST, port=REDIS_PORT)
 logger.info(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
 
