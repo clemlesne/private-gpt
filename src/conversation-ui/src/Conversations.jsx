@@ -8,8 +8,8 @@ import PropTypes from "prop-types";
 function Conversations({
   conversations,
   loadingConversation,
-  selectedConversation,
   setSelectedConversation,
+  selectedConversation = null,
 }) {
   const groupedConversations = conversations.reduce(
     (acc, conversation) => {
@@ -87,8 +87,8 @@ function Conversations({
 Conversations.propTypes = {
   conversations: PropTypes.array.isRequired,
   loadingConversation: PropTypes.bool.isRequired,
-  selectedConversation: PropTypes.string,
   setSelectedConversation: PropTypes.func.isRequired,
+  selectedConversation: PropTypes.string,
 };
 
 export default Conversations;

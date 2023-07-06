@@ -11,9 +11,9 @@ import * as XLSX from "xlsx";
 
 function Conversation({
   conversationId,
-  darkTheme,
   refreshConversations,
   setLoadingConversation,
+  darkTheme = false,
 }) {
   // State
   const [conversation, setConversation] = useState({ messages: [] });
@@ -354,9 +354,9 @@ function Conversation({
 
 Conversation.propTypes = {
   conversationId: PropTypes.string,
-  darkTheme: PropTypes.bool,
   refreshConversations: PropTypes.func.isRequired,
   setLoadingConversation: PropTypes.func.isRequired,
+  darkTheme: PropTypes.bool,
 };
 
 export default Conversation;

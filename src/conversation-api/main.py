@@ -98,7 +98,7 @@ acs_client = azure_cs.ContentSafetyClient(
 ###
 
 ROOT_PATH = get_config("api", "root_path", str, default="")
-logger.info(f'Using root path: "{ROOT_PATH}"')
+logger.info(f'Using root path "{ROOT_PATH}"')
 
 api = FastAPI(
     contact={

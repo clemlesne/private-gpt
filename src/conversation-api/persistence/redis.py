@@ -32,7 +32,7 @@ STREAM_PREFIX = "stream"
 STREAM_STOPWORD = "STOP"
 USER_PREFIX = "user"
 client = Redis(db=0, host=REDIS_HOST, port=REDIS_PORT)
-logger.info(f"Connected to Redis at {REDIS_HOST}:{REDIS_PORT}")
+logger.info(f'Connected to Redis at "{REDIS_HOST}:{REDIS_PORT}"')
 
 
 class RedisStore(IStore):
