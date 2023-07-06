@@ -417,7 +417,7 @@ async def message_search(
     return index.message_search(q, current_user.id)
 
 
-@retry(stop=stop_after_attempt(3))
+@retry(reraise=True, stop=stop_after_attempt(3))
 def completion_from_conversation(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
@@ -481,7 +481,7 @@ def completion_from_conversation(
     stream.push(STREAM_STOPWORD, last_message.token)
 
 
-@retry(stop=stop_after_attempt(3))
+@retry(reraise=True, stop=stop_after_attempt(3))
 def guess_title(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
@@ -517,7 +517,7 @@ def guess_title(
     store.conversation_set(conversation)
 
 
-@retry(stop=stop_after_attempt(3))
+@retry(reraise=True, stop=stop_after_attempt(3))
 async def is_moderated(prompt: str) -> bool:
     logger.debug(f"Checking moderation for text: {prompt}")
 
