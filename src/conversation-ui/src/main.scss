@@ -142,7 +142,7 @@ body {
   textarea,
   button,
   input,
-  a {
+  a:not(.a--unstyled) {
     &,
     &::placeholder,
     &:disabled,
@@ -198,18 +198,23 @@ body {
   }
 
   a {
-    color: var(--color-active);
+    color: inherit;
     text-decoration: none;
 
-    &:not(:disabled):not([disabled]) {
-      &:hover {
-        text-decoration: underline;
-      }
+    &:not(.a--unstyled) {
+      color: var(--color-active);
 
-      &:visited {
-        color: var(--color-visited);
+      &:not(:disabled):not([disabled]) {
+        &:hover {
+          text-decoration: underline;
+        }
+
+        &:visited {
+          color: var(--color-visited);
+        }
       }
     }
+
   }
 
   ol {
