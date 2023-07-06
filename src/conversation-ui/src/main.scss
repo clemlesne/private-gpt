@@ -12,12 +12,14 @@ html {
   --radius: 1.5em; // Not relative, radius should be the same everywhere
   --search-padding-v: 1rem;
 
+  // Small width
   @media (max-width: 56rem) {
     --conversation-padding-h: 1rem;
     --header-padding-h: 1rem;
     --search-padding-h: 1rem;
   }
 
+  // Full width
   @media (min-width: 56rem) {
     --conversation-padding-h: 2rem;
     --header-padding-h: 2rem;

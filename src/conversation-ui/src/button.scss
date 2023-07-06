@@ -10,6 +10,7 @@
     background-color: var(--background-active);
   }
 
+  // Small width
   @media (max-width: 56rem) {
     .button__text {
       display: none;
