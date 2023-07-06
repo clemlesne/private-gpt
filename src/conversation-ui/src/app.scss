@@ -1,6 +1,6 @@
 html {
   // Small width
-  @media (max-width: 48rem) {
+  @media (max-width: 56rem) {
     #root {
       display: grid;
       grid-template-areas: "header" "main";
@@ -38,7 +38,7 @@ html {
   }
 
   // Full width
-  @media (min-width: 48rem) {
+  @media (min-width: 56rem) {
     #root {
       display: grid;
       grid-template-areas: "header" "main";
