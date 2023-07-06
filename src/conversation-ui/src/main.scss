@@ -1,0 +1,299 @@
+html {
+  --content-max-width: 80rem;
+  --conversation-padding-v: 1rem;
+  --conversations-padding: 0.5rem;
+  // Font families come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs)
+  --font-family-mono: 'Cascadia Code', Menlo, 'Courier New', Courier, monospace;
+  --font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+  --font-size-small: 0.75rem;
+  --font-size: 0.875rem;
+  --header-padding-v: 1rem;
+  --header-width: min(26rem, 38vw);
+  --radius: 1.5em; // Not relative, radius should be the same everywhere
+  --search-padding-v: 1rem;
+
+  @media (max-width: 56rem) {
+    --conversation-padding-h: 1rem;
+    --header-padding-h: 1rem;
+    --search-padding-h: 1rem;
+  }
+
+  @media (min-width: 56rem) {
+    --conversation-padding-h: 2rem;
+    --header-padding-h: 2rem;
+    --search-padding-h: 2rem;
+  }
+
+  font-size: 16px;
+
+  &.theme--light,
+  &:not(.theme--dark) {
+    // Colors come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
+    --background-active: #a9d3f2;
+    --background-error: #f1bbbc;
+    --background-muted: #f0f0f0;
+    --background: #ffffff;
+    --border-active: #e6f4ff;
+    --border: #c7c7c7;
+    --color-active: #004377;
+    --color-error: #751d1f;
+    --color-visited: #58357f;
+    --color: #242424;
+  }
+
+  &.theme--dark {
+    // Colors come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
+    --background-active: #004377;
+    --background-error: #751d1f;
+    --background-muted: #1f1f1f;
+    --background: #000000;
+    --border-active: #003054;
+    --border: #737373;
+    --color-active: #a9d3f2;
+    --color-error: #f1bbbc;
+    --color-visited: #d7c3e3;
+    --color: #ffffff;
+  }
+}
+
+body {
+  appearance: none;
+  background-color: var(--background);
+  color: var(--color);
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  font-synthesis: none;
+  font-weight: 400;
+  hyphens: manual;
+  line-height: 1.7;
+  text-rendering: optimizeLegibility;
+  word-break: break-word;
+
+  // Code blocks
+  pre,
+  code,
+  kbd,
+  samp {
+    &,
+    * {
+      font-family: var(--font-family-mono);
+    }
+  }
+
+  p,
+  big,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  small {
+    font: inherit;
+    margin: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 900;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  h3 {
+    font-size: 1.125rem;
+  }
+
+  strong,
+  big {
+    font-weight: bold;
+  }
+
+  big {
+    font-size: 3rem;
+  }
+
+  small {
+    font-size: var(--font-size-small);
+  }
+
+  textarea,
+  input {
+    cursor: text;
+  }
+
+  select,
+  a,
+  button {
+    cursor: pointer;
+  }
+
+  select,
+  textarea,
+  button,
+  input,
+  a {
+    &,
+    &::placeholder,
+    &:disabled,
+    &[disabled] {
+      color: var(--color);
+    }
+
+    &::placeholder,
+    &:disabled,
+    &[disabled] {
+      cursor: default;
+      opacity: 0.75;
+    }
+  }
+
+  select,
+  textarea,
+  button,
+  input {
+    border-radius: var(--radius);
+    border: unset;
+    min-width: 0;
+    padding: 0.75rem 1rem;
+
+    &:not(:disabled):not([disabled]) {
+      &:hover {
+        outline: 1px solid var(--border);
+      }
+
+      &:active,
+      &:focus {
+        outline: 3px solid var(--border-active);
+      }
+    }
+
+    &,
+    select {
+      background-color: var(--background-muted);
+      color: inherit;
+      font-family: inherit;
+    }
+  }
+
+  select,
+  button {
+    &,
+    > * {
+      // Disable line wrapping
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  a {
+    color: var(--color-active);
+    text-decoration: none;
+
+    &:not(:disabled):not([disabled]) {
+      &:hover {
+        text-decoration: underline;
+      }
+
+      &:visited {
+        color: var(--color-visited);
+      }
+    }
+  }
+
+  ol {
+    list-style-type: decimal;
+  }
+
+  ul {
+    list-style-type: disc;
+  }
+}
+
+// "react-select" styles
+.react-select {
+  --react-select-padding-h: 1rem;
+  --react-select-padding-v: 0.25rem;
+
+  min-width: 0;
+
+  &.react-select--is-disabled {
+    .react-select__control {
+      cursor: default;
+      opacity: 0.75;
+    }
+  }
+
+  &:not(.react-select--is-disabled) {
+    .react-select__control {
+      &.react-select__control--is-focused {
+        cursor: text;
+        outline: 3px solid var(--border-active) !important;
+      }
+
+      &:not(.react-select__control--is-focused) {
+        &:hover {
+          outline: 1px solid var(--border) !important;
+        }
+      }
+    }
+  }
+
+  .react-select__control,
+  .react-select__menu {
+    border-radius: var(--radius);
+  }
+
+  .react-select__control {
+    background-color: var(--background-muted);
+    cursor: pointer;
+    padding: 0 var(--react-select-padding-h);
+    transition: none;
+
+    .react-select__placeholder {
+      opacity: 0.75;
+
+      // Disable line wrapping
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .react-select__menu {
+    background-color: var(--background);
+    outline: 1px solid var(--border);
+    overflow: hidden; // Hide the horizontal scrollbar, it mess with the layout
+    width: min(16rem, 150%); // 150% the width of the input, or 16rem, whichever is smaller
+
+    .react-select__menu-notice,
+    .react-select__option {
+      padding: var(--react-select-padding-v) var(--react-select-padding-h);
+    }
+
+    .react-select__group-heading {
+      font-weight: bold;
+      padding: calc(var(--react-select-padding-v) * 2) var(--react-select-padding-h);
+    }
+
+    .react-select__option {
+      cursor: pointer;
+      line-height: 1.5;
+
+      &.react-select__option--is-focused {
+        background-color: var(--background-muted);
+      }
+    }
+  }
+}

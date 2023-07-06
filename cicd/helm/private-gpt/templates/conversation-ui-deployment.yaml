@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "private-gpt.fullname" . }}-conversation-ui
+  labels:
+    {{- include "private-gpt.labels" . | nindent 4 }}
+    app.kubernetes.io/component: conversation-ui
+spec:
+  selector:
+    matchLabels:
+      {{- include "private-gpt.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: conversation-ui
+  template:
+    metadata:
+      labels:
+        {{- include "private-gpt.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: conversation-ui
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/conversation-ui-config.yaml") . | sha256sum }}
+    spec:
+      containers:
+        - name: conversation-ui
+          image: "ghcr.io/clemlesne/private-gpt/conversation-ui:{{ .Values.image.tag | default .Chart.Version }}"
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          resources: {{- toYaml .Values.resources | nindent 12 | required "A value for .Values.resources is required" }}
+          livenessProbe:
+            periodSeconds: 5
+            timeoutSeconds: 5
+            httpGet:
+              path: /health/liveness
+              port: http
+          startupProbe:
+            periodSeconds: 5
+            failureThreshold: 30
+            tcpSocket:
+              port: http
+          volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: {{ include "private-gpt.fullname" . }}-conversation-ui
+        - name: tmp
+          emptyDir: {}

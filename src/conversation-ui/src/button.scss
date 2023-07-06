@@ -1,0 +1,22 @@
+.button {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  height: fit-content;
+  justify-content: center;
+
+  &.button--active {
+    background-color: var(--background-active);
+  }
+
+  @media (max-width: 56rem) {
+    .button__text {
+      display: none;
+    }
+  }
+
+  .button__text {
+    margin-left: 0.5rem;
+  }
+}

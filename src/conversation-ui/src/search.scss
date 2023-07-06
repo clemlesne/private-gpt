@@ -1,0 +1,40 @@
+.search {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  > *:not(:last-child) {
+    margin-bottom: var(--conversation-padding-v);
+  }
+
+  .search__messages {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 12rem;
+
+    > *:not(:last-child) {
+      margin-bottom: var(--search-padding-v);
+    }
+  }
+
+  .search__input {
+    align-items: flex-end;
+    background-color: var(--background);
+    display: flex;
+    flex-direction: row;
+
+    // Stays at the bottom
+    bottom: 0;
+    position: sticky;
+    z-index: 900;
+
+    > *:not(:last-child) {
+      margin-right: calc(var(--search-padding-h) / 2);
+    }
+
+    > input {
+      flex-grow: 1;
+    }
+  }
+}

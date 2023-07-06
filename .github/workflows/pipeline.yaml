@@ -1,0 +1,315 @@
+name: pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - feat/*
+      - hotfix/*
+      - main
+  pull_request:
+    branches:
+      - develop
+      - feat/*
+      - hotfix/*
+      - main
+
+env:
+  CONTAINER_NAME: ${{ github.repository }}
+  CONTAINER_REGISTRY: ghcr.io
+  CONTAINER_PLATFORMS: linux/amd64,linux/arm64/v8
+  # https://github.com/docker/buildx/releases
+  BUILDX_VERSION: 0.10.4
+  # https://nodejs.org/en/download/releases
+  NODE_VERSION: 18.16.0
+  # https://github.com/helm/helm/releases
+  HELM_VERSION: 3.11.2
+
+jobs:
+  sast-creds:
+    name: SAST - Credentials
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        with:
+          # We need all Git history for testing credentials
+          fetch-depth: 0
+          # Ensure all submodules up-to-date
+          submodules: recursive
+
+      - name: SAST - Credentials
+        uses: trufflesecurity/trufflehog@v3.33.0
+        with:
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          path: .
+
+  build-helm:
+    name: Build Helm chart
+    needs:
+      - sast-creds
+      - sast-semgrep
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        with:
+          # We need all Git history for "version.sh"
+          fetch-depth: 0
+          # Ensure "version.sh" submodule are up-to-date
+          submodules: recursive
+
+      - name: Version
+        id: version
+        run: |
+          echo "version=$(bash cicd/version/version.sh -g . -c)" >> $GITHUB_OUTPUT
+          echo "version_full=$(bash cicd/version/version.sh -g . -c -m)" >> $GITHUB_OUTPUT
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3.5
+        with:
+          version: v${{ env.HELM_VERSION }}
+
+      # Required for running "npx" CLI
+      - name: Setup Node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Package Helm chart
+        run: |
+          cp README.md cicd/helm/private-gpt
+
+          helm package \
+            --app-version ${{ steps.version.outputs.version }} \
+            --dependency-update \
+            --destination .cr-release-packages \
+            --version ${{ steps.version.outputs.version }} \
+            cicd/helm/private-gpt
+
+      - name: Cache Helm chart
+        uses: actions/upload-artifact@v3.1.2
+        with:
+          name: helm-chart
+          path: .cr-release-packages
+
+      - name: Render Helm chart locally
+        run: |
+          helm template \
+            --output-dir .helm-template \
+            --values test/helm/values.yaml \
+            .cr-release-packages/private-gpt-${{ steps.version.outputs.version }}.tgz
+
+      - name: Run SAST Snyk for Helm
+        # Snyk can be used to break the build when it detects security issues. In this case we want to upload the issues to GitHub Security
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          npx --yes snyk@${{ env.SNYK_VERSION }} iac test \
+            --sarif-file-output=snyk.sarif \
+            --severity-threshold=medium \
+            .helm-template
+
+      # Fix issue "Error: Code Scanning could not process the submitted SARIF file: rejecting SARIF, as there are more runs than allowed (XX > 20)"
+      # See: https://github.com/github/codeql-action/issues/220
+      - name: Merge SARIF files
+        run: |
+          npx --yes @microsoft/sarif-multitool@${{ env.SARIF_MULTITOOL_VERSION }} \
+            merge \
+              --merge-runs \
+              --output-file merged.sarif \
+              snyk.sarif
+
+      - name: Upload results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2.2.12
+        with:
+          sarif_file: merged.sarif
+
+  deploy-helm:
+    name: Deploy Helm chart
+    needs:
+      - build-publish
+      - build-helm
+    # Only deploy on non-scheduled main branch, as there is only one Helm repo and we cannot override an existing version
+    if: (github.event_name != 'schedule') && (github.ref == 'refs/heads/main')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        with:
+          # Chart Releaser needs to have local access to "gh-pages" plus current branch
+          fetch-depth: 0
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Download Helm chart
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: helm-chart
+          path: .cr-release-packages
+
+      - name: Archive Helm chart
+        uses: helm/chart-releaser-action@v1.5.0
+        with:
+          charts_dir: src/helm
+          skip_packaging: true
+        env:
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-publish:
+    name: Build & deploy image "${{ matrix.src }}"
+    needs:
+      - sast-semgrep
+      - sast-creds
+    runs-on: ubuntu-22.04
+    permissions:
+      # Allow to write to GitHub Security
+      security-events: write
+      # Allow to write to GitHub Packages
+      packages: write
+    strategy:
+      matrix:
+        src: [conversation-api, conversation-ui]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+        with:
+          # We need all Git history for "version.sh"
+          fetch-depth: 0
+          # Ensure "version.sh" submodule are up-to-date
+          submodules: recursive
+
+      - name: Configure Git
+        run: |
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+
+      - name: Version
+        id: version
+        run: |
+          echo "version=$(bash cicd/version/version.sh -g . -c)" >> $GITHUB_OUTPUT
+          echo "version_full=$(bash cicd/version/version.sh -g . -c -m)" >> $GITHUB_OUTPUT
+
+      - name: Setup QEMU
+        id: setup-qemu
+        uses: docker/setup-qemu-action@v2.1.0
+        with:
+          platforms: ${{ env.CONTAINER_PLATFORMS }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2.5.0
+        with:
+          version: v${{ env.BUILDX_VERSION }}
+
+      # Required for running "npx" CLI
+      - name: Setup Node
+        uses: actions/setup-node@v3.6.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Login to container registry
+        uses: docker/login-action@v2.1.0
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Container meta
+        id: meta
+        uses: docker/metadata-action@v4.4.0
+        with:
+          images: ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}/${{ matrix.src }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=schedule
+            type=schedule,pattern={{date 'YYYYMMDD'}}
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version_full }}
+            type=sha
+          labels: |
+            org.opencontainers.image.documentation=https://github.com/${{ env.CONTAINER_NAME }}
+            org.opencontainers.image.vendor=${{ github.actor }}
+
+      - name: Store tag
+        id: tag
+        run: |
+          branch=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          tag=$(echo "${{ steps.meta.outputs.tags }}" | grep $branch)
+          echo "tag=$tag" >> $GITHUB_OUTPUT
+
+      - name: Build/push container
+        uses: docker/build-push-action@v4.0.0
+        with:
+          build-args: |
+            VERSION=${{ steps.version.outputs.version_full }}
+          cache-from: |
+            type=gha
+            type=registry,ref=${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}/${{ matrix.src }}
+          cache-to: |
+            type=gha,mode=max
+            type=registry,ref=${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}/${{ matrix.src }},mode=max
+          context: src/${{ matrix.src }}
+          labels: ${{ steps.meta.outputs.labels }}
+          platforms: ${{ env.CONTAINER_PLATFORMS }}
+          provenance: true
+          push: true
+          sbom: true
+          tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Run SAST Snyk on container image
+        # Snyk can be used to break the build when it detects security issues. In this case we want to upload the issues to GitHub Security
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          npx --yes snyk@${{ env.SNYK_VERSION }} container test \
+            --fail-on=upgradable \
+            --file=src/${{ matrix.src }}/Dockerfile \
+            --sarif-file-output=snyk.sarif \
+            --severity-threshold=medium \
+            ${{ steps.tag.outputs.tag }}
+
+      # Fix issue "Error: Code Scanning could not process the submitted SARIF file: rejecting SARIF, as there are more runs than allowed (XX > 20)"
+      # See: https://github.com/github/codeql-action/issues/220
+      - name: Merge SARIF files
+        run: |
+          npx --yes @microsoft/sarif-multitool@${{ env.SARIF_MULTITOOL_VERSION }} \
+            merge \
+              --merge-runs \
+              --output-file merged.sarif \
+              snyk.sarif
+
+      - name: Upload results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2.2.12
+        with:
+          sarif_file: merged.sarif
+
+  sast-semgrep:
+    name: SAST - Semgrep
+    runs-on: ubuntu-22.04
+    permissions:
+      # Allow to write to GitHub Security
+      security-events: write
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.2
+
+      - name: Run tests
+        # Semgrep can be used to break the build when it detects security issues. In this case we want to upload the issues to GitHub Security
+        continue-on-error: true
+        env:
+          SEMGREP_RULES: p/cwe-top-25 p/owasp-top-ten p/dockerfile
+        run: semgrep ci --sarif --output=semgrep.sarif
+
+      - name: Upload results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2.2.12
+        with:
+          sarif_file: semgrep.sarif

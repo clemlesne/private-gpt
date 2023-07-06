@@ -1,0 +1,17 @@
+.main {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow-x: hidden; // Avoid horizontal scroll
+
+  .main__container {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    max-width: var(--content-max-width);
+    padding: var(--conversation-padding-v) var(--conversation-padding-h);
+    width: 100%;
+  }
+}

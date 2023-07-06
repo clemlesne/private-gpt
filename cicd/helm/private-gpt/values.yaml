@@ -1,0 +1,70 @@
+image:
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+replicaCount: 2
+nameOverride: ""
+fullnameOverride: ""
+
+# Requires to be binded with an Azure AD identity
+# See: https://learn.microsoft.com/en-us/azure/aks/workload-identity-deploy-cluster
+serviceAccountName: private-gpt-sa
+
+ingress:
+  # app.contoso.com
+  host: null
+  tls: {}
+
+resources:
+  requests:
+    cpu: .25
+    memory: 256Mi
+  limits:
+    cpu: .5
+    memory: 512Mi
+
+oidc:
+  algorithms: []
+  api_audience: null
+  authority: null
+  issuers: []
+  jwks: null
+
+api:
+  acs:
+    # https://[deployment].cognitiveservices.azure.com
+    base: null
+    token: null
+  logging:
+    app: DEBUG
+    sys: WARN
+  openai:
+    base: null
+    gpt_deploy_id: gpt-35-turbo
+
+redis:
+  auth:
+    enabled: false
+  replica:
+    replicaCount: 0
+  resources:
+    requests:
+      cpu: .25
+      memory: 256Mi
+    limits:
+      cpu: .5
+      memory: 512Mi
+
+qdrant:
+  replicaCount: 2
+  updateConfigurationOnChange: true
+  persistence:
+    size: 10Gi
+    storageClassName: managed-csi
+  resources:
+    requests:
+      cpu: .25
+      memory: 256Mi
+    limits:
+      cpu: .5
+      memory: 512Mi

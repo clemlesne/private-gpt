@@ -1,0 +1,68 @@
+.conversation {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: flex-end;
+
+  > *:not(:last-child) {
+    margin-bottom: var(--conversation-padding-v);
+  }
+
+  .conversation__messages {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 8rem;
+
+    > *:not(:last-child) {
+      margin-bottom: var(--conversation-padding-v);
+    }
+
+    .conversation__messages__empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+
+      // Center the content vertically and horizontally
+      align-self: center;
+      margin: auto 0;
+
+      > *:not(:last-child) {
+        margin-bottom: 1rem;
+      }
+    }
+  }
+
+  .conversation__input {
+    background-color: var(--background);
+
+    // Stays at the bottom
+    bottom: 0;
+    position: sticky;
+    z-index: 900;
+  }
+
+  // Delimit the content to limit wrapping
+  .conversation__input__block {
+    align-items: center;
+    display: flex;
+    flex-direction: row;
+    justify-content: flex-end;
+
+    // Add spaces blocks
+    &:not(:last-child) {
+      margin-bottom: calc(var(--conversation-padding-h) / 3);
+    }
+
+    // Add spaces around buttons
+    > *:not(:last-child) {
+      margin-right: calc(var(--conversation-padding-h) / 3);
+    }
+
+    // Make the input take all the available space
+    > textarea {
+      resize: vertical;
+      width: 100%;
+    }
+  }
+}

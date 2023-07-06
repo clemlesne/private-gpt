@@ -1,0 +1,17 @@
+.conversations {
+  display: flex;
+  flex-direction: column;
+
+  > *:not(:last-child) {
+    margin-bottom: var(--conversations-padding);
+  }
+
+  > a,
+  > h2,
+  > h3 {
+    // Disable line wrapping
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

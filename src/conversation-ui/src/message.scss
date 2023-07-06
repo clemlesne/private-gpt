@@ -1,0 +1,57 @@
+.message {
+  display: flex;
+  flex-direction: column;
+  max-width: 70%;
+
+  &.message--assistant {
+    &,
+    .message__content {
+      align-self: flex-start;
+    }
+  }
+
+  &:not(.message--assistant) {
+    &,
+    .message__content {
+      align-self: flex-end;
+    }
+  }
+
+  &.message--error {
+    .message__content {
+      background-color: var(--background-error);
+      color: var(--color-error);
+    }
+  }
+
+  .message__content {
+    background-color: var(--background-muted);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+    overflow-x: auto;
+    padding: 1rem;
+
+    // Fix overflow with non wrapping content like code and tables
+    max-width: 100%;
+
+    > *:not(:last-child) {
+      margin-bottom: 1rem;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 0.25rem;
+      }
+    }
+  }
+
+  .message__sub {
+    margin: 0 1rem;
+    opacity: 0.75;
+  }
+}
