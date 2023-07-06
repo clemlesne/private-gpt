@@ -27,12 +27,15 @@ Create a local configuration file, a file named `config.toml` at the root of the
 # Values are for example only, you should change them
 [openai]
 ada_deploy_id = "ada"
+ada_max_tokens = 2049
 api_base = "https://moaw-dev-clesne-moaw-search-oai.openai.azure.com"
 gpt_deploy_id = "gpt"
+gpt_max_tokens = 4096
 
 [acs]
 api_base = "https://moaw-dev-clesne-moaw-search-acs.cognitiveservices.azure.com"
 api_token = "00000000000000000000000000000000"
+max_length = 1000
 
 [logging]
 app_level = "DEBUG"

@@ -7,6 +7,7 @@ load_dotenv(find_dotenv())
 from fastapi import HTTPException, status
 from pathlib import Path
 from tenacity import retry, stop_after_attempt
+from tiktoken import encoding_for_model
 from typing import Dict, Optional, TypeVar, Union, Hashable
 from uuid import UUID
 import jwt
@@ -132,9 +133,12 @@ OIDC_ISSUERS = get_config("oidc", "issuers", list, required=True)
 OIDC_JWKS = get_config("oidc", "jwks", str, required=True)
 
 
-def hash_token(str: Union[str, Hashable]) -> Union[UUID, None]:
-    if not str:
-        return None
+def oai_tokens_nb(content: str, encoding_name: str) -> int:
+    encoding = encoding_for_model(encoding_name)
+    return len(encoding.encode(content))
+
+
+def hash_token(str: Union[str, Hashable]) -> UUID:
     return UUID(bytes=mmh3.hash_bytes(str))
 
 

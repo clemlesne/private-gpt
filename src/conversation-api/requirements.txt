@@ -10,4 +10,5 @@ qdrant-client==1.1.7
 redis==4.5.5
 sse-starlette==1.6.1
 tenacity==8.2.2
+tiktoken==0.4.0
 uvicorn==0.22.0

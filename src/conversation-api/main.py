@@ -1,5 +1,5 @@
 # Import utils
-from utils import VerifyToken, build_logger, VERSION, hash_token, get_config
+from utils import VerifyToken, build_logger, VERSION, hash_token, get_config, oai_tokens_nb
 
 # Import misc
 from azure.core.credentials import AzureKeyCredential
@@ -68,15 +68,15 @@ async def refresh_oai_token():
         await asyncio.sleep(15 * 60)
 
 
-OAI_COMPLETION_ARGS = {
-    "deployment_id": get_config("openai", "gpt_deploy_id", str, required=True),
-    "model": "gpt-3.5-turbo",
-}
+OAI_GPT_DEPLOY_ID = get_config("openai", "gpt_deploy_id", str, required=True)
+OAI_GPT_MAX_TOKENS = get_config("openai", "gpt_max_tokens", int, required=True)
+OAI_GPT_MODEL = get_config("openai", "gpt_model", str, default="gpt-3.5-turbo", required=True)
+logger.info(f'Using OpenAI ADA model "{OAI_GPT_MODEL}" ({OAI_GPT_DEPLOY_ID}) with {OAI_GPT_MAX_TOKENS} tokens max')
 
-logger.info(f"Using Aure private service ({openai.api_base})")
 openai.api_base = get_config("openai", "api_base", str, required=True)
 openai.api_type = "azure_ad"
 openai.api_version = "2023-05-15"
+logger.info(f"Using Aure private service ({openai.api_base})")
 asyncio.create_task(refresh_oai_token())
 
 ###
@@ -88,6 +88,7 @@ asyncio.create_task(refresh_oai_token())
 ACS_SEVERITY_THRESHOLD = 2
 ACS_API_BASE = get_config("acs", "api_base", str, required=True)
 ACS_API_TOKEN = get_config("acs", "api_token", str, required=True)
+ACS_MAX_LENGTH = get_config("acs", "max_length", int, required=True)
 logger.info(f"Connected Azure Content Safety to {ACS_API_BASE}")
 acs_client = azure_cs.ContentSafetyClient(
     ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
@@ -298,11 +299,14 @@ async def message_post(
     )
 
     if conversation_id:
+        # Validate API schema
         if prompt_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Prompt ID cannot be provided when conversation ID is provided",
             )
+
+        # Validate conversation existence
         logger.info(
             f"Adding message to conversation (conversation_id={conversation_id})"
         )
@@ -311,6 +315,18 @@ async def message_post(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
             )
+
+        # Validate message length
+        tokens_nb = oai_tokens_nb(message.content + "".join([m.content for m in store.message_list(conversation_id)]), OAI_GPT_MODEL)
+        logger.debug(f'{tokens_nb} tokens in the conversation')
+        if tokens_nb > OAI_GPT_MAX_TOKENS:
+            logger.info(f"Message ({tokens_nb}) too long for conversation")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Conversation history is too long",
+            )
+
+        # Update conversation
         store.message_set(message, conversation_id)
         index.message_index(message, conversation_id, current_user.id)
         conversation = store.conversation_get(conversation_id, current_user.id)
@@ -321,11 +337,24 @@ async def message_post(
                 detail="Conversation not found",
             )
     else:
+        # Test prompt ID if provided
         if prompt_id and prompt_id not in AI_PROMPTS:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Prompt ID not found",
             )
+
+        # Validate message length
+        tokens_nb = oai_tokens_nb(message.content, OAI_GPT_MODEL)
+        logger.debug(f'{tokens_nb} tokens in the conversation')
+        if tokens_nb > OAI_GPT_MAX_TOKENS:
+            logger.info(f"Message ({tokens_nb}) too long for conversation")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Conversation history is too long",
+            )
+
+        # Create a new conversation
         conversation = StoredConversationModel(
             created_at=datetime.now(),
             id=uuid4(),
@@ -418,8 +447,9 @@ def completion_from_conversation(
     try:
         # Use chat completion to get a more natural response and lower the usage cost
         chunks = openai.ChatCompletion.create(
-            **OAI_COMPLETION_ARGS,
+            deployment_id=OAI_GPT_DEPLOY_ID,
             messages=completion_messages,
+            model=OAI_GPT_MODEL,
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
             stream=True,
             user=hash_token(current_user.id.bytes).hex,
@@ -472,8 +502,9 @@ def guess_title(
     try:
         # Use chat completion to get a more natural response and lower the usage cost
         completion = openai.ChatCompletion.create(
-            **OAI_COMPLETION_ARGS,
+            deployment_id=OAI_GPT_DEPLOY_ID,
             messages=completion_messages,
+            model=OAI_GPT_MODEL,
             presence_penalty=1,  # Increase the model's likelihood to talk about new topics
             user=hash_token(current_user.id.bytes).hex,
         )
@@ -490,6 +521,13 @@ def guess_title(
 @retry(stop=stop_after_attempt(3))
 async def is_moderated(prompt: str) -> bool:
     logger.debug(f"Checking moderation for text: {prompt}")
+
+    if len(prompt) > ACS_MAX_LENGTH:
+        logger.info(f"Message ({len(prompt)}) too long for moderation")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Message too long",
+        )
 
     req = azure_cs.models.AnalyzeTextOptions(
         text=prompt,

@@ -181,7 +181,19 @@ function Conversation({
           };
         })
         .catch((error) => {
-          console.error(error);
+          // Catch 400 errors
+          if (error.response && error.response.status == 400) {
+            replaceLastMessage({
+              content: error.response.data.detail,
+              created_at: new Date().toISOString(),
+              error: true,
+              id: uuidv4(),
+              role: "assistant",
+              secret: secret,
+            });
+          } else { // Catch other errors
+            console.error(error);
+          }
           setLoading(false);
         });
     };
@@ -263,6 +275,7 @@ function Conversation({
               darkTheme={darkTheme}
               date={message.created_at}
               defaultDisplaySub={message.secret}
+              error={message.error}
               key={message.id}
               role={message.role}
               secret={message.secret}

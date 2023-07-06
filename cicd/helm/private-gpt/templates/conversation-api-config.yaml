@@ -12,11 +12,14 @@ data:
 
     [openai]
     ada_deploy_id = {{ .Values.api.openai.ada_deploy_id | quote }}
+    ada_max_tokens = 2049
     api_base = {{ .Values.api.openai.base | quote }}
     gpt_deploy_id = {{ .Values.api.openai.gpt_deploy_id | quote }}
+    gpt_max_tokens = 4096
 
     [acs]
     api_base = {{ .Values.api.acs.base | quote }}
+    max_length = 1000
 
     [logging]
     app_level = {{ .Values.api.logging.app | quote }}

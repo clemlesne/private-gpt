@@ -26,12 +26,12 @@ QD_HOST = get_config("qd", "host", str, required=True)
 QD_PORT = 6333
 QD_METRIC = qmodels.Distance.DOT
 client = QdrantClient(host=QD_HOST, port=6333)
-logger.info(f"Connected to Qdrant at {QD_HOST}:{QD_PORT}")
+logger.info(f'Connected to Qdrant at "{QD_HOST}:{QD_PORT}"')
 
-OAI_EMBEDDING_ARGS = {
-    "deployment_id": get_config("openai", "ada_deploy_id", str, required=True),
-    "model": "text-embedding-ada-002",
-}
+OAI_ADA_DEPLOY_ID = get_config("openai", "ada_deploy_id", str, required=True)
+OAI_ADA_MAX_TOKENS = get_config("openai", "ada_max_tokens", int, required=True)
+OAI_ADA_MODEL = get_config("openai", "ada_model", str, default="text-embedding-ada-002", required=True)
+logger.info(f'Using OpenAI ADA model "{OAI_ADA_MODEL}" ({OAI_ADA_DEPLOY_ID}) with {OAI_ADA_MAX_TOKENS} tokens max')
 
 
 class QdrantSearch(ISearch):
@@ -136,8 +136,9 @@ class QdrantSearch(ISearch):
         logger.debug(f"Getting vector for text: {prompt}")
         try:
             res = openai.Embedding.create(
-                **OAI_EMBEDDING_ARGS,
+                deployment_id=OAI_ADA_DEPLOY_ID,
                 input=prompt,
+                model=OAI_ADA_MODEL,
                 user=user_id.hex,
             )
         except openai.error.AuthenticationError as e:

@@ -17,8 +17,15 @@
     }
   }
 
+  &.message--error {
+    .message__content {
+      background-color: var(--background-error);
+      color: var(--color-error);
+    }
+  }
+
   .message__content {
-    backdrop-filter: blur(8vw) contrast(0.75);
+    background-color: var(--background-muted);
     border-radius: var(--radius);
     padding: 1rem;
 

@@ -23,30 +23,36 @@ html {
     --search-padding-h: 2rem;
   }
 
+  font-size: 16px;
+
   &.theme--light,
   &:not(.theme--dark) {
-    --background-active: #e6f4ff;
-    --background-muted: #f5f5f5;
+    // Colors come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
+    --background-active: #a9d3f2;
+    --background-error: #f1bbbc;
+    --background-muted: #f0f0f0;
     --background: #ffffff;
     --border-active: #e6f4ff;
     --border: #c7c7c7;
-    --color-active: #194f80; // Contrast ratio of 7.58:1 with "background-active"
-    --color-visited: #58357f; // Contrast ratio of 8.4:1 with "background-active"
-    --color: #3b3b3b; // Contrast ratio of 10:1 with "background-active"
+    --color-active: #004377;
+    --color-error: #751d1f;
+    --color-visited: #58357f;
+    --color: #242424;
   }
 
   &.theme--dark {
-    --background-active: #003054;
-    --background-muted: #323232;
+    // Colors come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
+    --background-active: #004377;
+    --background-error: #751d1f;
+    --background-muted: #1f1f1f;
     --background: #000000;
     --border-active: #003054;
     --border: #737373;
-    --color-active: #99c9ed; // Constrast ratio of 7.69:1 with "background-active"
-    --color-visited: #d7c3e3; // Constrast ratio of 8.25:1 with "background-active"
-    --color: #e6e6e6; // Constrast ratio of 10.84:1 with "background-active"
+    --color-active: #a9d3f2;
+    --color-error: #f1bbbc;
+    --color-visited: #d7c3e3;
+    --color: #ffffff;
   }
-
-  font-size: 16px;
 }
 
 body {

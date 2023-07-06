@@ -14,11 +14,12 @@ import remarkNormalizeHeadings from "remark-normalize-headings";
 
 function Message({
   content,
+  darkTheme,
   date,
   role,
   secret,
-  darkTheme = false,
   defaultDisplaySub = false,
+  error = false,
 }) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
@@ -38,7 +39,7 @@ function Message({
   };
 
   return (
-    <div className={`message message--${role}`}>
+    <div className={`message message--${role} ${error ? "message--error" : ""}`}>
       <div
         ref={httpContent}
         className="message__content"
@@ -95,9 +96,10 @@ Message.propTypes = {
   content: PropTypes.string.isRequired,
   darkTheme: PropTypes.bool.isRequired,
   date: PropTypes.string.isRequired,
-  defaultDisplaySub: PropTypes.bool,
   role: PropTypes.string.isRequired,
-  secret: PropTypes.bool,
+  secret: PropTypes.bool.isRequired,
+  defaultDisplaySub: PropTypes.bool,
+  error: PropTypes.bool,
 };
 
 export default Message;
