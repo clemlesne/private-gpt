@@ -4,13 +4,12 @@ import { useAuth } from "oidc-react";
 import { useState, useMemo, useRef } from "react";
 import Button from "./Button";
 import Message from "./Message";
-import PropTypes from "prop-types";
 
-function Search({ setHideConversation }) {
+function Search() {
   // State
   const [input, setInput] = useState(null);
-  const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [messages, setMessages] = useState([]);
   // Ref
   const self = useRef(null);
   // Dynamic
@@ -48,16 +47,11 @@ function Search({ setHideConversation }) {
     fetchSearch();
   }, [auth]);
 
-  useMemo(() => {
-    setHideConversation(messages.length > 0);
-  }, [messages]);
-
   // Hide search when clicking outside of the container
   useMemo(() => {
     const handleClickOutside = (e) => {
       if (self.current && !self.current.contains(e.target)) {
         setMessages([]);
-        setHideConversation(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -73,59 +67,52 @@ function Search({ setHideConversation }) {
   };
 
   return (
-    <div className="search">
-      <div ref={self} className="search__container">
-        <form
-          className="search__input"
-          onSubmit={(e) => {
-            fetchSearch();
+    <div ref={self} className="search">
+      <form
+        className="search__input"
+        onSubmit={(e) => {
+          fetchSearch();
+          e.preventDefault();
+        }}
+        onKeyDown={(e) => {
+          // Ability to close search with escape
+          if (e.key === "Escape") {
+            setMessages([]);
             e.preventDefault();
-          }}
-          onKeyDown={(e) => {
-            // Ability to close search with escape
-            if (e.key === "Escape") {
-              setMessages([]);
-              setHideConversation(false);
-              e.preventDefault();
-            }
-          }}
-        >
-          <input
-            placeholder="Search messages across all conversations"
-            value={input || ""}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={inputKeyHandler}
-          />
-          <Button
-            disabled={!(input && input.length > 0)}
-            emoji="🔍"
-            loading={loading}
-            text="Search"
-            type="submit"
-          />
-        </form>
-        {messages.length > 0 && (
-          <div className="search__messages">
-            <h2 className="search__title">Search results</h2>
-            {messages.map((message) => (
-              <Message
-                content={message.data.content}
-                date={message.data.created_at}
-                defaultDisplaySub={true}
-                key={message.data.id}
-                role={message.data.role}
-                secret={message.secret}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+          }
+        }}
+      >
+        <input
+          placeholder="Search messages across all conversations"
+          value={input || ""}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={inputKeyHandler}
+        />
+        <Button
+          disabled={!(input && input.length > 0)}
+          emoji="🔍"
+          loading={loading}
+          text="Search"
+          type="submit"
+        />
+      </form>
+      {messages.length > 0 && (
+        <div className="search__messages">
+          <h2 className="search__title">Search results</h2>
+          {messages.map((message) => (
+            <Message
+              content={message.data.content}
+              date={message.data.created_at}
+              defaultDisplaySub={true}
+              key={message.data.id}
+              role={message.data.role}
+              secret={message.secret}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
-Search.propTypes = {
-  setHideConversation: PropTypes.func.isRequired,
-};
 
 export default Search;

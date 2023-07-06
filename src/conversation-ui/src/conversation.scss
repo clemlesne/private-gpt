@@ -1,22 +1,14 @@
 .conversation {
-  align-items: center;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  justify-content: flex-end;
 
-  .conversation__container {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    justify-content: flex-end;
-    margin: 0 calc(var(--conversation-padding-h) * 2);
-    max-width: var(--content-max-width);
-    width: 100%;
+  > *:not(:last-child) {
+    margin-bottom: var(--conversation-padding-v);
   }
 
   .conversation__messages {
-    padding: var(--conversation-padding-v) var(--conversation-padding-h) 0
-      var(--conversation-padding-h);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
@@ -43,10 +35,6 @@
 
   .conversation__input {
     background-color: var(--background);
-    padding: calc(
-        var(--conversation-padding-v) - (var(--conversation-padding-v) / 3)
-      )
-      var(--conversation-padding-h);
 
     // Stays at the bottom
     bottom: 0;

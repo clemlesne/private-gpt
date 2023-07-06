@@ -1,16 +1,32 @@
 import "./main.scss";
 import "normalize.css/normalize.css";
 import { AuthProvider } from "oidc-react";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App";
+import Conversation from "./Conversation";
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Search from "./Search";
 
 const router = createBrowserRouter([
   {
     element: <App />,
     path: "/",
+    children: [
+      {
+        path: "",
+        element: <Conversation />,
+      },
+      {
+        path: "conversation/:conversationId",
+        element: <Conversation />,
+      },
+      {
+        path: "search",
+        element: <Search />,
+      },
+    ],
   },
   {
     element: null,

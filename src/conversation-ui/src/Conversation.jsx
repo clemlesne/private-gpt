@@ -1,20 +1,16 @@
 import "./conversation.scss";
 import { client } from "./Utils";
+import { ConversationContext } from "./App";
 import { useAuth } from "oidc-react";
-import { useState, useEffect, useMemo } from "react";
+import { useParams } from "react-router-dom";
+import { useState, useEffect, useMemo, useContext } from "react";
 import { v4 as uuidv4 } from "uuid";
+import * as XLSX from "xlsx";
 import Button from "./Button";
 import Message from "./Message";
-import PropTypes from "prop-types";
 import Select, { createFilter } from "react-select";
-import * as XLSX from "xlsx";
 
-function Conversation({
-  conversationId,
-  refreshConversations,
-  setLoadingConversation,
-  darkTheme = false,
-}) {
+function Conversation() {
   // State
   const [conversation, setConversation] = useState({ messages: [] });
   const [input, setInput] = useState(null);
@@ -23,8 +19,12 @@ function Conversation({
   const [prompts, setPrompts] = useState({});
   const [secret, setSecret] = useState(false);
   const [selectedPrompt, setSelectedPrompt] = useState(null);
+  // Browser context
+  const { conversationId } = useParams();
   // Dynamic
   const auth = useAuth();
+  // React context
+  const [, refreshConversations] = useContext(ConversationContext);
 
   useEffect(() => {
     const fetchPrompts = async () => {
@@ -102,10 +102,7 @@ function Conversation({
         });
     };
 
-    setLoadingConversation(true);
-    fetchConversation().finally(() => {
-      setLoadingConversation(false);
-    });
+    fetchConversation();
   }, [auth, conversationId]);
 
   const sendMessage = () => {
@@ -254,110 +251,100 @@ function Conversation({
 
   return (
     <div className="conversation">
-      <div className="conversation__container">
-        <div className="conversation__messages">
-          {conversation.messages.length == 0 && (
-            <div className="conversation__messages__empty">
-              <big>🔒 Private GPT</big>
-              {!auth.userData && (
-                <Button
-                  onClick={() => auth.signIn()}
-                  active={true}
-                  emoji="🔑"
-                  loading={auth.isLoading}
-                  text="Signin"
-                />
-              )}
-            </div>
-          )}
-          {conversation.messages.map((message) => (
-            <Message
-              content={message.content}
-              darkTheme={darkTheme}
-              date={message.created_at}
-              defaultDisplaySub={message.secret}
-              error={message.error}
-              key={message.id}
-              role={message.role}
-              secret={message.secret}
-            />
-          ))}
-        </div>
-        {auth.userData && (
-          <form
-            className="conversation__input"
-            onSubmit={(e) => {
-              sendMessage();
-              e.preventDefault();
-            }}
-          >
-            <div className="conversation__input__block">
-              {!conversationId && (
-                <Select
-                  className="react-select"
-                  classNamePrefix="react-select"
-                  defultValue={selectedPrompt ? selectedPrompt.id : null}
-                  isDisabled={loading}
-                  menuPlacement="auto"
-                  minMenuHeight={384}
-                  onChange={(e) => setSelectedPrompt(prompts[e.value])}
-                  options={optionsPrompt}
-                  placeholder="Default tone"
-                  unstyled={true}
-                  filterOption={createFilter({
-                    ignoreAccents: true,
-                    ignoreCase: true,
-                    matchFrom: "any",
-                  })}
-                />
-              )}
-              {conversation.prompt && (
-                <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>
-              )}
-              {conversationId && <Button
-                disabled={loading}
-                emoji="⬇️"
-                onClick={() => downloadToExcel()}
-                text="Download"
-              />}
+      <div className="conversation__messages">
+        {conversation.messages.length == 0 && (
+          <div className="conversation__messages__empty">
+            <big>🔒 Private GPT</big>
+            {!auth.userData && (
               <Button
-                active={secret}
-                disabled={loading}
-                emoji={secret ? "💾" : "🙈"}
-                onClick={() => setSecret(!secret)}
-                text={secret ? "Stored" : "Temporary"}
-              />
-            </div>
-            <div className="conversation__input__block">
-              <textarea
-                placeholder="Message"
-                value={input || ""}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={inputKeyHandler}
-              />
-            </div>
-            <div className="conversation__input__block">
-              <Button
+                onClick={() => auth.signIn()}
                 active={true}
-                disabled={!(input && input.length > 0)}
-                emoji="⬆️"
-                loading={loading}
-                text="Send"
-                type="submit"
+                emoji="🔑"
+                loading={auth.isLoading}
+                text="Signin"
               />
-            </div>
-          </form>
+            )}
+          </div>
         )}
+        {conversation.messages.map((message) => (
+          <Message
+            content={message.content}
+            date={message.created_at}
+            defaultDisplaySub={message.secret}
+            error={message.error}
+            key={message.id}
+            role={message.role}
+            secret={message.secret}
+          />
+        ))}
       </div>
+      {auth.userData && (
+        <form
+          className="conversation__input"
+          onSubmit={(e) => {
+            sendMessage();
+            e.preventDefault();
+          }}
+        >
+          <div className="conversation__input__block">
+            {!conversationId && (
+              <Select
+                className="react-select"
+                classNamePrefix="react-select"
+                defultValue={selectedPrompt ? selectedPrompt.id : null}
+                isDisabled={loading}
+                menuPlacement="auto"
+                minMenuHeight={384}
+                onChange={(e) => setSelectedPrompt(prompts[e.value])}
+                options={optionsPrompt}
+                placeholder="Default tone"
+                unstyled={true}
+                filterOption={createFilter({
+                  ignoreAccents: true,
+                  ignoreCase: true,
+                  matchFrom: "any",
+                })}
+              />
+            )}
+            {conversation.prompt && (
+              <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>
+            )}
+            {conversationId && <Button
+              disabled={loading}
+              emoji="⬇️"
+              onClick={() => downloadToExcel()}
+              text="Download"
+            />}
+            <Button
+              active={secret}
+              disabled={loading}
+              emoji={secret ? "💾" : "🙈"}
+              onClick={() => setSecret(!secret)}
+              text={secret ? "Stored" : "Temporary"}
+            />
+          </div>
+          <div className="conversation__input__block">
+            <textarea
+              placeholder="Message"
+              value={input || ""}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={inputKeyHandler}
+            />
+          </div>
+          <div className="conversation__input__block">
+            <Button
+              active={true}
+              disabled={!(input && input.length > 0)}
+              emoji="⬆️"
+              loading={loading}
+              text="Send"
+              type="submit"
+            />
+          </div>
+        </form>
+      )}
     </div>
   );
 }
-
-Conversation.propTypes = {
-  conversationId: PropTypes.string,
-  refreshConversations: PropTypes.func.isRequired,
-  setLoadingConversation: PropTypes.func.isRequired,
-  darkTheme: PropTypes.bool,
-};
 
 export default Conversation;

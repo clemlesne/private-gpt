@@ -1,22 +1,9 @@
 .conversations {
+  display: flex;
+  flex-direction: column;
+
   > *:not(:last-child) {
     margin-bottom: var(--conversations-padding);
-  }
-
-  &,
-  .conversations__actions {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .conversations__actions {
-    background-color: var(--background);
-    padding: calc(var(--header-padding-v) / 2) 0;
-
-    // Stays at the top
-    position: sticky;
-    top: 0;
-    z-index: 900;
   }
 
   > a,

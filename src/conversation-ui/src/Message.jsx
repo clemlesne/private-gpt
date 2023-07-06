@@ -1,7 +1,8 @@
 import "./message.scss";
-import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
-import { useState, useRef } from "react";
 import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
+import { ThemeContext } from "./App";
+import { useState, useRef, useContext } from "react";
 import moment from "moment";
 import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
@@ -14,17 +15,18 @@ import remarkNormalizeHeadings from "remark-normalize-headings";
 
 function Message({
   content,
-  darkTheme,
   date,
   role,
-  secret,
   defaultDisplaySub = false,
   error = false,
+  secret = false,
 }) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   // Refs
   const httpContent = useRef(null);
+  // React context
+  const [darkTheme,] = useContext(ThemeContext);
 
   const clipboardHandler = (e) => {
     e.preventDefault();
@@ -46,7 +48,7 @@ function Message({
         onClick={() => setDisplaySub(!displaySub)}
         onDoubleClick={clipboardHandler}
       >
-        {/* eslint-disable-next-line react/no-children-prop */}
+        { }
         <ReactMarkdown
           linkTarget="_blank"
           remarkPlugins={[
@@ -94,12 +96,11 @@ function Message({
 
 Message.propTypes = {
   content: PropTypes.string.isRequired,
-  darkTheme: PropTypes.bool.isRequired,
   date: PropTypes.string.isRequired,
   role: PropTypes.string.isRequired,
-  secret: PropTypes.bool.isRequired,
   defaultDisplaySub: PropTypes.bool,
   error: PropTypes.bool,
+  secret: PropTypes.bool,
 };
 
 export default Message;

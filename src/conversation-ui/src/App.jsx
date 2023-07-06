@@ -1,14 +1,16 @@
 import "./app.scss";
-import { client, header } from "./Utils";
+import { client } from "./Utils";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
+import { Outlet } from "react-router-dom";
 import { useAuth } from "oidc-react";
-import { useState, useEffect } from "react";
-import Button from "./Button";
-import Conversation from "./Conversation";
-import Conversations from "./Conversations";
-import Search from "./Search";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect, createContext } from "react";
+import Header from "./Header";
 import useLocalStorageState from "use-local-storage-state";
+
+export const ConversationContext = createContext(null);
+export const ThemeContext = createContext(null);
 
 function App() {
   // Browser context
@@ -18,15 +20,13 @@ function App() {
       : "light";
   // State
   const [conversations, setConversations] = useState([]);
-  const [hideConversation, setHideConversation] = useState(false);
-  const [loadingConversation, setLoadingConversation] = useState(false);
-  const [selectedConversation, setSelectedConversation] = useState(null);
   // Persistance
   const [darkTheme, setDarkTheme] = useLocalStorageState("darkTheme", {
     defaultValue: () => getPreferredScheme() == "dark",
   });
   // Dynamic
   const auth = useAuth();
+  const navigate = useNavigate();
 
   const fetchConversations = async (idToSelect = null) => {
     if (!auth.userData) return;
@@ -57,7 +57,7 @@ function App() {
           if (!found) {
             found = localConversations[0].id;
           }
-          setSelectedConversation(found);
+          navigate(`/conversation/${found}`);
         }
       })
       .catch((error) => {
@@ -111,80 +111,16 @@ function App() {
         ]}
         htmlAttributes={{ class: darkTheme ? "theme--dark" : "theme--light" }}
       />
-      <div className="header">
-        <div className="header__top">
-          <h1>🔒 Private GPT</h1>
-          <Button
-            className="header__top__toggle"
-            emoji="="
-            text="Menu"
-            onClick={() => header() }
-          />
-        </div>
-        <div className="header__content">
-          {auth.userData && (
-            <Conversations
-              loadingConversation={loadingConversation}
-              conversations={conversations}
-              selectedConversation={selectedConversation}
-              setSelectedConversation={setSelectedConversation}
-            />
-          )}
-        </div>
-        <small className="header__bottom">
-          <div className="header__bottom__block">
-            {auth.userData && (
-              <p>
-                Logged as{" "}
-                {auth.userData.profile.name
-                  ? auth.userData.profile.name
-                  : "unknown name"}{" "}
-                (
-                {auth.userData.profile.email
-                  ? auth.userData.profile.email
-                  : "unknown email"}
-                ).
-              </p>
-            )}
-            {auth.isLoading && <p>Connecting...</p>}
+      <ThemeContext.Provider value={[ darkTheme, setDarkTheme ]}>
+        <ConversationContext.Provider value={[ conversations, refreshConversations ]}>
+          <Header />
+          <div id="main" className="main">
+            <div className="main__container">
+              <Outlet />
+            </div>
           </div>
-          <div className="header__bottom__block">
-            <span>
-              {import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
-            </span>
-          </div>
-          <div className="header__bottom__block">
-            <Button
-              onClick={() => {
-                header(false);
-                auth.userData ? auth.signOut() : auth.signIn()
-              }}
-              emoji={auth.userData ? "🚪" : "🔑"}
-              loading={auth.isLoading}
-              text={auth.userData ? "Signout" : "Signin"}
-            />
-            <Button
-              onClick={() => {
-                header(false);
-                setDarkTheme(!darkTheme);
-              }}
-              emoji={darkTheme ? "☀️" : "🌕"}
-              text={darkTheme ? "Light" : "Dark"}
-            />
-          </div>
-        </small>
-      </div>
-      <div id="main" className="main">
-        {auth.userData && <Search setHideConversation={setHideConversation} />}
-        {!hideConversation && (
-          <Conversation
-            conversationId={selectedConversation}
-            darkTheme={darkTheme}
-            refreshConversations={refreshConversations}
-            setLoadingConversation={setLoadingConversation}
-          />
-        )}
-      </div>
+        </ConversationContext.Provider>
+      </ThemeContext.Provider>
     </>
   );
 }

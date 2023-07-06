@@ -1,124 +1,17 @@
-html {
-  // Small width
-  @media (max-width: 56rem) {
-    #root {
-      display: grid;
-      grid-template-areas: "header" "main";
-      grid-template-rows: min-content auto;
-      min-height: 100vh;
-    }
-
-    &.header--open {
-      // Make the header full height
-      .header {
-        min-height: 100vh;
-      }
-
-      // Hide the main content
-      .main {
-        display: none;
-      }
-    }
-
-    &:not(.header--open) {
-      // Fix the header to the top
-      .header {
-        // Stays at the top
-        top: 0;
-        position: sticky;
-        z-index: 1000;
-      }
-
-      // Hide the header content
-      .header__content,
-      .header__bottom {
-        display: none;
-      }
-    }
-  }
-
-  // Full width
-  @media (min-width: 56rem) {
-    #root {
-      display: grid;
-      grid-template-areas: "header" "main";
-      grid-template-columns: var(--header-width) auto;
-    }
-
-    // Header always open, so we need to make sure it is full height
-    .header {
-      height: 100vh;
-    }
-
-    // Hide the toggle button
-    .header__top__toggle {
-      display: none;
-    }
-
-    // Make content to scroll
-    .main {
-      height: 100vh;
-    }
-  }
-}
-
-.header {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  overflow-x: auto;
-
-  .header__top {
-    align-items: center;
-    backdrop-filter: blur(8vw);
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    padding: calc(var(--header-padding-v) / 2) var(--header-padding-h);
-
-    // Add spaces around title and toggle button
-    > *:not(:last-child) {
-      margin-right: var(--header-padding-h);
-    }
-  }
-
-  .header__content {
-    flex-grow: 1;
-    padding: 0 var(--header-padding-h);
-  }
-
-  .header__bottom {
-    background-color: var(--background);
-    padding: calc(var(--header-padding-v) - (var(--header-padding-v) / 3))
-      var(--header-padding-h);
-
-    // Stays at the bottom
-    bottom: 0;
-    position: sticky;
-    z-index: 900;
-
-    // Delimit the content to limit wrapping
-    .header__bottom__block {
-      display: flex;
-      flex-direction: row;
-      flex-wrap: wrap;
-
-      // Add spaces blocks
-      &:not(:last-child) {
-        margin-bottom: calc(var(--header-padding-h) / 3);
-      }
-
-      // Add spaces around buttons
-      > *:not(:last-child) {
-        margin-right: calc(var(--header-padding-h) / 3);
-      }
-    }
-  }
-}
-
 .main {
+  align-items: center;
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
   overflow-x: hidden; // Avoid horizontal scroll
+
+  .main__container {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    max-width: var(--content-max-width);
+    padding: var(--conversation-padding-v) var(--conversation-padding-h);
+    width: 100%;
+  }
 }

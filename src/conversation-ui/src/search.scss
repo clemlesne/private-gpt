@@ -1,28 +1,17 @@
 .search {
-  align-items: center;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
 
-  .search__container {
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    // Use the same padding as the header to align horizontally the search with the header
-    margin: calc(var(--header-padding-v) / 2) calc(var(--search-padding-h) * 2)
-      0 calc(var(--search-padding-h) * 2);
-    max-width: var(--content-max-width);
-    width: 100%;
+  > *:not(:last-child) {
+    margin-bottom: var(--conversation-padding-v);
   }
 
   .search__messages {
-    background-color: var(--background-muted);
-    border-radius: var(--radius);
     display: flex;
     flex-direction: column;
     flex-grow: 1;
     min-height: 12rem;
-    padding: var(--search-padding-v) var(--search-padding-h);
-    margin-bottom: var(--search-padding-v);
 
     > *:not(:last-child) {
       margin-bottom: var(--search-padding-v);
@@ -34,8 +23,6 @@
     background-color: var(--background);
     display: flex;
     flex-direction: row;
-    padding: 0 var(--search-padding-h) calc(var(--search-padding-v) * 2)
-      var(--search-padding-h);
 
     // Stays at the bottom
     bottom: 0;

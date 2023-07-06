@@ -1,16 +1,18 @@
 import "./conversations.scss";
+import { ConversationContext } from "./App";
 import { header } from "./Utils";
-import Button from "./Button";
-import Loader from "./Loader";
+import { useContext } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
-import PropTypes from "prop-types";
 
-function Conversations({
-  conversations,
-  loadingConversation,
-  setSelectedConversation,
-  selectedConversation = null,
-}) {
+function Conversations() {
+  // Browser context
+  const { conversationId } = useParams();
+  // Dynamic
+  const navigate = useNavigate();
+  // React context
+  const [conversations] = useContext(ConversationContext);
+
   const groupedConversations = conversations.reduce(
     (acc, conversation) => {
       const now = moment();
@@ -43,13 +45,10 @@ function Conversations({
             key={conversation.id}
             onClick={() => {
               header(false);
-              setSelectedConversation(conversation.id);
+              navigate(`/conversation/${conversation.id}`);
             }}
-            disabled={conversation.id == selectedConversation}
+            disabled={conversation.id == conversationId}
           >
-            {conversation.id == selectedConversation && loadingConversation && (
-              <Loader />
-            )}{" "}
             {conversation.title ? conversation.title : "New chat"}{" "}
           </a>
         ))}
@@ -59,20 +58,6 @@ function Conversations({
 
   return (
     <div className="conversations">
-      <div className="conversations__actions">
-        {/* This button is never disabled and this is on purpose.
-
-        It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
-        <Button
-          onClick={() => {
-            header(false);
-            setSelectedConversation(null);
-          }}
-          text="New chat"
-          emoji="+"
-          active={true}
-        />
-      </div>
       <h2>Your conversations</h2>
       { conversations.length === 0 && <p>No conversations yet.</p>}
       {displayConversations("Today", groupedConversations.today)}
@@ -83,12 +68,5 @@ function Conversations({
     </div>
   );
 }
-
-Conversations.propTypes = {
-  conversations: PropTypes.array.isRequired,
-  loadingConversation: PropTypes.bool.isRequired,
-  setSelectedConversation: PropTypes.func.isRequired,
-  selectedConversation: PropTypes.string,
-};
 
 export default Conversations;

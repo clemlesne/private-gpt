@@ -27,6 +27,8 @@
   .message__content {
     background-color: var(--background-muted);
     border-radius: var(--radius);
+    box-sizing: border-box;
+    overflow-x: auto;
     padding: 1rem;
 
     // Fix overflow with non wrapping content like code and tables
