@@ -8,6 +8,19 @@ html {
       min-height: 100vh;
     }
 
+    .header__actions {
+      flex-direction: row;
+
+      > * {
+        flex-grow: 1;
+      }
+
+      // Add spaces around actions
+      > *:not(:last-child) {
+        margin-right: calc(var(--header-padding-v) / 2);
+      }
+    }
+
     &.header--open {
       // Make the header full height
       .header {
@@ -56,6 +69,16 @@ html {
       display: none;
     }
 
+    .header__actions {
+      flex-direction: column;
+      align-items: stretch;
+
+      // Add spaces around actions
+      > *:not(:last-child) {
+        margin-bottom: calc(var(--header-padding-v) / 2);
+      }
+    }
+
     // Make content to scroll
     .main {
       height: 100vh;
@@ -88,13 +111,6 @@ html {
 
   .header__actions {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-
-    // Add spaces around actions
-    > *:not(:last-child) {
-      margin-bottom: calc(var(--header-padding-v) / 2);
-    }
   }
 
   .header__content {
