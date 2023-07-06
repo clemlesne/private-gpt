@@ -1,5 +1,12 @@
 # Import utils
-from utils import VerifyToken, build_logger, VERSION, hash_token, get_config, oai_tokens_nb
+from utils import (
+    VerifyToken,
+    build_logger,
+    VERSION,
+    hash_token,
+    get_config,
+    oai_tokens_nb,
+)
 
 # Import misc
 from azure.core.credentials import AzureKeyCredential
@@ -69,8 +76,12 @@ async def refresh_oai_token():
 
 OAI_GPT_DEPLOY_ID = get_config("openai", "gpt_deploy_id", str, required=True)
 OAI_GPT_MAX_TOKENS = get_config("openai", "gpt_max_tokens", int, required=True)
-OAI_GPT_MODEL = get_config("openai", "gpt_model", str, default="gpt-3.5-turbo", required=True)
-logger.info(f'Using OpenAI ADA model "{OAI_GPT_MODEL}" ({OAI_GPT_DEPLOY_ID}) with {OAI_GPT_MAX_TOKENS} tokens max')
+OAI_GPT_MODEL = get_config(
+    "openai", "gpt_model", str, default="gpt-3.5-turbo", required=True
+)
+logger.info(
+    f'Using OpenAI ADA model "{OAI_GPT_MODEL}" ({OAI_GPT_DEPLOY_ID}) with {OAI_GPT_MAX_TOKENS} tokens max'
+)
 
 openai.api_base = get_config("openai", "api_base", str, required=True)
 openai.api_type = "azure_ad"
@@ -316,8 +327,12 @@ async def message_post(
             )
 
         # Validate message length
-        tokens_nb = oai_tokens_nb(message.content + "".join([m.content for m in store.message_list(conversation_id)]), OAI_GPT_MODEL)
-        logger.debug(f'{tokens_nb} tokens in the conversation')
+        tokens_nb = oai_tokens_nb(
+            message.content
+            + "".join([m.content for m in store.message_list(conversation_id)]),
+            OAI_GPT_MODEL,
+        )
+        logger.debug(f"{tokens_nb} tokens in the conversation")
         if tokens_nb > OAI_GPT_MAX_TOKENS:
             logger.info(f"Message ({tokens_nb}) too long for conversation")
             raise HTTPException(
@@ -345,7 +360,7 @@ async def message_post(
 
         # Validate message length
         tokens_nb = oai_tokens_nb(message.content, OAI_GPT_MODEL)
-        logger.debug(f'{tokens_nb} tokens in the conversation')
+        logger.debug(f"{tokens_nb} tokens in the conversation")
         if tokens_nb > OAI_GPT_MAX_TOKENS:
             logger.info(f"Message ({tokens_nb}) too long for conversation")
             raise HTTPException(

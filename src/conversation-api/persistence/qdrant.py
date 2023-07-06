@@ -29,8 +29,12 @@ logger.info(f'Connected to Qdrant at "{QD_HOST}:{QD_PORT}"')
 
 OAI_ADA_DEPLOY_ID = get_config("openai", "ada_deploy_id", str, required=True)
 OAI_ADA_MAX_TOKENS = get_config("openai", "ada_max_tokens", int, required=True)
-OAI_ADA_MODEL = get_config("openai", "ada_model", str, default="text-embedding-ada-002", required=True)
-logger.info(f'Using OpenAI ADA model "{OAI_ADA_MODEL}" ({OAI_ADA_DEPLOY_ID}) with {OAI_ADA_MAX_TOKENS} tokens max')
+OAI_ADA_MODEL = get_config(
+    "openai", "ada_model", str, default="text-embedding-ada-002", required=True
+)
+logger.info(
+    f'Using OpenAI ADA model "{OAI_ADA_MODEL}" ({OAI_ADA_DEPLOY_ID}) with {OAI_ADA_MAX_TOKENS} tokens max'
+)
 
 
 class QdrantSearch(ISearch):
