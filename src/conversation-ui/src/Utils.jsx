@@ -7,10 +7,12 @@ const client = axios.create({
   baseURL: 'http://127.0.0.1:8081',
 });
 axiosRetry(client, {
-  retries: 3,
-  retryCondition: axiosRetry.isNetworkOrIdempotentRequestError,
+  retries: 12,
   retryDelay: axiosRetry.exponentialDelay,
   shouldResetTimeout: true,
+  retryCondition: (error) => {
+    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response.status == 429;
+  }
 });
 
 const header = (enabled) => {
