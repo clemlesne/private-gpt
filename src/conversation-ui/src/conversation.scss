@@ -19,9 +19,9 @@
     }
 
     .conversation__messages__empty {
+      align-items: center;
       display: flex;
       flex-direction: column;
-      align-items: center;
 
       // Center the content vertically and horizontally
       align-self: center;
@@ -29,6 +29,31 @@
 
       > *:not(:last-child) {
         margin-bottom: 1rem;
+      }
+    }
+
+    .conversation__messages__empty__doc {
+      background-color: var(--background-muted);
+      border-radius: var(--radius);
+      display: grid;
+      grid-gap: 1rem;
+      padding: 2rem;
+      place-items: flex-start;
+
+      // Small width
+      @media (max-width: 84rem) {
+        grid-template-columns: auto auto;
+      }
+
+      // Full width
+      @media (min-width: 84rem) {
+        grid-template-columns: auto auto auto auto auto auto;
+      }
+
+      div {
+        > *:not(:last-child) {
+          margin-bottom: 0.5rem;
+        }
       }
     }
   }
