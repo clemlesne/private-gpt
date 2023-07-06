@@ -15,7 +15,7 @@ test:
 	npm outdated
 
 	@echo "➡️ Running NPM Lint..."
-	npm run lint
+	npm run test
 
 	@echo "➡️ Running Hadolint..."
 	find . -name "Dockerfile*" -exec bash -c "echo 'File {}:' && hadolint {}" \;
