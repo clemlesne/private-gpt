@@ -134,7 +134,11 @@ class QdrantSearch(ISearch):
             ),
         )
 
-    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_random_exponential(multiplier=0.5, max=30),
+    )
     def _vector_from_text(self, prompt: str, user_id: UUID) -> List[float]:
         logger.debug(f"Getting vector for text: {prompt}")
         try:

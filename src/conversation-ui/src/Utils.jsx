@@ -8,6 +8,7 @@ const client = axios.create({
 });
 axiosRetry(client, {
   retries: 3,
+  retryCondition: axiosRetry.isNetworkOrIdempotentRequestError,
   retryDelay: axiosRetry.exponentialDelay,
   shouldResetTimeout: true,
 });

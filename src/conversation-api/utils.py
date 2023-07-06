@@ -187,7 +187,11 @@ class VerifyToken:
 
         return payload
 
-    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(3),
+        wait=wait_random_exponential(multiplier=0.5, max=30),
+    )
     def _load_jwks(self) -> None:
         logging.debug("Loading signing key from JWT")
         self.signing_key = self.jwks_client.get_signing_key_from_jwt(self.token)
