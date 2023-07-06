@@ -8,7 +8,7 @@ from datetime import datetime
 from models.message import MessageModel, IndexMessageModel
 from models.search import SearchModel, SearchStatsModel, SearchAnswerModel
 from qdrant_client import QdrantClient
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_random_exponential
 from typing import List
 from uuid import UUID
 import asyncio
@@ -134,7 +134,7 @@ class QdrantSearch(ISearch):
             ),
         )
 
-    @retry(reraise=True, stop=stop_after_attempt(3))
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
     def _vector_from_text(self, prompt: str, user_id: UUID) -> List[float]:
         logger.debug(f"Getting vector for text: {prompt}")
         try:

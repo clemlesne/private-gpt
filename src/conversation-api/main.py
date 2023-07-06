@@ -27,7 +27,7 @@ from models.user import UserModel
 from persistence.qdrant import QdrantSearch
 from persistence.redis import RedisStore, RedisStream, STREAM_STOPWORD
 from sse_starlette.sse import EventSourceResponse
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_random_exponential
 from typing import Annotated, Dict, List, Optional
 from uuid import UUID
 from uuid import uuid4
@@ -432,7 +432,7 @@ async def message_search(
     return index.message_search(q, current_user.id)
 
 
-@retry(reraise=True, stop=stop_after_attempt(3))
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
 def completion_from_conversation(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
@@ -496,7 +496,7 @@ def completion_from_conversation(
     stream.push(STREAM_STOPWORD, last_message.token)
 
 
-@retry(reraise=True, stop=stop_after_attempt(3))
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
 def guess_title(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
@@ -532,7 +532,7 @@ def guess_title(
     store.conversation_set(conversation)
 
 
-@retry(reraise=True, stop=stop_after_attempt(3))
+@retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
 async def is_moderated(prompt: str) -> bool:
     logger.debug(f"Checking moderation for text: {prompt}")
 

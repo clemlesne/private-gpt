@@ -6,7 +6,7 @@ load_dotenv(find_dotenv())
 # Import modules
 from fastapi import HTTPException, status
 from pathlib import Path
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_random_exponential
 from tiktoken import encoding_for_model
 from typing import Dict, Optional, TypeVar, Union, Hashable
 from uuid import UUID
@@ -187,7 +187,7 @@ class VerifyToken:
 
         return payload
 
-    @retry(reraise=True, stop=stop_after_attempt(3))
+    @retry(reraise=True, stop=stop_after_attempt(3), wait=wait_random_exponential(multiplier=0.5, max=30))
     def _load_jwks(self) -> None:
         logging.debug("Loading signing key from JWT")
         self.signing_key = self.jwks_client.get_signing_key_from_jwt(self.token)
