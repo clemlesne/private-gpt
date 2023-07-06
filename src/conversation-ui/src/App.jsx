@@ -174,7 +174,7 @@ function App() {
           </div>
         </small>
       </div>
-      <div className="main">
+      <div id="main" className="main">
         {auth.userData && <Search setHideConversation={setHideConversation} />}
         {!hideConversation && (
           <Conversation

@@ -223,7 +223,8 @@ function Conversation({
 
   // Scroll to the bottom of the page when the conversation changes
   useEffect(() => {
-    window.scrollTo(0, document.body.scrollHeight);
+    const main = document.getElementById("main");
+    if (main) main.scrollTop = main.scrollHeight;
   }, [conversation]);
 
   // Handle the input, allow to send a message with enter
