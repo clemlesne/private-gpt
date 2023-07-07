@@ -116,4 +116,8 @@ class CosmosStore(IStore):
                 item[key] = str(value)
             elif isinstance(value, datetime):
                 item[key] = value.isoformat()
+            elif isinstance(value, dict):
+                item[key] = self._sanitize_before_insert(value)
+            elif isinstance(value, list):
+                item[key] = [self._sanitize_before_insert(i) for i in value]
         return item
