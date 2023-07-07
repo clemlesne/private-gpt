@@ -7,6 +7,11 @@ metadata:
     app.kubernetes.io/component: conversation-api
 data:
   config.toml: |
+    [persistence]
+    search = "qdrant"
+    store = "redis"
+    stream = "redis"
+
     [api]
     root_path = "/{{ include "private-gpt.fullname" . }}-conversation-api"
 
