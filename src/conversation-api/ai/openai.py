@@ -21,7 +21,7 @@ logger = build_logger(__name__)
 # Init OpenIA
 ###
 
-async def refresh_oai_token():
+async def refresh_oai_token_background():
     """
     Refresh OpenAI token every 15 minutes.
 
@@ -42,7 +42,7 @@ openai.api_base = get_config("openai", "api_base", str, required=True)
 openai.api_type = "azure_ad"
 openai.api_version = "2023-05-15"
 logger.info(f"Using Aure private service ({openai.api_base})")
-asyncio.create_task(refresh_oai_token())
+asyncio.create_task(refresh_oai_token_background())
 
 OAI_GPT_DEPLOY_ID = get_config("openai", "gpt_deploy_id", str, required=True)
 OAI_GPT_MAX_TOKENS = get_config("openai", "gpt_max_tokens", int, required=True)

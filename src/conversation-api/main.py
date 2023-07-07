@@ -365,10 +365,10 @@ async def message_post(
     messages = store.message_list(conversation.id)
 
     if conversation.title is None:
-        asyncio.create_task(_guess_title(conversation, messages, current_user))
+        asyncio.create_task(_guess_title_background(conversation, messages, current_user))
 
     # Execute the message completion
-    asyncio.create_task(_completion_from_conversation(conversation, messages, current_user))
+    asyncio.create_task(_generate_completion_background(conversation, messages, current_user))
 
     return GetConversationModel(
         **conversation.dict(),
@@ -411,7 +411,7 @@ async def message_search(
     return await index.message_search(q, current_user.id)
 
 
-async def _completion_from_conversation(
+async def _generate_completion_background(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
     current_user: UserModel,
@@ -507,7 +507,7 @@ async def _validate_message_length(
     return tokens_nb
 
 
-async def _guess_title(
+async def _guess_title_background(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
     current_user: UserModel,
