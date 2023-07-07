@@ -299,6 +299,17 @@ async def message_post(
 
         tokens_nb = await _validate_message_length(message=message)
 
+        # Update conversation
+        store.message_set(message)
+        conversation = store.conversation_get(conversation_id, current_user.id)
+        if not conversation:
+            logger.warn("ACID error: conversation not found after testing existence")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Conversation not found",
+            )
+        await _message_index(message, current_user, conversation.prompt)
+
         # Build usage
         usage = UsageModel(
             ai_model=OAI_GPT_MODEL,
@@ -307,19 +318,9 @@ async def message_post(
             id=uuid4(),
             tokens=tokens_nb,
             user_id=current_user.id,
+            prompt_name=conversation.prompt.name if conversation.prompt else None,
         )
         store.usage_set(usage)
-
-        # Update conversation
-        store.message_set(message)
-        await _message_index(message, current_user)
-        conversation = store.conversation_get(conversation_id, current_user.id)
-        if not conversation:
-            logger.warn("ACID error: conversation not found after testing existence")
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Conversation not found",
-            )
     else:
         # Test prompt ID if provided
         if prompt_id and prompt_id not in AI_PROMPTS:
@@ -347,6 +348,7 @@ async def message_post(
             id=uuid4(),
             tokens=tokens_nb,
             user_id=current_user.id,
+            prompt_name=conversation.prompt.name if conversation.prompt else None,
         )
         store.usage_set(usage)
 
@@ -361,7 +363,7 @@ async def message_post(
             token=uuid4(),
         )
         store.message_set(message)
-        await _message_index(message, current_user)
+        await _message_index(message, current_user, conversation.prompt)
 
     messages = store.message_list(conversation.id)
 
@@ -454,13 +456,13 @@ async def _generate_completion_background(
         secret=last_message.secret,
     )
     store.message_set(res_message)
-    await _message_index(res_message, current_user)
+    await _message_index(res_message, current_user, conversation.prompt)
 
     # Then, send the end of stream message
     stream.push(STREAM_STOPWORD, last_message.token)
 
 
-async def _message_index(message: StoredMessageModel, current_user: UserModel) -> None:
+async def _message_index(message: StoredMessageModel, current_user: UserModel, prompt: Optional[StoredPromptModel]) -> None:
     tokens_nb = oai_tokens_nb(message.content, OAI_ADA_MODEL)
     if tokens_nb > OAI_ADA_MAX_TOKENS:
         logger.info(f"Message ({tokens_nb}) too long for indexing")
@@ -476,6 +478,7 @@ async def _message_index(message: StoredMessageModel, current_user: UserModel) -
         id=uuid4(),
         tokens=oai_tokens_nb(message.content, OAI_ADA_MODEL),
         user_id=current_user.id,
+        prompt_name=prompt.name if prompt else None,
     )
     store.usage_set(usage)
     await index.message_index(message, current_user.id)
