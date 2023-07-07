@@ -42,6 +42,11 @@ api:
     base: null
     gpt_deploy_id: gpt-35-turbo
 
+cosmos:
+  # https://[db].documents.azure.com
+  url: null
+  database: null
+
 redis:
   auth:
     enabled: false

@@ -9,7 +9,7 @@ data:
   config.toml: |
     [persistence]
     search = "qdrant"
-    store = "redis"
+    store = "cosmos"
     stream = "redis"
 
     [api]
@@ -42,3 +42,7 @@ data:
     [redis]
     db = {{ .Values.redis.db | int }}
     host = "{{ include "common.names.fullname" .Subcharts.redis }}-master"
+
+    [cosmos]
+    url = {{ .Values.cosmos.url | quote }}
+    database = {{ .Values.cosmos.database | quote }}
