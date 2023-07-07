@@ -1,8 +1,13 @@
 from .istore import IStore
 from abc import ABC, abstractmethod
-from models.message import MessageModel
+from enum import Enum
+from models.message import MessageModel, StoredMessageModel
 from models.search import SearchModel
 from uuid import UUID
+
+
+class SearchImplementation(str, Enum):
+    QDRANT = "qdrant"
 
 
 class ISearch(ABC):
@@ -14,7 +19,5 @@ class ISearch(ABC):
         pass
 
     @abstractmethod
-    def message_index(
-        self, message: MessageModel, conversation_id: UUID, user_id: UUID
-    ) -> None:
+    def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
         pass

@@ -1,5 +1,6 @@
 aiohttp==3.8.4
 azure-ai-contentsafety==1.0.0b1
+azure-cosmos==4.4.0
 azure-identity==1.13.0
 fastapi==0.95.2
 mmh3==4.0.0

@@ -1,6 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import AsyncGenerator, Callable, Literal
+from enum import Enum
+from typing import AsyncGenerator, Callable, Literal, Any
 from uuid import UUID
+
+
+class StreamImplementation(str, Enum):
+    REDIS = "redis"
 
 
 class IStream(ABC):
@@ -11,7 +16,7 @@ class IStream(ABC):
     @abstractmethod
     async def get(
         self, token: UUID, loop_func: Callable[[], bool]
-    ) -> AsyncGenerator[any | Literal["STOP"], None]:
+    ) -> AsyncGenerator[Any | Literal["STOP"], None]:
         pass
 
     @abstractmethod

@@ -15,17 +15,14 @@ from datetime import datetime
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models.conversation import (
-    GetConversationModel,
-    ListConversationsModel,
-    StoredConversationModel,
-)
-from models.message import MessageModel, MessageRole
+from models.conversation import (GetConversationModel, ListConversationsModel, StoredConversationModel)
+from models.message import MessageModel, MessageRole, StoredMessageModel
 from models.prompt import StoredPromptModel, ListPromptsModel
 from models.search import SearchModel
 from models.user import UserModel
-from persistence.qdrant import QdrantSearch
-from persistence.redis import RedisStore, RedisStream, STREAM_STOPWORD
+from persistence.isearch import SearchImplementation
+from persistence.istore import StoreImplementation
+from persistence.istream import StreamImplementation
 from sse_starlette.sse import EventSourceResponse
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from typing import Annotated, Dict, List, Optional
@@ -45,12 +42,35 @@ import openai
 logger = build_logger(__name__)
 
 ###
-# Init Redis
+# Init persistence
 ###
+store_impl = get_config("persistence", "store", StoreImplementation, required=True)
+if store_impl == StoreImplementation.COSMOS:
+    logger.info("Using CosmosDB store")
+    from persistence.cosmos import CosmosStore
+    store = CosmosStore()
+elif store_impl == StoreImplementation.REDIS:
+    logger.info("Using Redis store")
+    from persistence.redis import RedisStore
+    store = RedisStore()
+else:
+    raise ValueError(f"Unknown store implementation: {store_impl}")
 
-store = RedisStore()
-stream = RedisStream()
-index = QdrantSearch(store)
+search_impl = get_config("persistence", "search", SearchImplementation, required=True)
+if search_impl == SearchImplementation.QDRANT:
+    logger.info("Using Qdrant search")
+    from persistence.qdrant import QdrantSearch
+    index = QdrantSearch(store)
+else:
+    raise ValueError(f"Unknown search implementation: {search_impl}")
+
+stream_impl = get_config("persistence", "stream", StreamImplementation, required=True)
+if stream_impl == StreamImplementation.REDIS:
+    logger.info("Using Redis stream")
+    from persistence.redis import RedisStream, STREAM_STOPWORD
+    stream = RedisStream()
+else:
+    raise ValueError(f"Unknown stream implementation: {stream_impl}")
 
 ###
 # Init OpenAI
@@ -299,15 +319,6 @@ async def message_post(
             detail="Message is moderated",
         )
 
-    message = MessageModel(
-        content=content,
-        created_at=datetime.now(),
-        id=uuid4(),
-        role=MessageRole.USER,
-        secret=secret,
-        token=uuid4(),
-    )
-
     if conversation_id:
         # Validate API schema
         if prompt_id:
@@ -326,12 +337,24 @@ async def message_post(
                 detail="Conversation not found",
             )
 
+        # Build message
+        message = StoredMessageModel(
+            content=content,
+            conversation_id=conversation_id,
+            created_at=datetime.now(),
+            id=uuid4(),
+            role=MessageRole.USER,
+            secret=secret,
+            token=uuid4(),
+        )
+
         # Validate message length
         tokens_nb = oai_tokens_nb(
             message.content
-            + "".join([m.content for m in store.message_list(conversation_id)]),
+            + "".join([m.content for m in store.message_list(message.conversation_id)]),
             OAI_GPT_MODEL,
         )
+
         logger.debug(f"{tokens_nb} tokens in the conversation")
         if tokens_nb > OAI_GPT_MAX_TOKENS:
             logger.info(f"Message ({tokens_nb}) too long for conversation")
@@ -341,8 +364,8 @@ async def message_post(
             )
 
         # Update conversation
-        store.message_set(message, conversation_id)
-        index.message_index(message, conversation_id, current_user.id)
+        store.message_set(message)
+        index.message_index(message, current_user.id)
         conversation = store.conversation_get(conversation_id, current_user.id)
         if not conversation:
             logger.warn("ACID error: conversation not found after testing existence")
@@ -359,7 +382,7 @@ async def message_post(
             )
 
         # Validate message length
-        tokens_nb = oai_tokens_nb(message.content, OAI_GPT_MODEL)
+        tokens_nb = oai_tokens_nb(content, OAI_GPT_MODEL)
         logger.debug(f"{tokens_nb} tokens in the conversation")
         if tokens_nb > OAI_GPT_MAX_TOKENS:
             logger.info(f"Message ({tokens_nb}) too long for conversation")
@@ -368,7 +391,7 @@ async def message_post(
                 detail="Conversation history is too long",
             )
 
-        # Create a new conversation
+        # Build conversation
         conversation = StoredConversationModel(
             created_at=datetime.now(),
             id=uuid4(),
@@ -376,8 +399,19 @@ async def message_post(
             user_id=current_user.id,
         )
         store.conversation_set(conversation)
-        store.message_set(message, conversation.id)
-        index.message_index(message, conversation.id, current_user.id)
+
+        # Build message
+        message = StoredMessageModel(
+            content=content,
+            conversation_id=conversation.id,
+            created_at=datetime.now(),
+            id=uuid4(),
+            role=MessageRole.USER,
+            secret=secret,
+            token=uuid4(),
+        )
+        store.message_set(message)
+        index.message_index(message, current_user.id)
 
     messages = store.message_list(conversation.id)
 
@@ -486,15 +520,16 @@ def completion_from_conversation(
             content_full += content
 
     # First, store the updated conversation in Redis
-    res_message = MessageModel(
+    res_message = StoredMessageModel(
         content=content_full,
+        conversation_id=conversation.id,
         created_at=datetime.now(),
         id=uuid4(),
         role=MessageRole.ASSISTANT,
         secret=last_message.secret,
     )
-    store.message_set(res_message, conversation.id)
-    index.message_index(res_message, conversation.id, current_user.id)
+    store.message_set(res_message)
+    index.message_index(res_message, current_user.id)
 
     # Then, send the end of stream message
     stream.push(STREAM_STOPWORD, last_message.token)
