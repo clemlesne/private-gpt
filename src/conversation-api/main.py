@@ -9,8 +9,8 @@ from utils import (
 )
 
 # Import misc
-from azure.core.credentials import AzureKeyCredential
-from azure.identity import DefaultAzureCredential
+from ai.contentsafety import ContentSafety
+from ai.openai import OpenAI, OAI_GPT_MODEL, OAI_GPT_MAX_TOKENS, OAI_ADA_MODEL, OAI_ADA_MAX_TOKENS
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,20 +19,17 @@ from models.conversation import (GetConversationModel, ListConversationsModel, S
 from models.message import MessageModel, MessageRole, StoredMessageModel
 from models.prompt import StoredPromptModel, ListPromptsModel
 from models.search import SearchModel
+from models.usage import UsageModel
 from models.user import UserModel
 from persistence.isearch import SearchImplementation
 from persistence.istore import StoreImplementation
 from persistence.istream import StreamImplementation
 from sse_starlette.sse import EventSourceResponse
-from tenacity import retry, stop_after_attempt, wait_random_exponential
 from typing import Annotated, Dict, List, Optional
 from uuid import UUID
 from uuid import uuid4
 import asyncio
-import azure.ai.contentsafety as azure_cs
-import azure.core.exceptions as azure_exceptions
 import csv
-import openai
 
 
 ###
@@ -44,6 +41,7 @@ logger = build_logger(__name__)
 ###
 # Init persistence
 ###
+
 store_impl = get_config("persistence", "store", StoreImplementation, required=True)
 if store_impl == StoreImplementation.COSMOS:
     logger.info("Using CosmosDB store")
@@ -71,58 +69,6 @@ if stream_impl == StreamImplementation.REDIS:
     stream = RedisStream()
 else:
     raise ValueError(f"Unknown stream implementation: {stream_impl}")
-
-###
-# Init OpenAI
-###
-
-
-async def refresh_oai_token():
-    """
-    Refresh OpenAI token every 15 minutes.
-
-    The OpenAI SDK does not support token refresh, so we need to do it manually. We passe manually the token to the SDK. Azure AD tokens are valid for 30 mins, but we refresh every 15 minutes to be safe.
-
-    See: https://github.com/openai/openai-python/pull/350#issuecomment-1489813285
-    """
-    while True:
-        logger.info("Refreshing OpenAI token")
-        oai_cred = DefaultAzureCredential()
-        oai_token = oai_cred.get_token("https://cognitiveservices.azure.com/.default")
-        openai.api_key = oai_token.token
-        # Execute every 20 minutes
-        await asyncio.sleep(15 * 60)
-
-
-OAI_GPT_DEPLOY_ID = get_config("openai", "gpt_deploy_id", str, required=True)
-OAI_GPT_MAX_TOKENS = get_config("openai", "gpt_max_tokens", int, required=True)
-OAI_GPT_MODEL = get_config(
-    "openai", "gpt_model", str, default="gpt-3.5-turbo", required=True
-)
-logger.info(
-    f'Using OpenAI ADA model "{OAI_GPT_MODEL}" ({OAI_GPT_DEPLOY_ID}) with {OAI_GPT_MAX_TOKENS} tokens max'
-)
-
-openai.api_base = get_config("openai", "api_base", str, required=True)
-openai.api_type = "azure_ad"
-openai.api_version = "2023-05-15"
-logger.info(f"Using Aure private service ({openai.api_base})")
-asyncio.create_task(refresh_oai_token())
-
-###
-# Init Azure Content Safety
-###
-
-# Score are following: 0 - Safe, 2 - Low, 4 - Medium, 6 - High
-# See: https://review.learn.microsoft.com/en-us/azure/cognitive-services/content-safety/concepts/harm-categories?branch=release-build-content-safety#severity-levels
-ACS_SEVERITY_THRESHOLD = 2
-ACS_API_BASE = get_config("acs", "api_base", str, required=True)
-ACS_API_TOKEN = get_config("acs", "api_token", str, required=True)
-ACS_MAX_LENGTH = get_config("acs", "max_length", int, required=True)
-logger.info(f"Connected Azure Content Safety to {ACS_API_BASE}")
-acs_client = azure_cs.ContentSafetyClient(
-    ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
-)
 
 ###
 # Init FastAPI
@@ -159,6 +105,8 @@ api.add_middleware(
 # Init Generative AI
 ###
 
+openai = OpenAI()
+content_safety = ContentSafety()
 
 def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
     prompts = {}
@@ -312,7 +260,7 @@ async def message_post(
     conversation_id: Optional[UUID] = None,
     prompt_id: Optional[UUID] = None,
 ) -> GetConversationModel:
-    if await is_moderated(content):
+    if await content_safety.is_moderated(content):
         logger.info(f"Message content is moderated: {content}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -348,24 +296,22 @@ async def message_post(
             token=uuid4(),
         )
 
-        # Validate message length
-        tokens_nb = oai_tokens_nb(
-            message.content
-            + "".join([m.content for m in store.message_list(message.conversation_id)]),
-            OAI_GPT_MODEL,
-        )
+        tokens_nb = await _validate_message_length(message=message)
 
-        logger.debug(f"{tokens_nb} tokens in the conversation")
-        if tokens_nb > OAI_GPT_MAX_TOKENS:
-            logger.info(f"Message ({tokens_nb}) too long for conversation")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Conversation history is too long",
-            )
+        # Build usage
+        usage = UsageModel(
+            ai_model=OAI_GPT_MODEL,
+            conversation_id=conversation_id,
+            created_at=datetime.now(),
+            id=uuid4(),
+            tokens=tokens_nb,
+            user_id=current_user.id,
+        )
+        store.usage_set(usage)
 
         # Update conversation
         store.message_set(message)
-        index.message_index(message, current_user.id)
+        await _message_index(message, current_user)
         conversation = store.conversation_get(conversation_id, current_user.id)
         if not conversation:
             logger.warn("ACID error: conversation not found after testing existence")
@@ -381,15 +327,7 @@ async def message_post(
                 detail="Prompt ID not found",
             )
 
-        # Validate message length
-        tokens_nb = oai_tokens_nb(content, OAI_GPT_MODEL)
-        logger.debug(f"{tokens_nb} tokens in the conversation")
-        if tokens_nb > OAI_GPT_MAX_TOKENS:
-            logger.info(f"Message ({tokens_nb}) too long for conversation")
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Conversation history is too long",
-            )
+        tokens_nb = await _validate_message_length(content=content)
 
         # Build conversation
         conversation = StoredConversationModel(
@@ -399,6 +337,17 @@ async def message_post(
             user_id=current_user.id,
         )
         store.conversation_set(conversation)
+
+        # Build usage
+        usage = UsageModel(
+            ai_model=OAI_GPT_MODEL,
+            conversation_id=conversation.id,
+            created_at=datetime.now(),
+            id=uuid4(),
+            tokens=tokens_nb,
+            user_id=current_user.id,
+        )
+        store.usage_set(usage)
 
         # Build message
         message = StoredMessageModel(
@@ -411,19 +360,15 @@ async def message_post(
             token=uuid4(),
         )
         store.message_set(message)
-        index.message_index(message, current_user.id)
+        await _message_index(message, current_user)
 
     messages = store.message_list(conversation.id)
 
     if conversation.title is None:
-        asyncio.get_running_loop().run_in_executor(
-            None, lambda: guess_title(conversation, messages, current_user)
-        )
+        asyncio.create_task(_guess_title(conversation, messages, current_user))
 
     # Execute the message completion
-    asyncio.get_running_loop().run_in_executor(
-        None, lambda: completion_from_conversation(conversation, messages, current_user)
-    )
+    asyncio.create_task(_completion_from_conversation(conversation, messages, current_user))
 
     return GetConversationModel(
         **conversation.dict(),
@@ -433,10 +378,10 @@ async def message_post(
 
 @api.get("/message/{id}")
 async def message_get(id: UUID, token: UUID, req: Request) -> EventSourceResponse:
-    return EventSourceResponse(read_message_sse(req, token))
+    return EventSourceResponse(_read_message_sse(req, token))
 
 
-async def read_message_sse(req: Request, message_id: UUID):
+async def _read_message_sse(req: Request, message_id: UUID):
     def clean():
         logger.info(f"Cleared message cache (message_id={message_id})")
         stream.clean(message_id)
@@ -463,15 +408,10 @@ async def read_message_sse(req: Request, message_id: UUID):
 async def message_search(
     q: str, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> SearchModel:
-    return index.message_search(q, current_user.id)
+    return await index.message_search(q, current_user.id)
 
 
-@retry(
-    reraise=True,
-    stop=stop_after_attempt(3),
-    wait=wait_random_exponential(multiplier=0.5, max=30),
-)
-def completion_from_conversation(
+async def _completion_from_conversation(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
     current_user: UserModel,
@@ -496,28 +436,12 @@ def completion_from_conversation(
 
     logger.debug(f"Completion messages: {completion_messages}")
 
-    try:
-        # Use chat completion to get a more natural response and lower the usage cost
-        chunks = openai.ChatCompletion.create(
-            deployment_id=OAI_GPT_DEPLOY_ID,
-            messages=completion_messages,
-            model=OAI_GPT_MODEL,
-            presence_penalty=1,  # Increase the model's likelihood to talk about new topics
-            stream=True,
-            user=hash_token(current_user.id.bytes).hex,
-        )
-    except openai.error.AuthenticationError as e:
-        logger.exception(e)
-        return
-
     content_full = ""
-    for chunk in chunks:
-        content = chunk["choices"][0].get("delta", {}).get("content")
-        if content is not None:
-            logger.debug(f"Completion result: {content}")
-            # Add content to the redis stream cache_key
-            stream.push(content, last_message.token)
-            content_full += content
+    async for content in openai.completion_stream(completion_messages, current_user):
+        logger.debug(f"Completion result: {content}")
+        # Add content to the redis stream cache_key
+        stream.push(content, last_message.token)
+        content_full += content
 
     # First, store the updated conversation in Redis
     res_message = StoredMessageModel(
@@ -529,18 +453,53 @@ def completion_from_conversation(
         secret=last_message.secret,
     )
     store.message_set(res_message)
-    index.message_index(res_message, current_user.id)
+    await _message_index(res_message, current_user)
 
     # Then, send the end of stream message
     stream.push(STREAM_STOPWORD, last_message.token)
 
 
-@retry(
-    reraise=True,
-    stop=stop_after_attempt(3),
-    wait=wait_random_exponential(multiplier=0.5, max=30),
-)
-def guess_title(
+async def _message_index(message: StoredMessageModel, current_user: UserModel) -> None:
+    usage = UsageModel(
+        ai_model=OAI_ADA_MODEL,
+        conversation_id=message.conversation_id,
+        created_at=datetime.now(),
+        id=uuid4(),
+        tokens=oai_tokens_nb(message.content, OAI_ADA_MODEL),
+        user_id=current_user.id,
+    )
+    store.usage_set(usage)
+    await index.message_index(message, current_user.id)
+
+
+async def _validate_message_length(
+    message: Optional[StoredMessageModel] = None,
+    content: Optional[str] = None,
+) -> int:
+    if content:
+        tokens_nb = oai_tokens_nb(content, OAI_GPT_MODEL)
+    elif message:
+        tokens_nb = oai_tokens_nb(
+            message.content
+            + "".join([m.content for m in store.message_list(message.conversation_id)]),
+            OAI_GPT_MODEL,
+        )
+    else:
+        raise ValueError('Either message or content must be provided to "validate_usage"')
+
+    logger.debug(f"{tokens_nb} tokens in the conversation")
+
+    if tokens_nb > OAI_GPT_MAX_TOKENS:
+        logger.info(f"Message ({tokens_nb}) too long for conversation")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Conversation history is too long",
+        )
+
+    return tokens_nb
+
+
+async def _guess_title(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
     current_user: UserModel,
@@ -556,67 +515,8 @@ def guess_title(
 
     logger.debug(f"Completion messages: {completion_messages}")
 
-    try:
-        # Use chat completion to get a more natural response and lower the usage cost
-        completion = openai.ChatCompletion.create(
-            deployment_id=OAI_GPT_DEPLOY_ID,
-            messages=completion_messages,
-            model=OAI_GPT_MODEL,
-            presence_penalty=1,  # Increase the model's likelihood to talk about new topics
-            user=hash_token(current_user.id.bytes).hex,
-        )
-        content = completion["choices"][0].message.content
-    except openai.error.AuthenticationError as e:
-        logger.exception(e)
-        return
+    content = await openai.completion(completion_messages, current_user)
 
     # Store the updated conversation in Redis
     conversation.title = content
     store.conversation_set(conversation)
-
-
-@retry(
-    reraise=True,
-    stop=stop_after_attempt(3),
-    wait=wait_random_exponential(multiplier=0.5, max=30),
-)
-async def is_moderated(prompt: str) -> bool:
-    logger.debug(f"Checking moderation for text: {prompt}")
-
-    if len(prompt) > ACS_MAX_LENGTH:
-        logger.info(f"Message ({len(prompt)}) too long for moderation")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Message too long",
-        )
-
-    req = azure_cs.models.AnalyzeTextOptions(
-        text=prompt,
-        categories=[
-            azure_cs.models.TextCategory.HATE,
-            azure_cs.models.TextCategory.SELF_HARM,
-            azure_cs.models.TextCategory.SEXUAL,
-            azure_cs.models.TextCategory.VIOLENCE,
-        ],
-    )
-
-    try:
-        res = acs_client.analyze_text(req)
-    except azure_exceptions.ClientAuthenticationError as e:
-        logger.exception(e)
-        return False
-
-    is_moderated = any(
-        cat.severity >= ACS_SEVERITY_THRESHOLD
-        for cat in [
-            res.hate_result,
-            res.self_harm_result,
-            res.sexual_result,
-            res.violence_result,
-        ]
-    )
-    if is_moderated:
-        logger.info(f"Message is moderated: {prompt}")
-        logger.debug(f"Moderation result: {res}")
-
-    return is_moderated

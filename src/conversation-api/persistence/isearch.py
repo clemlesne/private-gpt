@@ -15,9 +15,9 @@ class ISearch(ABC):
         self.store = store
 
     @abstractmethod
-    def message_search(self, query: str, user_id: UUID) -> SearchModel[MessageModel]:
+    async def message_search(self, query: str, user_id: UUID) -> SearchModel[MessageModel]:
         pass
 
     @abstractmethod
-    def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
+    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
         pass

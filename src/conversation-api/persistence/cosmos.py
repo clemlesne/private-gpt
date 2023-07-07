@@ -11,6 +11,7 @@ from datetime import datetime
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.user import UserModel
+from models.usage import UsageModel
 from typing import (Any, Dict, List, Union)
 from uuid import UUID
 
@@ -30,6 +31,7 @@ database = client.get_database_client(DB_NAME)
 conversation_client = database.get_container_client("conversation")
 message_client = database.get_container_client("message")
 user_client = database.get_container_client("user")
+usage_client = database.get_container_client("usage")
 logger.info(f'Connected to Cosmos DB at "{DB_URL}"')
 
 
@@ -105,6 +107,9 @@ class CosmosStore(IStore):
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}'"
         items = message_client.query_items(query=query, enable_cross_partition_query=True)
         return [MessageModel(**item) for item in items]
+
+    def usage_set(self, usage: UsageModel) -> None:
+        usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
 
     def _sanitize_before_insert(self, item: dict) -> Dict[str, Union[str, int, float, bool]]:
         for key, value in item.items():

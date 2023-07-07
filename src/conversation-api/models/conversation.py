@@ -10,7 +10,7 @@ class BaseConversationModel(BaseModel):
     created_at: datetime
     id: UUID
     title: Optional[str] = None
-    user_id: UUID
+    user_id: UUID # Partition key
 
 
 class StoredConversationModel(BaseConversationModel):

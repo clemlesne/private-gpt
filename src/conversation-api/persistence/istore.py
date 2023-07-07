@@ -3,6 +3,7 @@ from enum import Enum
 from models.conversation import GetConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.user import UserModel
+from models.usage import UsageModel
 from typing import List, Union
 from uuid import UUID
 
@@ -57,4 +58,8 @@ class IStore(ABC):
 
     @abstractmethod
     def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+        pass
+
+    @abstractmethod
+    def usage_set(self, usage: UsageModel) -> None:
         pass

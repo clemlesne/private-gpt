@@ -65,7 +65,7 @@ db = 0
 host = "localhost"
 
 [cosmos]
-# Containers "conversation" (/user_id), "message" (/conversation_id) and "user" (/dummy) must exist
+# Containers "conversation" (/user_id), "message" (/conversation_id), "user" (/dummy), "usage" (/user_id) must exist
 url = "https://private-gpt.documents.azure.com:443"
 database = "private-gpt"
 ```

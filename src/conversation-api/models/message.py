@@ -21,7 +21,7 @@ class MessageModel(BaseModel):
 
 
 class StoredMessageModel(MessageModel):
-    conversation_id: UUID
+    conversation_id: UUID # Partition key
 
 
 class IndexMessageModel(BaseModel):
