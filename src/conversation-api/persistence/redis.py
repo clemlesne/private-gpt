@@ -196,7 +196,8 @@ class RedisStream(IStream):
             if message_loop:
                 yield message_loop
 
-            await asyncio.sleep(0.25)
+            # 8 messages per second, enough for give a good user experience, but not too much for not using the thread too much
+            await asyncio.sleep(0.125)
 
         # Send the end of stream message
         yield STREAM_STOPWORD
