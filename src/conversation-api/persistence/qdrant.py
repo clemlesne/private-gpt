@@ -5,7 +5,7 @@ from utils import build_logger, get_config
 from .isearch import ISearch
 from .istore import IStore
 from datetime import datetime
-from models.message import MessageModel, IndexMessageModel
+from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.search import SearchModel, SearchStatsModel, SearchAnswerModel
 from qdrant_client import QdrantClient
 from tenacity import retry, stop_after_attempt, wait_random_exponential
@@ -62,11 +62,7 @@ class QdrantSearch(ISearch):
         vector = self._vector_from_text(
             textwrap.dedent(
                 f"""
-                Today, we are the {datetime.now()}.
-
-                QUERY START
-                {q}
-                QUERY END
+                Today, we are the {datetime.now()}. {q.capitalize()}
             """
             ),
             user_id,
@@ -108,21 +104,23 @@ class QdrantSearch(ISearch):
         )
 
     def message_index(
-        self, message: MessageModel, conversation_id: UUID, user_id: UUID
+        self, message: StoredMessageModel, user_id: UUID
     ) -> None:
         logger.debug(f"Indexing message: {message.id}")
         self._loop.run_in_executor(
-            None, lambda: self._index_worker(message, conversation_id, user_id)
+            None, lambda: self._index_worker(message, user_id)
         )
 
     def _index_worker(
-        self, message: MessageModel, conversation_id: UUID, user_id: UUID
+        self, message: StoredMessageModel, user_id: UUID
     ) -> None:
         logger.debug(f"Starting indexing worker for message: {message.id}")
 
         vector = self._vector_from_text(message.content, user_id)
         index = IndexMessageModel(
-            conversation_id=conversation_id, id=message.id, user_id=user_id
+            conversation_id=message.conversation_id,
+            id=message.id,
+            user_id=user_id,
         )
 
         client.upsert(

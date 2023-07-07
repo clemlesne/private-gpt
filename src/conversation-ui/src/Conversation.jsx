@@ -255,6 +255,32 @@ function Conversation() {
         {conversation.messages.length == 0 && (
           <div className="conversation__messages__empty">
             <big>🔒 Private GPT</big>
+            <div className="conversation__messages__empty__doc">
+              <div>
+                <h2>💡</h2>
+              </div>
+              <div>
+                <h2>Examples</h2>
+                <p>Generating content that is tailored to specific audiences or personas.</p>
+                <p>Help on technical language and jargon in specific industries (such as finance or healthcare).</p>
+              </div>
+              <div>
+                <h2>⚡️</h2>
+              </div>
+              <div>
+                <h2>Capabilities</h2>
+                <p>Analyzing large amounts of qualitative data (such as news articles or earnings calls) to inform investment decisions.</p>
+                <p>Generating summaries of court cases or contracts to save time on manual review.</p>
+              </div>
+              <div>
+                <h2>⚠️</h2>
+              </div>
+              <div>
+                <h2>Limitations</h2>
+                <p>Ensuring that generated content adheres to applicable regulations in a given industry or region.</p>
+                <p>Mitigating any risks associated with automated content creation (such as reputational harm or inadvertent bias).</p>
+              </div>
+            </div>
             {!auth.userData && (
               <Button
                 onClick={() => auth.signIn()}

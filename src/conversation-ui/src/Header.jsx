@@ -3,7 +3,7 @@ import { header } from "./Utils";
 import { ThemeContext, ConversationContext } from "./App";
 import { useAuth } from "oidc-react";
 import { useContext } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Button from "./Button";
 import Conversations from "./Conversations";
 
@@ -18,7 +18,9 @@ function Header() {
   return (
     <div className="header">
       <div className="header__top">
-        <h1>🔒 Private GPT</h1>
+        <Link to="/" className="a--unstyled">
+          <h1>🔒 Private GPT</h1>
+        </Link>
         <Button
           className="header__top__toggle"
           emoji="="

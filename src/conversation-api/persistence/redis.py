@@ -5,34 +5,29 @@ from utils import build_logger, get_config
 from .istore import IStore
 from .istream import IStream
 from models.conversation import StoredConversationModel, StoredConversationModel
-from models.message import MessageModel, IndexMessageModel
+from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.user import UserModel
 from redis import Redis
-from typing import (
-    Any,
-    AsyncGenerator,
-    Callable,
-    Awaitable,
-    List,
-    Literal,
-    Optional,
-    Union,
-)
+from typing import (Any, AsyncGenerator, Callable, Awaitable, List, Literal, Optional, Union)
 from uuid import UUID
 import asyncio
 
 
 logger = build_logger(__name__)
 SECRET_TTL_SECS = 60 * 60 * 24  # 1 day
+
+# Configuration
 CONVERSATION_PREFIX = "conversation"
 MESSAGE_PREFIX = "message"
-REDIS_HOST = get_config("redis", "host", str, required=True)
-REDIS_PORT = 6379
+DB_HOST = get_config("redis", "host", str, required=True)
+DB_PORT = 6379
 STREAM_PREFIX = "stream"
 STREAM_STOPWORD = "STOP"
 USER_PREFIX = "user"
-client = Redis(db=0, host=REDIS_HOST, port=REDIS_PORT)
-logger.info(f'Connected to Redis at "{REDIS_HOST}:{REDIS_PORT}"')
+
+# Redis client
+client = Redis(db=0, host=DB_HOST, port=DB_PORT)
+logger.info(f'Connected to Redis at "{DB_HOST}:{DB_PORT}"')
 
 
 class RedisStore(IStore):
@@ -52,26 +47,6 @@ class RedisStore(IStore):
         if raw is None:
             return None
         return StoredConversationModel.parse_raw(raw)
-
-    def message_get_index(
-        self, message_indexs: List[IndexMessageModel]
-    ) -> List[MessageModel]:
-        keys = [
-            self._message_cache_key(message_index.conversation_id, message_index.id)
-            for message_index in message_indexs
-        ]
-        raws = client.mget(keys)
-        if raws is None:
-            return []
-        messages = []
-        for raw in raws:
-            if raw is None:
-                continue
-            try:
-                messages.append(MessageModel.parse_raw(raw))
-            except Exception:
-                logger.warn("Error parsing message", exc_info=True)
-        return messages
 
     def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         return (
@@ -109,10 +84,30 @@ class RedisStore(IStore):
             return None
         return MessageModel.parse_raw(raw)
 
-    def message_set(self, message: MessageModel, conversation_id: UUID) -> None:
+    def message_get_index(
+        self, message_indexs: List[IndexMessageModel]
+    ) -> List[MessageModel]:
+        keys = [
+            self._message_cache_key(message_index.conversation_id, message_index.id)
+            for message_index in message_indexs
+        ]
+        raws = client.mget(keys)
+        if raws is None:
+            return []
+        messages = []
+        for raw in raws:
+            if raw is None:
+                continue
+            try:
+                messages.append(MessageModel.parse_raw(raw))
+            except Exception:
+                logger.warn("Error parsing message", exc_info=True)
+        return messages
+
+    def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
         client.set(
-            self._message_cache_key(conversation_id, message.id),
+            self._message_cache_key(message.conversation_id, message.id),
             message.json(),
             ex=expiry,
         )

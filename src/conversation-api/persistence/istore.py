@@ -1,9 +1,15 @@
-from models.conversation import GetConversationModel, StoredConversationModel
-from models.message import MessageModel, IndexMessageModel
-from models.user import UserModel
 from abc import ABC, abstractmethod
+from enum import Enum
+from models.conversation import GetConversationModel, StoredConversationModel
+from models.message import MessageModel, IndexMessageModel, StoredMessageModel
+from models.user import UserModel
 from typing import List, Union
 from uuid import UUID
+
+
+class StoreImplementation(str, Enum):
+    COSMOS = "cosmos"
+    REDIS = "redis"
 
 
 class IStore(ABC):
@@ -46,7 +52,7 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def message_set(self, message: MessageModel, conversation_id: UUID) -> None:
+    def message_set(self, message: StoredMessageModel) -> None:
         pass
 
     @abstractmethod

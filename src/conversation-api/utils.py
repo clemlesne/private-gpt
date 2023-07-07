@@ -65,14 +65,19 @@ def get_config(
 
     # Convert to res_type
     try:
-        if validate is bool:
+        if validate is bool: # bool
             res = res.strip().lower() == "true"
-        elif validate is int:
+        elif validate is int: # int
             res = int(res)
-        elif validate is float:
+        elif validate is float: # float
             res = float(res)
-        elif validate is UUID:
+        elif validate is UUID: # UUID
             res = UUID(res)
+        else: # Enum
+            try:
+                res = validate(res)
+            except Exception:
+                pass
     except Exception:
         raise ConfigNotFound(
             f'Cannot convert config "{section}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'

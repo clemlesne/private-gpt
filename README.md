@@ -7,8 +7,10 @@ Includes:
 - Can be configured to use any Azure OpenAI completion API, including GPT-4
 - Dark theme for better readability
 - Dead simple interface
+- Deployable on any Kubernetes cluster, with its Helm chart
 - Manage users effortlessly with OpenID Connect
 - More than 150 tones and personalities (accountant, advisor, debater, excel sheet, instructor, logistician, etc.) to better help employees in their specific daily tasks
+- Plug and play with any storage system, including [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/), [Redis](https://github.com/redis/redis) and [Qdrant](https://github.com/qdrant/qdrant).
 - Possibility to send temporary messages, for confidentiality
 - Salable system based on stateless APIs, cache, progressive web app and events
 - Search engine for conversations, based on semantic similarity and AI embeddings
@@ -25,6 +27,14 @@ Create a local configuration file, a file named `config.toml` at the root of the
 ```toml
 # config.toml
 # Values are for example only, you should change them
+[persistence]
+# Enum: "qdrant"
+search = "qdrant"
+# Enum: "redis", "cosmos"
+store = "cosmos"
+# Enum: "redis"
+stream = "redis"
+
 [openai]
 ada_deploy_id = "ada"
 ada_max_tokens = 2049
@@ -53,6 +63,11 @@ host = "localhost"
 [redis]
 db = 0
 host = "localhost"
+
+[cosmos]
+# Containers "conversation" (/user_id), "message" (/conversation_id) and "user" (/dummy) must exist
+url = "https://private-gpt.documents.azure.com:443"
+database = "private-gpt"
 ```
 
 Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.
