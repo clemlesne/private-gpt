@@ -31,7 +31,7 @@ class QdrantSearch(ISearch):
     def __init__(self, store: IStore):
         super().__init__(store)
 
-        self._loop = asyncio.new_event_loop()
+        self._loop = asyncio.get_running_loop()
 
         # Ensure collection exists
         try:

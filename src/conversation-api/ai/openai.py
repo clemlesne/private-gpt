@@ -16,6 +16,8 @@ import openai
 ###
 
 logger = build_logger(__name__)
+loop = asyncio.get_running_loop()
+
 
 ###
 # Init OpenIA
@@ -42,7 +44,7 @@ openai.api_base = get_config("openai", "api_base", str, required=True)
 openai.api_type = "azure_ad"
 openai.api_version = "2023-05-15"
 logger.info(f"Using Aure private service ({openai.api_base})")
-asyncio.create_task(refresh_oai_token_background())
+loop.create_task(refresh_oai_token_background())
 
 OAI_GPT_DEPLOY_ID = get_config("openai", "gpt_deploy_id", str, required=True)
 OAI_GPT_MAX_TOKENS = get_config("openai", "gpt_max_tokens", int, required=True)

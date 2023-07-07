@@ -37,6 +37,7 @@ import csv
 ###
 
 logger = build_logger(__name__)
+loop = asyncio.get_running_loop()
 
 ###
 # Init persistence
@@ -365,10 +366,10 @@ async def message_post(
     messages = store.message_list(conversation.id)
 
     if conversation.title is None:
-        asyncio.create_task(_guess_title_background(conversation, messages, current_user))
+        loop.create_task(_guess_title_background(conversation, messages, current_user))
 
     # Execute the message completion
-    asyncio.create_task(_generate_completion_background(conversation, messages, current_user))
+    loop.create_task(_generate_completion_background(conversation, messages, current_user))
 
     return GetConversationModel(
         **conversation.dict(),
