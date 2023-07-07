@@ -69,7 +69,7 @@ class CosmosStore(IStore):
         conversation_client.upsert_item(body=self._sanitize_before_insert(conversation.dict()))
 
     def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
-        query = f"SELECT * FROM c WHERE c.user_id = '{user_id}'"
+        query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         items = conversation_client.query_items(query=query, enable_cross_partition_query=True)
         return [StoredConversationModel(**item) for item in items]
 
@@ -104,7 +104,7 @@ class CosmosStore(IStore):
         })
 
     def message_list(self, conversation_id: UUID) -> List[MessageModel]:
-        query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}'"
+        query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
         items = message_client.query_items(query=query, enable_cross_partition_query=True)
         return [MessageModel(**item) for item in items]
 
