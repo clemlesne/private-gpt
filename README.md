@@ -49,7 +49,7 @@ max_length = 1000
 
 [logging]
 app_level = "DEBUG"
-sys_level = "INFO"
+sys_level = "WARN"
 
 [oidc]
 algorithms = ["RS256"]
