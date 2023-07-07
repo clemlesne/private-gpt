@@ -3,15 +3,14 @@ from utils import build_logger, get_config
 
 # Import misc
 from .istore import IStore
-from azure.cosmos import CosmosClient, PartitionKey, ConsistencyLevel
-from azure.cosmos.database import DatabaseProxy
-from azure.cosmos.exceptions import CosmosHttpResponseError, CosmosResourceExistsError
+from azure.cosmos import CosmosClient, ConsistencyLevel
+from azure.cosmos.exceptions import CosmosHttpResponseError
 from azure.identity import DefaultAzureCredential
 from datetime import datetime
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
-from models.user import UserModel
 from models.usage import UsageModel
+from models.user import UserModel
 from typing import (Any, Dict, List, Union)
 from uuid import UUID
 
@@ -111,7 +110,7 @@ class CosmosStore(IStore):
     def usage_set(self, usage: UsageModel) -> None:
         usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
 
-    def _sanitize_before_insert(self, item: dict) -> Dict[str, Union[str, int, float, bool]]:
+    def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:
         for key, value in item.items():
             if isinstance(value, UUID):
                 item[key] = str(value)
