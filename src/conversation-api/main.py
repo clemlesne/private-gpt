@@ -130,7 +130,7 @@ def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
 AI_PROMPTS = get_ai_prompt()
 
 AI_CONVERSATION_DEFAULT_PROMPT = f"""
-Today, we are the {datetime.now()}.
+Today, we are the {datetime.utcnow()}.
 
 You MUST:
 - Cite sources and examples as footnotes (example: [^1])
@@ -290,7 +290,7 @@ async def message_post(
         message = StoredMessageModel(
             content=content,
             conversation_id=conversation_id,
-            created_at=datetime.now(),
+            created_at=datetime.utcnow(),
             id=uuid4(),
             role=MessageRole.USER,
             secret=secret,
@@ -303,7 +303,7 @@ async def message_post(
         usage = UsageModel(
             ai_model=OAI_GPT_MODEL,
             conversation_id=conversation_id,
-            created_at=datetime.now(),
+            created_at=datetime.utcnow(),
             id=uuid4(),
             tokens=tokens_nb,
             user_id=current_user.id,
@@ -332,7 +332,7 @@ async def message_post(
 
         # Build conversation
         conversation = StoredConversationModel(
-            created_at=datetime.now(),
+            created_at=datetime.utcnow(),
             id=uuid4(),
             prompt=AI_PROMPTS[prompt_id] if prompt_id else None,
             user_id=current_user.id,
@@ -343,7 +343,7 @@ async def message_post(
         usage = UsageModel(
             ai_model=OAI_GPT_MODEL,
             conversation_id=conversation.id,
-            created_at=datetime.now(),
+            created_at=datetime.utcnow(),
             id=uuid4(),
             tokens=tokens_nb,
             user_id=current_user.id,
@@ -354,7 +354,7 @@ async def message_post(
         message = StoredMessageModel(
             content=content,
             conversation_id=conversation.id,
-            created_at=datetime.now(),
+            created_at=datetime.utcnow(),
             id=uuid4(),
             role=MessageRole.USER,
             secret=secret,
@@ -448,7 +448,7 @@ async def _generate_completion_background(
     res_message = StoredMessageModel(
         content=content_full,
         conversation_id=conversation.id,
-        created_at=datetime.now(),
+        created_at=datetime.utcnow(),
         id=uuid4(),
         role=MessageRole.ASSISTANT,
         secret=last_message.secret,
@@ -472,7 +472,7 @@ async def _message_index(message: StoredMessageModel, current_user: UserModel) -
     usage = UsageModel(
         ai_model=OAI_ADA_MODEL,
         conversation_id=message.conversation_id,
-        created_at=datetime.now(),
+        created_at=datetime.utcnow(),
         id=uuid4(),
         tokens=oai_tokens_nb(message.content, OAI_ADA_MODEL),
         user_id=current_user.id,

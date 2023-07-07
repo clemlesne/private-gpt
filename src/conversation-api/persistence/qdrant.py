@@ -52,7 +52,7 @@ class QdrantSearch(ISearch):
         vector = await openai.vector_from_text(
             textwrap.dedent(
                 f"""
-                Today, we are the {datetime.now()}. {q.capitalize()}
+                Today, we are the {datetime.utcnow()}. {q.capitalize()}
             """
             ),
             user_id,
