@@ -35,6 +35,9 @@ store = "cosmos"
 # Enum: "redis"
 stream = "redis"
 
+[api]
+root_path = ""
+
 [openai]
 ada_deploy_id = "ada"
 ada_max_tokens = 2049
