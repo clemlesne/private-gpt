@@ -7,6 +7,7 @@ from .istream import IStream
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.user import UserModel
+from models.usage import UsageModel
 from redis import Redis
 from typing import (Any, AsyncGenerator, Callable, Awaitable, List, Literal, Optional, Union)
 from uuid import UUID
@@ -18,11 +19,12 @@ SECRET_TTL_SECS = 60 * 60 * 24  # 1 day
 
 # Configuration
 CONVERSATION_PREFIX = "conversation"
-MESSAGE_PREFIX = "message"
 DB_HOST = get_config("redis", "host", str, required=True)
 DB_PORT = 6379
+MESSAGE_PREFIX = "message"
 STREAM_PREFIX = "stream"
 STREAM_STOPWORD = "STOP"
+USAGE_PREFIX = "usage"
 USER_PREFIX = "user"
 
 # Redis client
@@ -129,6 +131,12 @@ class RedisStore(IStore):
         messages.sort(key=lambda x: x.created_at)
         return messages
 
+    def usage_set(self, usage: UsageModel) -> None:
+        client.set(self._usage_cache_key(usage.user_id), usage.json())
+
+    def _usage_cache_key(self, user_id: UUID) -> str:
+        return f"{USAGE_PREFIX}:{user_id.hex}"
+
     def _conversation_cache_key(
         self, user_id: UUID, conversation_id: Optional[UUID] = None
     ) -> str:
@@ -188,7 +196,8 @@ class RedisStream(IStream):
             if message_loop:
                 yield message_loop
 
-            await asyncio.sleep(0.25)
+            # 8 messages per second, enough for give a good user experience, but not too much for not using the thread too much
+            await asyncio.sleep(0.125)
 
         # Send the end of stream message
         yield STREAM_STOPWORD

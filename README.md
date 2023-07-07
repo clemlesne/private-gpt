@@ -10,11 +10,12 @@ Includes:
 - Deployable on any Kubernetes cluster, with its Helm chart
 - Manage users effortlessly with OpenID Connect
 - More than 150 tones and personalities (accountant, advisor, debater, excel sheet, instructor, logistician, etc.) to better help employees in their specific daily tasks
-- Plug and play with any storage system, including [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/), [Redis](https://github.com/redis/redis) and [Qdrant](https://github.com/qdrant/qdrant).
+- Plug and play storage system, including [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/), [Redis](https://github.com/redis/redis) and [Qdrant](https://github.com/qdrant/qdrant).
 - Possibility to send temporary messages, for confidentiality
 - Salable system based on stateless APIs, cache, progressive web app and events
 - Search engine for conversations, based on semantic similarity and AI embeddings
-- Unlimited conversation history
+- Unlimited conversation history and number of users
+- Usage tracking, for better understanding of your employees' usage
 
 ![Application screenshot](docs/main.png)
 
@@ -35,6 +36,9 @@ store = "cosmos"
 # Enum: "redis"
 stream = "redis"
 
+[api]
+root_path = ""
+
 [openai]
 ada_deploy_id = "ada"
 ada_max_tokens = 2049
@@ -49,7 +53,7 @@ max_length = 1000
 
 [logging]
 app_level = "DEBUG"
-sys_level = "INFO"
+sys_level = "WARN"
 
 [oidc]
 algorithms = ["RS256"]
@@ -65,7 +69,7 @@ db = 0
 host = "localhost"
 
 [cosmos]
-# Containers "conversation" (/user_id), "message" (/conversation_id) and "user" (/dummy) must exist
+# Containers "conversation" (/user_id), "message" (/conversation_id), "user" (/dummy), "usage" (/user_id) must exist
 url = "https://private-gpt.documents.azure.com:443"
 database = "private-gpt"
 ```

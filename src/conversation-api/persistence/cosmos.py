@@ -3,13 +3,13 @@ from utils import build_logger, get_config
 
 # Import misc
 from .istore import IStore
-from azure.cosmos import CosmosClient, PartitionKey, ConsistencyLevel
-from azure.cosmos.database import DatabaseProxy
-from azure.cosmos.exceptions import CosmosHttpResponseError, CosmosResourceExistsError
+from azure.cosmos import CosmosClient, ConsistencyLevel
+from azure.cosmos.exceptions import CosmosHttpResponseError
 from azure.identity import DefaultAzureCredential
 from datetime import datetime
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
+from models.usage import UsageModel
 from models.user import UserModel
 from typing import (Any, Dict, List, Union)
 from uuid import UUID
@@ -30,6 +30,7 @@ database = client.get_database_client(DB_NAME)
 conversation_client = database.get_container_client("conversation")
 message_client = database.get_container_client("message")
 user_client = database.get_container_client("user")
+usage_client = database.get_container_client("usage")
 logger.info(f'Connected to Cosmos DB at "{DB_URL}"')
 
 
@@ -67,7 +68,7 @@ class CosmosStore(IStore):
         conversation_client.upsert_item(body=self._sanitize_before_insert(conversation.dict()))
 
     def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
-        query = f"SELECT * FROM c WHERE c.user_id = '{user_id}'"
+        query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         items = conversation_client.query_items(query=query, enable_cross_partition_query=True)
         return [StoredConversationModel(**item) for item in items]
 
@@ -102,14 +103,21 @@ class CosmosStore(IStore):
         })
 
     def message_list(self, conversation_id: UUID) -> List[MessageModel]:
-        query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}'"
+        query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
         items = message_client.query_items(query=query, enable_cross_partition_query=True)
         return [MessageModel(**item) for item in items]
 
-    def _sanitize_before_insert(self, item: dict) -> Dict[str, Union[str, int, float, bool]]:
+    def usage_set(self, usage: UsageModel) -> None:
+        usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
+
+    def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:
         for key, value in item.items():
             if isinstance(value, UUID):
                 item[key] = str(value)
             elif isinstance(value, datetime):
                 item[key] = value.isoformat()
+            elif isinstance(value, dict):
+                item[key] = self._sanitize_before_insert(value)
+            elif isinstance(value, list):
+                item[key] = [self._sanitize_before_insert(i) for i in value]
         return item
