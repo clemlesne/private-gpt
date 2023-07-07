@@ -460,6 +460,14 @@ async def _completion_from_conversation(
 
 
 async def _message_index(message: StoredMessageModel, current_user: UserModel) -> None:
+    tokens_nb = oai_tokens_nb(message.content, OAI_ADA_MODEL)
+    if tokens_nb > OAI_ADA_MAX_TOKENS:
+        logger.info(f"Message ({tokens_nb}) too long for indexing")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Conversation history is too long",
+        )
+
     usage = UsageModel(
         ai_model=OAI_ADA_MODEL,
         conversation_id=message.conversation_id,
