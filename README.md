@@ -7,6 +7,7 @@ Includes:
 - Can be configured to use any Azure OpenAI completion API, including GPT-4
 - Dark theme for better readability
 - Dead simple interface
+- Deployable on any Kubernetes cluster, with its Helm chart
 - Manage users effortlessly with OpenID Connect
 - More than 150 tones and personalities (accountant, advisor, debater, excel sheet, instructor, logistician, etc.) to better help employees in their specific daily tasks
 - Plug and play with any storage system, including [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/), [Redis](https://github.com/redis/redis) and [Qdrant](https://github.com/qdrant/qdrant).
