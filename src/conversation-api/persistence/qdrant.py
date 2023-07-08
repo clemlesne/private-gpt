@@ -96,7 +96,7 @@ class QdrantSearch(ISearch):
     async def message_index(
         self, message: StoredMessageModel, user_id: UUID
     ) -> None:
-        logger.debug(f"Indexing message: {message.id}")
+        logger.debug(f'Indexing message "{message.id}"')
         self._loop.create_task(self._index_background(message, user_id))
 
     async def _index_background(
