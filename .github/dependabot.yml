@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: ""
+    target-branch: develop
+    schedule:
+      interval: daily
+  - package-ecosystem: pip
+    directory: src/conversation-api
+    target-branch: develop
+    schedule:
+      interval: daily
+  - package-ecosystem: docker
+    directory: src/conversation-api
+    target-branch: develop
+    schedule:
+      interval: daily
+  - package-ecosystem: npm
+    directory: src/conversation-ui
+    target-branch: develop
+    schedule:
+      interval: daily
+  - package-ecosystem: docker
+    directory: src/conversation-ui
+    target-branch: develop
+    schedule:
+      interval: daily
