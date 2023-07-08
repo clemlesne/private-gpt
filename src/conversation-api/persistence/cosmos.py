@@ -13,6 +13,7 @@ from models.usage import UsageModel
 from models.user import UserModel
 from typing import (Any, Dict, List, Union)
 from uuid import UUID
+import asyncio
 
 
 logger = build_logger(__name__)
@@ -35,6 +36,9 @@ logger.info(f'Connected to Cosmos DB at "{DB_URL}"')
 
 
 class CosmosStore(IStore):
+    def __init__(self):
+        self._loop = asyncio.get_running_loop()
+
     def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         query = f"SELECT * FROM c WHERE c.external_id = '{user_external_id}'"
         items = user_client.query_items(query=query, partition_key="dummy")
@@ -108,6 +112,10 @@ class CosmosStore(IStore):
         return [MessageModel(**item) for item in items]
 
     def usage_set(self, usage: UsageModel) -> None:
+        logger.debug(f'Usage set "{usage.id}"')
+        self._loop.create_task(self._usage_set_background(usage))
+
+    async def _usage_set_background(self, usage: UsageModel) -> None:
         usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
 
     def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:
