@@ -211,13 +211,13 @@ async def get_current_user(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     user = store.user_get(sub)
+    if not user:
+        user = UserModel(external_id=sub, id=uuid4())
+        store.user_set(user)
+
     logger.info(f'User "{user.id}" logged in')
     logger.debug(f"JWT: {jwt}")
-    if user:
-        return user
 
-    user = UserModel(external_id=sub, id=uuid4())
-    store.user_set(user)
     return user
 
 
