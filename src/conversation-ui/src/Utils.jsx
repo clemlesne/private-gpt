@@ -7,7 +7,7 @@ const client = axios.create({
   baseURL: 'http://127.0.0.1:8081',
 });
 axiosRetry(client, {
-  retries: 12,
+  retries: 5, // 5 retries + 1 attempt = 6 requests
   retryDelay: axiosRetry.exponentialDelay,
   shouldResetTimeout: true,
   retryCondition: (err) => {
