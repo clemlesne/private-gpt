@@ -46,8 +46,8 @@ function Conversation() {
           }, {});
           setPrompts(localPrompts);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch((err) => {
+          console.error(err);
         });
     };
 
@@ -97,8 +97,8 @@ function Conversation() {
           if (!res.data) return;
           setConversation(res.data);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch((err) => {
+          console.error(err);
         });
     };
 
@@ -153,7 +153,7 @@ function Conversation() {
 
           // Then, fetch the message
           const lastMessage = res.data.messages[res.data.messages.length - 1];
-          let stream = "";
+          let content = "";
           const source = new EventSource(
             `${client.defaults.baseURL}/message/${lastMessage.id}?token=${lastMessage.token}`
           );
@@ -164,13 +164,13 @@ function Conversation() {
             }
 
             // Update the last message
-            stream += e.data;
+            content += e.data;
             replaceLastMessage({
-              content: stream,
+              content,
               created_at: new Date().toISOString(),
               id: uuidv4(),
               role: "assistant",
-              secret: secret,
+              secret,
             });
           };
           source.onerror = (e) => {
@@ -186,7 +186,7 @@ function Conversation() {
               error: true,
               id: uuidv4(),
               role: "assistant",
-              secret: secret,
+            secret,
             });
           } else { // Catch other errors
             console.error(error);
@@ -201,14 +201,14 @@ function Conversation() {
         created_at: new Date().toISOString(),
         id: uuidv4(),
         role: "user",
-        secret: secret,
+        secret,
       },
       {
         content: "Loading…",
         created_at: new Date().toISOString(),
         id: uuidv4(),
         role: "assistant",
-        secret: secret,
+        secret,
       },
     ]);
 

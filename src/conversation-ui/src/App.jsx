@@ -2,9 +2,8 @@ import "./app.scss";
 import { client } from "./Utils";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "oidc-react";
-import { useNavigate } from "react-router-dom";
 import { useState, useEffect, createContext } from "react";
 import Header from "./Header";
 import useLocalStorageState from "use-local-storage-state";
@@ -60,8 +59,8 @@ function App() {
           navigate(`/conversation/${found}`);
         }
       })
-      .catch((error) => {
-        console.error(error);
+      .catch((err) => {
+        console.error(err);
       });
   };
 
