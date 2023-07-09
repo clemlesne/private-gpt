@@ -177,20 +177,30 @@ function Conversation() {
             if (e.eventPhase === EventSource.CLOSED) cleanup();
           };
         })
-        .catch((error) => {
-          // Catch 400 errors
-          if (error.response && error.response.status == 400) {
-            replaceLastMessage({
-              content: error.response.data.detail,
-              created_at: new Date().toISOString(),
-              error: true,
-              id: uuidv4(),
-              role: "assistant",
-            secret,
-            });
-          } else { // Catch other errors
-            console.error(error);
+        .catch((err) => {
+          let content;
+          if (err.response?.status == 400) {
+            content = err.response.data.detail;
+          } else if (err.request?.statusText) {
+            content = err.request.statusText;
+            console.error(err);
+          } else if (err.message) {
+            content = err.message;
+            console.error(err);
           }
+
+          // Capitalize the first letter only
+          content = content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
+
+          replaceLastMessage({
+            content,
+            created_at: new Date().toISOString(),
+            error: true,
+            id: uuidv4(),
+            role: "assistant",
+            secret,
+          });
+
           setLoading(false);
         });
     };
