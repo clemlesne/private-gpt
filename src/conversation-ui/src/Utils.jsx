@@ -10,8 +10,8 @@ axiosRetry(client, {
   retries: 12,
   retryDelay: axiosRetry.exponentialDelay,
   shouldResetTimeout: true,
-  retryCondition: (error) => {
-    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response.status == 429;
+  retryCondition: (err) => {
+    return axiosRetry.isNetworkOrIdempotentRequestError(err) || (err.response?.status == 429);
   }
 });
 
