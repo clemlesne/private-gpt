@@ -106,17 +106,25 @@ function Conversation() {
   }, [auth, conversationId]);
 
   const sendMessage = () => {
+    // Create a locache state cache, as state props wont't be updated until the next render
     let localMessages = [...conversation.messages];
 
+    // Append the message to the list
     const addMessages = (newMessages) => {
+      // Update local state cache
       localMessages = [...localMessages, ...newMessages];
+      // Update state
       setConversation({ ...conversation, messages: localMessages });
     };
 
-    const replaceLastMessage = (newMessage) => {
+    // Keep the same id, avoid React to re-render the whole list
+    const updateLastMessage = (newMessage) => {
       const tmp = [...localMessages];
-      tmp[tmp.length - 1] = newMessage;
+      // Update the last message with the new content
+      tmp[tmp.length - 1] = Object.assign({}, tmp[tmp.length - 1], newMessage);
+      // Update local state cache
       localMessages = tmp;
+      // Update state
       setConversation({ ...conversation, messages: localMessages });
     };
 
@@ -165,12 +173,8 @@ function Conversation() {
 
             // Update the last message
             content += e.data;
-            replaceLastMessage({
+            updateLastMessage({
               content,
-              created_at: new Date().toISOString(),
-              id: uuidv4(),
-              role: "assistant",
-              secret,
             });
           };
           source.onerror = (e) => {
@@ -192,13 +196,9 @@ function Conversation() {
           // Capitalize the first letter only
           content = content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
 
-          replaceLastMessage({
+          updateLastMessage({
             content,
-            created_at: new Date().toISOString(),
             error: true,
-            id: uuidv4(),
-            role: "assistant",
-            secret,
           });
 
           setLoading(false);
