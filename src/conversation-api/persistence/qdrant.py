@@ -103,7 +103,7 @@ class QdrantSearch(ISearch):
             except Exception:
                 logger.warn("Error parsing index message", exc_info=True)
 
-        messages = self.store.message_get_index(index_messages)
+        messages = await self.store.message_get_index(index_messages)
 
         return SearchModel[MessageModel](
             answers=[
