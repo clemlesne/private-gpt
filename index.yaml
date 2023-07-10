@@ -2,6 +2,15 @@ apiVersion: v1
 entries:
   private-gpt:
   - apiVersion: v1
+    appVersion: 0.4.1
+    created: "2023-07-10T22:24:42.254783692Z"
+    description: Private GPT is a local version of Chat GPT, using Azure OpenAI.
+    digest: 91db08922d5053bfe02558673f5afb465449205b828b2e795527ba8d331921e5
+    name: private-gpt
+    urls:
+    - https://github.com/clemlesne/private-gpt/releases/download/private-gpt-0.4.1/private-gpt-0.4.1.tgz
+    version: 0.4.1
+  - apiVersion: v1
     appVersion: 0.4.0
     created: "2023-07-10T21:26:04.386207304Z"
     description: Private GPT is a local version of Chat GPT, using Azure OpenAI.
@@ -46,4 +55,4 @@ entries:
     urls:
     - https://github.com/clemlesne/private-gpt/releases/download/private-gpt-0.1.0/private-gpt-0.1.0.tgz
     version: 0.1.0
-generated: "2023-07-10T21:26:04.386231405Z"
+generated: "2023-07-10T22:24:42.254897295Z"
