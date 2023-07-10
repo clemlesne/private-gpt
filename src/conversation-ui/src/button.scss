@@ -10,6 +10,10 @@
     background-color: var(--background-active);
   }
 
+  &.button--large {
+    font-size: 125%;
+  }
+
   // Small width
   @media (max-width: 56rem) {
     .button__text {

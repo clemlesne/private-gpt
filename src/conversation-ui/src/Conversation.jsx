@@ -293,10 +293,11 @@ function Conversation() {
             </div>
             {!auth.userData && (
               <Button
-                onClick={() => auth.signIn()}
                 active={true}
                 emoji="🔑"
+                large={true}
                 loading={auth.isLoading}
+                onClick={() => auth.signIn()}
                 text="Signin"
               />
             )}
