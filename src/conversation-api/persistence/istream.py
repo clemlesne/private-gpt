@@ -14,6 +14,8 @@ class IStream(ABC):
     async def readiness(self) -> ReadinessStatus:
         pass
 
+    @abstractmethod
+    async def push(self, content: str, token: UUID) -> None:
         pass
 
     @abstractmethod
@@ -23,5 +25,5 @@ class IStream(ABC):
         pass
 
     @abstractmethod
-    def clean(self, token: UUID) -> None:
+    async def clean(self, token: UUID) -> None:
         pass

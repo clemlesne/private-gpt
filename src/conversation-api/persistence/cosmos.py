@@ -50,6 +50,7 @@ class CosmosStore(IStore):
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
+    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         query = f"SELECT * FROM c WHERE c.external_id = '{user_external_id}'"
         items = user_client.query_items(query=query, partition_key="dummy")
         try:
@@ -58,13 +59,13 @@ class CosmosStore(IStore):
         except StopIteration:
             return None
 
-    def user_set(self, user: UserModel) -> None:
-        user_client.upsert_item(body={
+    async def user_set(self, user: UserModel) -> None:
+        user_client.create_item(body={
             **self._sanitize_before_insert(user.dict()),
             "dummy": "dummy",
         })
 
-    def conversation_get(
+    async def conversation_get(
         self, conversation_id: UUID, user_id: UUID
     ) -> Union[StoredConversationModel, None]:
         try:
@@ -75,18 +76,18 @@ class CosmosStore(IStore):
         except CosmosHttpResponseError:
             return None
 
-    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+    async def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         return self.conversation_get(conversation_id, user_id) is not None
 
-    def conversation_set(self, conversation: StoredConversationModel) -> None:
-        conversation_client.upsert_item(body=self._sanitize_before_insert(conversation.dict()))
+    async def conversation_set(self, conversation: StoredConversationModel) -> None:
+        conversation_client.create_item(body=self._sanitize_before_insert(conversation.dict()))
 
-    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         items = conversation_client.query_items(query=query, enable_cross_partition_query=True)
         return [StoredConversationModel(**item) for item in items]
 
-    def message_get(
+    async def message_get(
         self, message_id: UUID, conversation_id: UUID
     ) -> Union[MessageModel, None]:
         try:
@@ -95,7 +96,7 @@ class CosmosStore(IStore):
         except CosmosHttpResponseError:
             return None
 
-    def message_get_index(
+    async def message_get_index(
         self, message_indexs: List[IndexMessageModel]
     ) -> List[MessageModel]:
         messages = []
@@ -109,24 +110,24 @@ class CosmosStore(IStore):
                 pass
         return messages
 
-    def message_set(self, message: StoredMessageModel) -> None:
+    async def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
-        message_client.upsert_item(body={
+        message_client.create_item(body={
             **self._sanitize_before_insert(message.dict()),
             "_ts": expiry, # TTL in seconds
         })
 
-    def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
         items = message_client.query_items(query=query, enable_cross_partition_query=True)
         return [MessageModel(**item) for item in items]
 
-    def usage_set(self, usage: UsageModel) -> None:
+    async def usage_set(self, usage: UsageModel) -> None:
         logger.debug(f'Usage set "{usage.id}"')
         self._loop.create_task(self._usage_set_background(usage))
 
     async def _usage_set_background(self, usage: UsageModel) -> None:
-        usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
+        usage_client.create_item(body=self._sanitize_before_insert(usage.dict()))
 
     def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:
         for key, value in item.items():

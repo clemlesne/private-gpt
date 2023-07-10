@@ -237,10 +237,10 @@ async def get_current_user(
         logger.error("Token does not contain a sub claim")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    user = store.user_get(sub)
+    user = await store.user_get(sub)
     if not user:
         user = UserModel(external_id=sub, id=uuid4())
-        store.user_set(user)
+        await store.user_set(user)
 
     logger.info(f'User "{user.id}" logged in')
     logger.debug(f"JWT: {jwt}")
@@ -257,13 +257,13 @@ async def prompt_list() -> ListPromptsModel:
 async def conversation_get(
     id: UUID, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> GetConversationModel:
-    conversation = store.conversation_get(id, current_user.id)
+    conversation = await store.conversation_get(id, current_user.id)
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
-    messages = store.message_list(conversation.id)
+    messages = await store.message_list(conversation.id)
     return GetConversationModel(
         **conversation.dict(),
         messages=messages,
@@ -274,7 +274,7 @@ async def conversation_get(
 async def conversation_list(
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> ListConversationsModel:
-    conversations = store.conversation_list(current_user.id)
+    conversations = await store.conversation_list(current_user.id)
     return ListConversationsModel(conversations=conversations)
 
 
@@ -307,7 +307,7 @@ async def message_post(
         logger.info(
             f"Adding message to conversation (conversation_id={conversation_id})"
         )
-        if not store.conversation_exists(conversation_id, current_user.id):
+        if not await store.conversation_exists(conversation_id, current_user.id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
@@ -327,8 +327,8 @@ async def message_post(
         tokens_nb = await _validate_message_length(message=message)
 
         # Update conversation
-        store.message_set(message)
-        conversation = store.conversation_get(conversation_id, current_user.id)
+        await store.message_set(message)
+        conversation = await store.conversation_get(conversation_id, current_user.id)
         if not conversation:
             logger.warn("ACID error: conversation not found after testing existence")
             raise HTTPException(
@@ -347,7 +347,7 @@ async def message_post(
             user_id=current_user.id,
             prompt_name=conversation.prompt.name if conversation.prompt else None,
         )
-        store.usage_set(usage)
+        await store.usage_set(usage)
     else:
         # Test prompt ID if provided
         if prompt_id and prompt_id not in AI_PROMPTS:
@@ -365,7 +365,7 @@ async def message_post(
             prompt=AI_PROMPTS[prompt_id] if prompt_id else None,
             user_id=current_user.id,
         )
-        store.conversation_set(conversation)
+        await store.conversation_set(conversation)
 
         # Build usage
         usage = UsageModel(
@@ -377,7 +377,7 @@ async def message_post(
             user_id=current_user.id,
             prompt_name=conversation.prompt.name if conversation.prompt else None,
         )
-        store.usage_set(usage)
+        await store.usage_set(usage)
 
         # Build message
         message = StoredMessageModel(
@@ -389,10 +389,10 @@ async def message_post(
             secret=secret,
             token=uuid4(),
         )
-        store.message_set(message)
+        await store.message_set(message)
         await _message_index(message, current_user, conversation.prompt)
 
-    messages = store.message_list(conversation.id)
+    messages = await store.message_list(conversation.id)
 
     if conversation.title is None:
         loop.create_task(_guess_title_background(conversation, messages, current_user))
@@ -412,17 +412,17 @@ async def message_get(id: UUID, token: UUID, req: Request) -> EventSourceRespons
 
 
 async def _read_message_sse(req: Request, message_id: UUID):
-    def clean():
+    async def clean():
         logger.info(f"Cleared message cache (message_id={message_id})")
-        stream.clean(message_id)
+        await stream.clean(message_id)
 
-    def client_disconnect():
+    async def client_disconnect():
         logger.info(f"Disconnected from client (via refresh/close) (req={req.client})")
-        clean()
+        await clean()
 
     async def loop_func() -> bool:
         if await req.is_disconnected():
-            client_disconnect()
+            await client_disconnect()
             return True
         return False
 
@@ -431,7 +431,7 @@ async def _read_message_sse(req: Request, message_id: UUID):
             yield data
     except Exception:
         logger.exception("Error while streaming message", exc_info=True)
-        clean()
+        await clean()
 
 
 @api.get("/message", description="No moderation check, as the content is not stored.")
@@ -470,7 +470,7 @@ async def _generate_completion_background(
     async for content in openai.completion_stream(completion_messages, current_user):
         logger.debug(f"Completion result: {content}")
         # Add content to the redis stream cache_key
-        stream.push(content, last_message.token)
+        await stream.push(content, last_message.token)
         content_full += content
 
     # First, store the updated conversation in Redis
@@ -482,11 +482,11 @@ async def _generate_completion_background(
         role=MessageRole.ASSISTANT,
         secret=last_message.secret,
     )
-    store.message_set(res_message)
+    await store.message_set(res_message)
     await _message_index(res_message, current_user, conversation.prompt)
 
     # Then, send the end of stream message
-    stream.push(STREAM_STOPWORD, last_message.token)
+    await stream.push(STREAM_STOPWORD, last_message.token)
 
 
 async def _message_index(message: StoredMessageModel, current_user: UserModel, prompt: Optional[StoredPromptModel]) -> None:
@@ -507,7 +507,7 @@ async def _message_index(message: StoredMessageModel, current_user: UserModel, p
         user_id=current_user.id,
         prompt_name=prompt.name if prompt else None,
     )
-    store.usage_set(usage)
+    await store.usage_set(usage)
     await index.message_index(message, current_user.id)
 
 
@@ -520,7 +520,7 @@ async def _validate_message_length(
     elif message:
         tokens_nb = oai_tokens_nb(
             message.content
-            + "".join([m.content for m in store.message_list(message.conversation_id)]),
+            + "".join([m.content for m in await store.message_list(message.conversation_id)]),
             OAI_GPT_MODEL,
         )
     else:
@@ -558,7 +558,7 @@ async def _guess_title_background(
 
     # Store the updated conversation in Redis
     conversation.title = content
-    store.conversation_set(conversation)
+    await store.conversation_set(conversation)
 
 
 # Instrument FastAPI with OpenTelemetry

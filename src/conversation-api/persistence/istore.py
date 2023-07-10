@@ -20,47 +20,51 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def user_set(self, user: UserModel) -> None:
+    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         pass
 
     @abstractmethod
-    def conversation_get(
+    async def user_set(self, user: UserModel) -> None:
+        pass
+
+    @abstractmethod
+    async def conversation_get(
         self, conversation_id: UUID, user_id: UUID
     ) -> Union[GetConversationModel, None]:
         pass
 
     @abstractmethod
-    def message_get_index(
+    async def message_get_index(
         self, messages: List[IndexMessageModel]
     ) -> List[MessageModel]:
         pass
 
     @abstractmethod
-    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+    async def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         pass
 
     @abstractmethod
-    def conversation_set(self, conversation: StoredConversationModel) -> None:
+    async def conversation_set(self, conversation: StoredConversationModel) -> None:
         pass
 
     @abstractmethod
-    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         pass
 
     @abstractmethod
-    def message_get(
+    async def message_get(
         self, message_id: UUID, conversation_id: UUID
     ) -> Union[MessageModel, None]:
         pass
 
     @abstractmethod
-    def message_set(self, message: StoredMessageModel) -> None:
+    async def message_set(self, message: StoredMessageModel) -> None:
         pass
 
     @abstractmethod
-    def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         pass
 
     @abstractmethod
-    def usage_set(self, usage: UsageModel) -> None:
+    async def usage_set(self, usage: UsageModel) -> None:
         pass
