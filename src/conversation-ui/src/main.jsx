@@ -52,6 +52,8 @@ const oidcConfig = {
     router.navigate("/");
   },
   authority: "https://login.microsoftonline.com/common/v2.0",
+  autoSignIn: false, // Not automatically sign in, it is perceived as weird for users to be signed in without clicking a button
+  autoSignOut: false, // Not automatically sign out, it is perceived as weird for users to be signed out "randomly"
   clientId: "e9d5f20f-7f14-4204-a9a2-0d91d6af5c82",
   redirectUri: "https://127.0.0.1:8080/auth",
   scope: "openid profile email",
