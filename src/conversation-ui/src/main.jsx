@@ -8,6 +8,7 @@ import Conversation from "./Conversation";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import Search from "./Search";
+import Auth from "./Auth";
 
 const router = createBrowserRouter([
   {
@@ -26,12 +27,12 @@ const router = createBrowserRouter([
         path: "search",
         element: <Search />,
       },
+      {
+        path: "auth",
+        element: <Auth />,
+      },
     ],
-  },
-  {
-    element: null,
-    path: "/auth",
-  },
+  }
 ]);
 
 const oidcConfig = {
