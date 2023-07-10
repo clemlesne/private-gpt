@@ -1,5 +1,5 @@
 # Import utils
-from utils import build_logger, get_config
+from utils import (build_logger, get_config, AZ_CREDENTIAL)
 
 # Import misc
 from .istore import IStore
@@ -25,8 +25,7 @@ DB_URL = get_config("cosmos", "url", str, required=True)
 DB_NAME = get_config("cosmos", "database", str, required=True)
 
 # Cosmos DB Client
-credential = DefaultAzureCredential()
-client = CosmosClient(url=DB_URL, credential=credential, consistency_level=ConsistencyLevel.Session)
+client = CosmosClient(url=DB_URL, credential=AZ_CREDENTIAL, consistency_level=ConsistencyLevel.Session)
 database = client.get_database_client(DB_NAME)
 conversation_client = database.get_container_client("conversation")
 message_client = database.get_container_client("message")
