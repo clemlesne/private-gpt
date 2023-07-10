@@ -1,5 +1,5 @@
 # Import utils
-from utils import build_logger, get_config
+from utils import (build_logger, get_config)
 
 # Import misc
 from .isearch import ISearch

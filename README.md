@@ -11,6 +11,7 @@ Includes:
 - Dead simple interface
 - Deployable on any Kubernetes cluster, with its Helm chart
 - Manage users effortlessly with OpenID Connect
+- Monitoring with Azure App Insights (logs, traces, user behaviors)
 - More than 150 tones and personalities (accountant, advisor, debater, excel sheet, instructor, logistician, etc.) to better help employees in their specific daily tasks
 - Plug and play storage system, including [Azure Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/), [Redis](https://github.com/redis/redis) and [Qdrant](https://github.com/qdrant/qdrant).
 - Possibility to send temporary messages, for confidentiality
@@ -29,7 +30,7 @@ Create a local configuration file, a file named `config.toml` at the root of the
 
 ```toml
 # config.toml
-# Values are for example only, you should change them
+# /!\ All the file values are for example, you must change them
 [persistence]
 # Enum: "qdrant"
 search = "qdrant"
@@ -40,6 +41,9 @@ stream = "redis"
 
 [api]
 root_path = ""
+
+[appinsights]
+connection_str = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com"
 
 [openai]
 ada_deploy_id = "ada"

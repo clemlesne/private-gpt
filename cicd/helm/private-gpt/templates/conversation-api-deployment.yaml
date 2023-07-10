@@ -45,13 +45,21 @@ spec:
             - name: config
               mountPath: /app/config.toml
               subPath: config.toml
+            - name: tmp
+              mountPath: /app/tmp
           env:
             - name: PG_ACS_API_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "private-gpt.fullname" . }}-conversation-api
                   key: PG_ACS_API_TOKEN
+            - name: TMPDIR
+              value: /app/tmp
       volumes:
+        # Store app configuration
         - name: config
           configMap:
             name: {{ include "private-gpt.fullname" . }}-conversation-api
+        # Store Azure App Insight telemetry buffer
+        - name: tmp
+          emptyDir: {}

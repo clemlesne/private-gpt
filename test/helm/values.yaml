@@ -1,5 +1,7 @@
 ingress:
   host: example.com
+appinsights:
+  connection_str: InstrumentationKey=00000000-0000-0000-0000-000000000000
 api:
   acs:
     base: example.com

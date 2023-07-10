@@ -4,7 +4,22 @@ from dotenv import load_dotenv, find_dotenv
 load_dotenv(find_dotenv())
 
 # Import modules
+from azure.identity import DefaultAzureCredential
+from azure.monitor.opentelemetry.exporter import AzureMonitorLogExporter, AzureMonitorMetricExporter, AzureMonitorTraceExporter
 from fastapi import HTTPException, status
+from opentelemetry import trace
+from opentelemetry._logs import (get_logger_provider, set_logger_provider)
+from opentelemetry.instrumentation.redis import RedisInstrumentor
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
+from opentelemetry.instrumentation.urllib3 import URLLib3Instrumentor
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk._logs import (LoggerProvider, LoggingHandler)
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import ConsoleMetricExporter, PeriodicExportingMetricReader
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pathlib import Path
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from tiktoken import encoding_for_model
@@ -22,6 +37,7 @@ import tomllib
 ###
 
 VERSION = os.environ.get("VERSION")
+AZ_CREDENTIAL = DefaultAzureCredential()
 
 ###
 # Init config
@@ -113,15 +129,41 @@ while CONFIG_FOLDER:
 print(f'Config "{CONFIG_PATH}" loaded')
 
 ###
+# Init Azure App Insights
+###
+
+def strip_query_params(url: str) -> str:
+    return url.split("?")[0]
+
+APPINSIGHTS_CONNECTION_STR = get_config("appinsights", "connection_str", str, required=True)
+# Logs
+set_logger_provider(LoggerProvider())
+log_exporter = AzureMonitorLogExporter(connection_string=APPINSIGHTS_CONNECTION_STR, credential=AZ_CREDENTIAL)
+get_logger_provider().add_log_record_processor(BatchLogRecordProcessor(log_exporter))
+# Metrics
+metric_exporter = AzureMonitorMetricExporter(connection_string=APPINSIGHTS_CONNECTION_STR, credential=AZ_CREDENTIAL)
+# Traces
+# TODO: Enable sampling
+set_meter_provider(MeterProvider([PeriodicExportingMetricReader(ConsoleMetricExporter())]))
+SystemMetricsInstrumentor().instrument() # System
+RedisInstrumentor().instrument() # Redis
+RequestsInstrumentor().instrument() # Requests
+URLLib3Instrumentor().instrument(url_filter=strip_query_params) # Urllib3
+trace.set_tracer_provider(TracerProvider())
+trace_exporter = AzureMonitorTraceExporter(connection_string=APPINSIGHTS_CONNECTION_STR, credential=AZ_CREDENTIAL)
+span_processor = BatchSpanProcessor(trace_exporter)
+trace.get_tracer_provider().add_span_processor(span_processor)
+
+###
 # Init logging
 ###
 
-
 def build_logger(name: str) -> logging.Logger:
+    handler = LoggingHandler()
     logger = logging.getLogger(name)
+    logger.addHandler(handler)
     logger.setLevel(LOGGING_APP_LEVEL)
     return logger
-
 
 LOGGING_SYS_LEVEL = get_config("logging", "sys_level", str, "WARN")
 logging.basicConfig(level=LOGGING_SYS_LEVEL)

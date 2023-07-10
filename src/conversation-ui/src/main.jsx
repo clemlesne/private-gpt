@@ -1,14 +1,26 @@
 import "./main.scss";
 import "normalize.css/normalize.css";
+import { AppInsightsContext, ReactPlugin } from "@microsoft/applicationinsights-react-js";
+import { ApplicationInsights } from "@microsoft/applicationinsights-web";
 import { AuthProvider } from "oidc-react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import App from "./App";
+import Auth from "./Auth";
 import Conversation from "./Conversation";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import Search from "./Search";
-import Auth from "./Auth";
+
+const reactPlugin = new ReactPlugin();
+const appInsights = new ApplicationInsights({
+  config: {
+    connectionString: "InstrumentationKey=0b860d29-2a55-4d29-ab57-88cdd85a8da0;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com",
+    extensions: [reactPlugin],
+    enableAutoRouteTracking: true,
+  },
+});
+appInsights.loadAppInsights();
 
 const router = createBrowserRouter([
   {
@@ -32,7 +44,7 @@ const router = createBrowserRouter([
         element: <Auth />,
       },
     ],
-  }
+  },
 ]);
 
 const oidcConfig = {
@@ -48,10 +60,12 @@ const oidcConfig = {
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <HelmetProvider>
-      <AuthProvider {...oidcConfig}>
-        <RouterProvider router={router} />
-      </AuthProvider>
-    </HelmetProvider>
+    <AppInsightsContext.Provider value={reactPlugin}>
+      <HelmetProvider>
+        <AuthProvider {...oidcConfig}>
+          <RouterProvider router={router} />
+        </AuthProvider>
+      </HelmetProvider>
+    </AppInsightsContext.Provider>
   </React.StrictMode>
 );

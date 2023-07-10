@@ -1,11 +1,11 @@
 # Import utils
 from utils import (
-    VerifyToken,
     build_logger,
-    VERSION,
-    hash_token,
     get_config,
+    hash_token,
     oai_tokens_nb,
+    VerifyToken,
+    VERSION,
 )
 
 # Import misc
@@ -21,6 +21,7 @@ from models.prompt import StoredPromptModel, ListPromptsModel
 from models.search import SearchModel
 from models.usage import UsageModel
 from models.user import UserModel
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from persistence.isearch import SearchImplementation
 from persistence.istore import StoreImplementation
 from persistence.istream import StreamImplementation
@@ -532,3 +533,7 @@ async def _guess_title_background(
     # Store the updated conversation in Redis
     conversation.title = content
     store.conversation_set(conversation)
+
+
+# Instrument FastAPI with OpenTelemetry
+FastAPIInstrumentor.instrument_app(api)
