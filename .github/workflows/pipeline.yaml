@@ -221,7 +221,7 @@ jobs:
 
       - name: Container meta
         id: meta
-        uses: docker/metadata-action@v4.4.0
+        uses: docker/metadata-action@v4.6.0
         with:
           images: ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}/${{ matrix.src }}
           tags: |
