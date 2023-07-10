@@ -1,3 +1,5 @@
+@import 'utils';
+
 .button {
   align-items: center;
   display: flex;
@@ -15,7 +17,7 @@
   }
 
   // Small width
-  @media (max-width: 56rem) {
+  @media (max-width: $media--small) {
     .button__text {
       display: none;
     }

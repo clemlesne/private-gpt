@@ -1,6 +1,8 @@
+@import 'utils';
+
 html {
   // Small width
-  @media (max-width: 56rem) {
+  @media (max-width: $media--small) {
     #root {
       display: grid;
       grid-template-areas: "header" "main";
@@ -52,7 +54,7 @@ html {
   }
 
   // Full width
-  @media (min-width: 56rem) {
+  @media (min-width: $media--small) {
     #root {
       display: grid;
       grid-template-areas: "header" "main";
