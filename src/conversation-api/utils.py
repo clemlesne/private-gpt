@@ -190,9 +190,10 @@ def hash_token(str: Union[str, Hashable]) -> UUID:
 
 
 class VerifyToken:
+    jwks_client = jwt.PyJWKClient(OIDC_JWKS, cache_keys=True)
+
     def __init__(self, token):
         self.token = token
-        self.jwks_client = jwt.PyJWKClient(OIDC_JWKS)
 
     def verify(self) -> Dict[str, str]:
         try:
@@ -242,4 +243,4 @@ class VerifyToken:
     )
     def _load_jwks(self) -> None:
         logging.debug("Loading signing key from JWT")
-        self.signing_key = self.jwks_client.get_signing_key_from_jwt(self.token)
+        self.signing_key = VerifyToken.jwks_client.get_signing_key_from_jwt(self.token)
