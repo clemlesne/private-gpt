@@ -108,7 +108,7 @@ class QdrantSearch(ISearch):
         return SearchModel[MessageModel](
             answers=[
                 SearchAnswerModel[MessageModel](data=m, score=s)
-                for m, s in zip(messages, [r.score for r in raws])
+                for m, s in zip(messages, [raw.score for raw in raws])
             ],
             query=q,
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
