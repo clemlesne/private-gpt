@@ -9,7 +9,7 @@ openai==0.27.8
 opentelemetry-instrumentation-fastapi==0.38b0
 opentelemetry-instrumentation-redis==0.38b0
 opentelemetry-instrumentation-requests==0.38b0
-opentelemetry-instrumentation-system-metrics==0.38b0
+opentelemetry-instrumentation-system-metrics==0.39b0
 opentelemetry-instrumentation-urllib3==0.38b0
 pyjwt[crypto]==2.7.0
 python-dotenv==1.0.0
