@@ -2,8 +2,9 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from models.conversation import GetConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
-from models.user import UserModel
+from models.readiness import ReadinessStatus
 from models.usage import UsageModel
+from models.user import UserModel
 from typing import List, Union
 from uuid import UUID
 
@@ -15,7 +16,7 @@ class StoreImplementation(str, Enum):
 
 class IStore(ABC):
     @abstractmethod
-    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    async def readiness(self) -> ReadinessStatus:
         pass
 
     @abstractmethod

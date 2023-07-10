@@ -30,16 +30,22 @@ spec:
               containerPort: 8080
               protocol: TCP
           resources: {{- toYaml .Values.resources | nindent 12 | required "A value for .Values.resources is required" }}
+          startupProbe:
+            periodSeconds: 5
+            failureThreshold: 30
+            tcpSocket:
+              port: http
           livenessProbe:
             periodSeconds: 5
             timeoutSeconds: 5
             httpGet:
               path: /health/liveness
               port: http
-          startupProbe:
-            periodSeconds: 5
-            failureThreshold: 30
-            tcpSocket:
+          readinessProbe:
+            periodSeconds: 15
+            timeoutSeconds: 5
+            httpGet:
+              path: /health/readiness
               port: http
           volumeMounts:
             - name: config

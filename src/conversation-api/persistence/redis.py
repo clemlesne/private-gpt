@@ -6,11 +6,12 @@ from .istore import IStore
 from .istream import IStream
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
-from models.user import UserModel
+from models.readiness import ReadinessStatus
 from models.usage import UsageModel
+from models.user import UserModel
 from redis import Redis
 from typing import (Any, AsyncGenerator, Callable, Awaitable, List, Literal, Optional, Union)
-from uuid import UUID
+from uuid import UUID, uuid4
 import asyncio
 
 
@@ -33,7 +34,18 @@ logger.info(f'Connected to Redis at "{DB_HOST}:{DB_PORT}"')
 
 
 class RedisStore(IStore):
-    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    async def readiness(self) -> ReadinessStatus:
+        try:
+            tmp_id = str(uuid4())
+            client.set(tmp_id, "dummy")
+            client.get(tmp_id)
+            client.delete(tmp_id)
+        except Exception:
+            logger.warn("Error connecting to Redis", exc_info=True)
+            return ReadinessStatus.FAIL
+        return ReadinessStatus.OK
+
+    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         raw = client.get(self._user_cache_key(user_external_id))
         if raw is None:
             return None

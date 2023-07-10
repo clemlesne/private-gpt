@@ -3,16 +3,16 @@ from utils import (build_logger, get_config, AZ_CREDENTIAL)
 
 # Import misc
 from .istore import IStore
-from azure.cosmos import CosmosClient, ConsistencyLevel
+from azure.cosmos import CosmosClient
 from azure.cosmos.exceptions import CosmosHttpResponseError
-from azure.identity import DefaultAzureCredential
 from datetime import datetime
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
+from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
 from typing import (Any, Dict, List, Union)
-from uuid import UUID
+from uuid import UUID, uuid4
 import asyncio
 
 
@@ -25,7 +25,7 @@ DB_URL = get_config("cosmos", "url", str, required=True)
 DB_NAME = get_config("cosmos", "database", str, required=True)
 
 # Cosmos DB Client
-client = CosmosClient(url=DB_URL, credential=AZ_CREDENTIAL, consistency_level=ConsistencyLevel.Session)
+client = CosmosClient(url=DB_URL, credential=AZ_CREDENTIAL)
 database = client.get_database_client(DB_NAME)
 conversation_client = database.get_container_client("conversation")
 message_client = database.get_container_client("message")
@@ -38,7 +38,18 @@ class CosmosStore(IStore):
     def __init__(self):
         self._loop = asyncio.get_running_loop()
 
-    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    async def readiness(self) -> ReadinessStatus:
+        try:
+            # Cosmos DB is not ACID compliant, so we can't use transactions
+            conversation_client.upsert_item(body={
+                "dummy": "dummy",
+                "id": str(uuid4()),
+            })
+        except CosmosHttpResponseError:
+            logger.warn("Error connecting to Cosmos", exc_info=True)
+            return ReadinessStatus.FAIL
+        return ReadinessStatus.OK
+
         query = f"SELECT * FROM c WHERE c.external_id = '{user_external_id}'"
         items = user_client.query_items(query=query, partition_key="dummy")
         try:

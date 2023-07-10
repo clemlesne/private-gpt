@@ -18,6 +18,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models.conversation import (GetConversationModel, ListConversationsModel, StoredConversationModel)
 from models.message import MessageModel, MessageRole, StoredMessageModel
 from models.prompt import StoredPromptModel, ListPromptsModel
+from models.readiness import ReadinessModel, ReadinessCheckModel, ReadinessStatus
 from models.search import SearchModel
 from models.usage import UsageModel
 from models.user import UserModel
@@ -195,6 +196,31 @@ A poem
 )
 async def health_liveness_get() -> None:
     return None
+
+
+@api.get(
+    "/health/readiness",
+    name="Healthckeck readiness",
+)
+async def health_readiness_get() -> ReadinessModel:
+    index_check, store_check, stream_check = await asyncio.gather(index.readiness(), store.readiness(), stream.readiness())
+
+    readiness = ReadinessModel(
+        status=ReadinessStatus.OK,
+        checks=[
+            ReadinessCheckModel(id="index", status=index_check),
+            ReadinessCheckModel(id="startup", status=ReadinessStatus.OK),
+            ReadinessCheckModel(id="store", status=store_check),
+            ReadinessCheckModel(id="stream", status=stream_check),
+        ],
+    )
+
+    for check in readiness.checks:
+        if check.status != ReadinessStatus.OK:
+            readiness.status = ReadinessStatus.FAIL
+            break
+
+    return readiness
 
 
 async def get_current_user(
