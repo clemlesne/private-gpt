@@ -46,8 +46,8 @@ function Conversation() {
           }, {});
           setPrompts(localPrompts);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch((err) => {
+          console.error(err);
         });
     };
 
@@ -97,8 +97,8 @@ function Conversation() {
           if (!res.data) return;
           setConversation(res.data);
         })
-        .catch((error) => {
-          console.error(error);
+        .catch((err) => {
+          console.error(err);
         });
     };
 
@@ -106,17 +106,25 @@ function Conversation() {
   }, [auth, conversationId]);
 
   const sendMessage = () => {
+    // Create a locache state cache, as state props wont't be updated until the next render
     let localMessages = [...conversation.messages];
 
+    // Append the message to the list
     const addMessages = (newMessages) => {
+      // Update local state cache
       localMessages = [...localMessages, ...newMessages];
+      // Update state
       setConversation({ ...conversation, messages: localMessages });
     };
 
-    const replaceLastMessage = (newMessage) => {
+    // Keep the same id, avoid React to re-render the whole list
+    const updateLastMessage = (newMessage) => {
       const tmp = [...localMessages];
-      tmp[tmp.length - 1] = newMessage;
+      // Update the last message with the new content
+      tmp[tmp.length - 1] = Object.assign({}, tmp[tmp.length - 1], newMessage);
+      // Update local state cache
       localMessages = tmp;
+      // Update state
       setConversation({ ...conversation, messages: localMessages });
     };
 
@@ -153,7 +161,7 @@ function Conversation() {
 
           // Then, fetch the message
           const lastMessage = res.data.messages[res.data.messages.length - 1];
-          let stream = "";
+          let content = "";
           const source = new EventSource(
             `${client.defaults.baseURL}/message/${lastMessage.id}?token=${lastMessage.token}`
           );
@@ -164,33 +172,35 @@ function Conversation() {
             }
 
             // Update the last message
-            stream += e.data;
-            replaceLastMessage({
-              content: stream,
-              created_at: new Date().toISOString(),
-              id: uuidv4(),
-              role: "assistant",
-              secret: secret,
+            content += e.data;
+            updateLastMessage({
+              content,
             });
           };
           source.onerror = (e) => {
             if (e.eventPhase === EventSource.CLOSED) cleanup();
           };
         })
-        .catch((error) => {
-          // Catch 400 errors
-          if (error.response && error.response.status == 400) {
-            replaceLastMessage({
-              content: error.response.data.detail,
-              created_at: new Date().toISOString(),
-              error: true,
-              id: uuidv4(),
-              role: "assistant",
-              secret: secret,
-            });
-          } else { // Catch other errors
-            console.error(error);
+        .catch((err) => {
+          let content;
+          if (err.response?.status == 400) {
+            content = err.response.data.detail;
+          } else if (err.request?.statusText) {
+            content = err.request.statusText;
+            console.error(err);
+          } else if (err.message) {
+            content = err.message;
+            console.error(err);
           }
+
+          // Capitalize the first letter only
+          content = content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
+
+          updateLastMessage({
+            content,
+            error: true,
+          });
+
           setLoading(false);
         });
     };
@@ -201,14 +211,14 @@ function Conversation() {
         created_at: new Date().toISOString(),
         id: uuidv4(),
         role: "user",
-        secret: secret,
+        secret,
       },
       {
         content: "Loading…",
         created_at: new Date().toISOString(),
         id: uuidv4(),
         role: "assistant",
-        secret: secret,
+        secret,
       },
     ]);
 
@@ -283,10 +293,11 @@ function Conversation() {
             </div>
             {!auth.userData && (
               <Button
-                onClick={() => auth.signIn()}
                 active={true}
                 emoji="🔑"
+                large={true}
                 loading={auth.isLoading}
+                onClick={() => auth.signIn()}
                 text="Signin"
               />
             )}

@@ -23,6 +23,9 @@ resources:
     cpu: .5
     memory: 512Mi
 
+appinsights:
+  connection_str: null
+
 oidc:
   algorithms: []
   api_audience: null

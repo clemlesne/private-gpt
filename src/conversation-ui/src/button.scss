@@ -1,3 +1,5 @@
+@import 'utils';
+
 .button {
   align-items: center;
   display: flex;
@@ -10,14 +12,18 @@
     background-color: var(--background-active);
   }
 
+  &.button--large {
+    font-size: 125%;
+  }
+
   // Small width
-  @media (max-width: 56rem) {
+  @media (max-width: $media--small) {
     .button__text {
       display: none;
     }
   }
 
   .button__text {
-    margin-left: 0.5rem;
+    margin-left: 0.5em;
   }
 }

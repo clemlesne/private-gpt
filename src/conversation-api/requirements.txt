@@ -2,9 +2,15 @@ aiohttp==3.8.4
 azure-ai-contentsafety==1.0.0b1
 azure-cosmos==4.4.0
 azure-identity==1.13.0
+azure-monitor-opentelemetry==1.0.0b13
 fastapi==0.95.2
 mmh3==4.0.0
 openai==0.27.7
+opentelemetry-instrumentation-fastapi==0.38b0
+opentelemetry-instrumentation-redis==0.38b0
+opentelemetry-instrumentation-requests==0.38b0
+opentelemetry-instrumentation-system-metrics==0.38b0
+opentelemetry-instrumentation-urllib3==0.38b0
 pyjwt[crypto]==2.7.0
 python-dotenv==1.0.0
 qdrant-client==1.1.7

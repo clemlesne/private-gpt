@@ -1,16 +1,17 @@
 # Import utils
-from utils import build_logger, get_config
+from utils import (build_logger, get_config)
 
 # Import misc
 from .istore import IStore
 from .istream import IStream
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
-from models.user import UserModel
+from models.readiness import ReadinessStatus
 from models.usage import UsageModel
+from models.user import UserModel
 from redis import Redis
 from typing import (Any, AsyncGenerator, Callable, Awaitable, List, Literal, Optional, Union)
-from uuid import UUID
+from uuid import UUID, uuid4
 import asyncio
 
 
@@ -33,16 +34,27 @@ logger.info(f'Connected to Redis at "{DB_HOST}:{DB_PORT}"')
 
 
 class RedisStore(IStore):
-    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    async def readiness(self) -> ReadinessStatus:
+        try:
+            tmp_id = str(uuid4())
+            client.set(tmp_id, "dummy")
+            client.get(tmp_id)
+            client.delete(tmp_id)
+        except Exception:
+            logger.warn("Error connecting to Redis", exc_info=True)
+            return ReadinessStatus.FAIL
+        return ReadinessStatus.OK
+
+    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         raw = client.get(self._user_cache_key(user_external_id))
         if raw is None:
             return None
         return UserModel.parse_raw(raw)
 
-    def user_set(self, user: UserModel) -> None:
+    async def user_set(self, user: UserModel) -> None:
         client.set(self._user_cache_key(user.external_id), user.json())
 
-    def conversation_get(
+    async def conversation_get(
         self, conversation_id: UUID, user_id: UUID
     ) -> Union[StoredConversationModel, None]:
         raw = client.get(self._conversation_cache_key(user_id, conversation_id))
@@ -50,18 +62,18 @@ class RedisStore(IStore):
             return None
         return StoredConversationModel.parse_raw(raw)
 
-    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+    async def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         return (
             client.exists(self._conversation_cache_key(user_id, conversation_id)) != 0
         )
 
-    def conversation_set(self, conversation: StoredConversationModel) -> None:
+    async def conversation_set(self, conversation: StoredConversationModel) -> None:
         client.set(
             self._conversation_cache_key(conversation.user_id, conversation.id),
             conversation.json(),
         )
 
-    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         keys = client.keys(f"{self._conversation_cache_key(user_id)}:*")
         raws = client.mget(keys)
         if raws is None:
@@ -78,7 +90,7 @@ class RedisStore(IStore):
         conversations.sort(key=lambda x: x.created_at, reverse=True)
         return conversations
 
-    def message_get(
+    async def message_get(
         self, message_id: UUID, conversation_id: UUID
     ) -> Union[MessageModel, None]:
         raw = client.get(self._message_cache_key(conversation_id, message_id))
@@ -86,7 +98,7 @@ class RedisStore(IStore):
             return None
         return MessageModel.parse_raw(raw)
 
-    def message_get_index(
+    async def message_get_index(
         self, message_indexs: List[IndexMessageModel]
     ) -> List[MessageModel]:
         keys = [
@@ -106,7 +118,7 @@ class RedisStore(IStore):
                 logger.warn("Error parsing message", exc_info=True)
         return messages
 
-    def message_set(self, message: StoredMessageModel) -> None:
+    async def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
         client.set(
             self._message_cache_key(message.conversation_id, message.id),
@@ -114,7 +126,7 @@ class RedisStore(IStore):
             ex=expiry,
         )
 
-    def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         keys = client.keys(f"{self._message_cache_key(conversation_id)}:*")
         raws = client.mget(keys)
         if raws is None:
@@ -131,7 +143,7 @@ class RedisStore(IStore):
         messages.sort(key=lambda x: x.created_at)
         return messages
 
-    def usage_set(self, usage: UsageModel) -> None:
+    async def usage_set(self, usage: UsageModel) -> None:
         client.set(self._usage_cache_key(usage.user_id), usage.json())
 
     def _usage_cache_key(self, user_id: UUID) -> str:
@@ -156,7 +168,17 @@ class RedisStore(IStore):
 
 
 class RedisStream(IStream):
-    def push(self, content: str, token: UUID) -> None:
+    async def readiness(self) -> ReadinessStatus:
+        try:
+            client.set("dummy", "dummy")
+            client.get("dummy")
+            client.delete("dummy")
+        except Exception:
+            logger.warn("Error connecting to Redis", exc_info=True)
+            return ReadinessStatus.FAIL
+        return ReadinessStatus.OK
+
+    async def push(self, content: str, token: UUID) -> None:
         client.xadd(self._cache_key(token), {"message": content})
 
     async def get(
@@ -202,7 +224,7 @@ class RedisStream(IStream):
         # Send the end of stream message
         yield STREAM_STOPWORD
 
-    def clean(self, token: UUID) -> None:
+    async def clean(self, token: UUID) -> None:
         client.delete(self._cache_key(token))
 
     def _cache_key(self, token: UUID) -> str:

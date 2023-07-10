@@ -29,13 +29,13 @@
     border-radius: var(--radius);
     box-sizing: border-box;
     overflow-x: auto;
-    padding: 1rem;
+    padding: 1em;
 
     // Fix overflow with non wrapping content like code and tables
     max-width: 100%;
 
     > *:not(:last-child) {
-      margin-bottom: 1rem;
+      margin-bottom: 1em;
     }
 
     table {
@@ -45,13 +45,13 @@
       th,
       td {
         border: 1px solid var(--border);
-        padding: 0.25rem;
+        padding: 0.25em;
       }
     }
   }
 
   .message__sub {
-    margin: 0 1rem;
+    margin: 0 1em;
     opacity: 0.75;
   }
 }

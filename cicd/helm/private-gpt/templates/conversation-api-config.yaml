@@ -15,6 +15,9 @@ data:
     [api]
     root_path = "/{{ include "private-gpt.fullname" . }}-conversation-api"
 
+    [appinsights]
+    connection_str = {{ .Values.appinsights.connection_str | required "A value for .Values.appinsights.connection_str" | quote }}
+
     [openai]
     ada_deploy_id = {{ .Values.api.openai.ada_deploy_id | quote }}
     ada_max_tokens = 2049

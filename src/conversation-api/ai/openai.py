@@ -1,6 +1,6 @@
 # Import utils
 from uuid import UUID
-from utils import (build_logger, get_config, hash_token)
+from utils import (build_logger, get_config, hash_token, AZ_CREDENTIAL)
 
 # Import misc
 from azure.identity import DefaultAzureCredential
@@ -33,8 +33,7 @@ async def refresh_oai_token_background():
     """
     while True:
         logger.info("Refreshing OpenAI token")
-        oai_cred = DefaultAzureCredential()
-        oai_token = oai_cred.get_token("https://cognitiveservices.azure.com/.default")
+        oai_token = AZ_CREDENTIAL.get_token("https://cognitiveservices.azure.com/.default")
         openai.api_key = oai_token.token
         # Execute every 20 minutes
         await asyncio.sleep(15 * 60)

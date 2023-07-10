@@ -1,5 +1,5 @@
 # Import utils
-from utils import build_logger, get_config
+from utils import (build_logger, get_config)
 
 # Import misc
 from .isearch import ISearch
@@ -7,9 +7,10 @@ from .istore import IStore
 from ai.openai import OpenAI
 from datetime import datetime
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
+from models.readiness import ReadinessStatus
 from models.search import SearchModel, SearchStatsModel, SearchAnswerModel
 from qdrant_client import QdrantClient
-from uuid import UUID
+from uuid import UUID, uuid4
 import asyncio
 import qdrant_client.http.models as qmodels
 import textwrap
@@ -44,6 +45,26 @@ class QdrantSearch(ISearch):
                     size=QD_DIMENSION,
                 ),
             )
+
+    async def readiness(self) -> ReadinessStatus:
+        try:
+            tmp_id = str(uuid4())
+            client.upsert(
+                collection_name=QD_COLLECTION,
+                points=[
+                    qmodels.PointStruct(
+                        vector=[0.0] * QD_DIMENSION,
+                        payload={},
+                        id=tmp_id,
+                    )
+                ],
+            )
+            client.retrieve(collection_name=QD_COLLECTION, ids=[tmp_id])
+            client.delete(collection_name=QD_COLLECTION, points_selector=[tmp_id])
+        except Exception:
+            logger.warn("Error connecting to Qdrant", exc_info=True)
+            return ReadinessStatus.FAIL
+        return ReadinessStatus.OK
 
     async def message_search(self, q: str, user_id: UUID) -> SearchModel[MessageModel]:
         logger.debug(f"Searching for: {q}")

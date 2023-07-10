@@ -28,7 +28,7 @@ function Header() {
           onClick={() => header() }
         />
       </div>
-      <div className="header__actions">
+      {auth.userData && <div className="header__actions">
         {/* This button is never disabled and this is on purpose.
 
         It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
@@ -49,7 +49,7 @@ function Header() {
           text="Search"
           emoji="🔍"
         />
-      </div>
+      </div>}
       <div className="header__content">
         {auth.userData && (
           <Conversations

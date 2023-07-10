@@ -2,10 +2,9 @@ import "./app.scss";
 import { client } from "./Utils";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "oidc-react";
-import { useNavigate } from "react-router-dom";
-import { useState, useEffect, createContext } from "react";
+import { useState, useEffect, createContext, useMemo } from "react";
 import Header from "./Header";
 import useLocalStorageState from "use-local-storage-state";
 
@@ -60,18 +59,25 @@ function App() {
           navigate(`/conversation/${found}`);
         }
       })
-      .catch((error) => {
-        console.error(error);
+      .catch((err) => {
+        console.error(err);
       });
-  };
-
-  const refreshConversations = async (id) => {
-    fetchConversations(id);
   };
 
   useEffect(() => {
     fetchConversations();
   }, [auth]);
+
+  const themeContextProps = useMemo(() => (
+    [darkTheme, setDarkTheme]
+  ), [darkTheme, setDarkTheme]);
+
+  const conversationContextProps = useMemo(() => {
+    const refreshConversations = async (id) => {
+      fetchConversations(id);
+    };
+    return [conversations, refreshConversations];
+  }, [conversations, fetchConversations]);
 
   return (
     <>
@@ -111,8 +117,8 @@ function App() {
         ]}
         htmlAttributes={{ class: darkTheme ? "theme--dark" : "theme--light" }}
       />
-      <ThemeContext.Provider value={[ darkTheme, setDarkTheme ]}>
-        <ConversationContext.Provider value={[ conversations, refreshConversations ]}>
+      <ThemeContext.Provider value={themeContextProps}>
+        <ConversationContext.Provider value={conversationContextProps}>
           <Header />
           <div id="main" className="main">
             <div className="main__container">

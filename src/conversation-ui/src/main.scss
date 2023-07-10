@@ -1,36 +1,44 @@
+@import 'utils';
+
 html {
-  --content-max-width: 80rem;
-  --conversation-padding-v: 1rem;
-  --conversations-padding: 0.5rem;
-  // Font families come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs)
-  --font-family-mono: 'Cascadia Code', Menlo, 'Courier New', Courier, monospace;
+  // Styles from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs)
   --font-family: 'Segoe UI', 'Segoe UI Web (West European)', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+  --font-family-mono: 'Cascadia Code', Menlo, 'Courier New', Courier, monospace;
+
+  // Absolute values (rem)
   --font-size-small: 0.75rem;
   --font-size: 0.875rem;
-  --header-padding-v: 1rem;
-  --header-width: min(26rem, 38vw);
-  --radius: 1.5em; // Not relative, radius should be the same everywhere
-  --search-padding-v: 1rem;
+
+  // Relative values (em)
+  --content-max-width: 80em;
+  --conversation-padding-v: 1em;
+  --conversations-padding: 0.5em;
+  --header-padding-v: 1em;
+  --header-width: min(26em, 38vw);
+  --line-height-small: 1.5;
+  --line-height: 1.7;
+  --radius: 1.5em;
+  --search-padding-v: 1em;
 
   // Small width
-  @media (max-width: 56rem) {
-    --conversation-padding-h: 1rem;
-    --header-padding-h: 1rem;
-    --search-padding-h: 1rem;
+  @media (max-width: $media--small) {
+    --conversation-padding-h: 1em;
+    --header-padding-h: 1em;
+    --search-padding-h: 1em;
   }
 
   // Full width
-  @media (min-width: 56rem) {
-    --conversation-padding-h: 2rem;
-    --header-padding-h: 2rem;
-    --search-padding-h: 2rem;
+  @media (min-width: $media--small) {
+    --conversation-padding-h: 2em;
+    --header-padding-h: 2em;
+    --search-padding-h: 2em;
   }
 
   font-size: 16px;
 
   &.theme--light,
   &:not(.theme--dark) {
-    // Colors come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
+    // Styles from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
     --background-active: #a9d3f2;
     --background-error: #f1bbbc;
     --background-muted: #f0f0f0;
@@ -59,7 +67,6 @@ html {
 }
 
 body {
-  appearance: none;
   background-color: var(--background);
   color: var(--color);
   font-family: var(--font-family);
@@ -67,9 +74,12 @@ body {
   font-synthesis: none;
   font-weight: 400;
   hyphens: manual;
-  line-height: 1.7;
+  line-height: var(--line-height);
   text-rendering: optimizeLegibility;
   word-break: break-word;
+
+  // Reset styles
+  appearance: none;
 
   // Code blocks
   pre,
@@ -91,6 +101,7 @@ body {
   h5,
   h6,
   small {
+    // Reset styles
     font: inherit;
     margin: 0;
   }
@@ -165,9 +176,12 @@ body {
   button,
   input {
     border-radius: var(--radius);
+    padding: 0.75em 1em;
+
+    // Reset styles
     border: unset;
     min-width: 0;
-    padding: 0.75rem 1rem;
+    line-height: var(--line-height-small);
 
     &:not(:disabled):not([disabled]) {
       &:hover {
@@ -230,8 +244,8 @@ body {
 
 // "react-select" styles
 .react-select {
-  --react-select-padding-h: 1rem;
-  --react-select-padding-v: 0.25rem;
+  --react-select-padding-h: 1em;
+  --react-select-padding-v: 0.25em;
 
   min-width: 0;
 
@@ -282,7 +296,7 @@ body {
     background-color: var(--background);
     outline: 1px solid var(--border);
     overflow: hidden; // Hide the horizontal scrollbar, it mess with the layout
-    width: min(16rem, 150%); // 150% the width of the input, or 16rem, whichever is smaller
+    width: min(16em, 150%); // 150% the width of the input, or 16em, whichever is smaller
 
     .react-select__menu-notice,
     .react-select__option {
@@ -296,7 +310,7 @@ body {
 
     .react-select__option {
       cursor: pointer;
-      line-height: 1.5;
+      line-height: var(--line-height-small);
 
       &.react-select__option--is-focused {
         background-color: var(--background-muted);
