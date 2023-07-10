@@ -7,6 +7,9 @@ container_name := ghcr.io/clemlesne/private-gpt/$(component_name)
 install:
 	python3 -m pip install -r requirements.txt
 
+upgrade:
+	pur -r requirements.txt
+
 test:
 	@echo "➡️ Running Black..."
 	python3 -m black --check .
