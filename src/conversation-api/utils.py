@@ -222,7 +222,8 @@ class VerifyToken:
                 last_error = e
 
         if not succeed:
-            logger.info("JWT token is invalid", last_error)
+            logger.info("JWT token is invalid")
+            logger.debug(last_error)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="JWT token is invalid",
