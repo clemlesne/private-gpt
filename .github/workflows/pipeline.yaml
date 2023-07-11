@@ -213,7 +213,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Login to container registry
-        uses: docker/login-action@v2.1.0
+        uses: docker/login-action@v2.2.0
         with:
           registry: ${{ env.CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
