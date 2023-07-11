@@ -1,4 +1,4 @@
-# 🔒 Private GPT
+# Employee communication with Private GPT – AI-powered chatbot you can trust
 
 > 👋🏻 Demo available at [private-gpt.shopping-cart-devops-demo.lesne.pro](https://private-gpt.shopping-cart-devops-demo.lesne.pro).
 
