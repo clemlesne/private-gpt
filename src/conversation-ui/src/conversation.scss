@@ -10,6 +10,23 @@
     margin-bottom: var(--conversation-padding-v);
   }
 
+  .conversation__header {
+    background-color: var(--background);
+    padding: var(--conversation-padding-v) 0;
+
+    // Stays at the top
+    top: 0;
+    position: sticky;
+    z-index: 1000;
+
+    > h2 {
+      // Disable line wrapping
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
   .conversation__messages {
     display: flex;
     flex-direction: column;
