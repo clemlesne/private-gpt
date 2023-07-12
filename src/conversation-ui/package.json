@@ -13,7 +13,7 @@
   "dependencies": {
     "@microsoft/applicationinsights-react-js": "^3.4.3",
     "@microsoft/applicationinsights-web": "^3.0.2",
-    "@orama/orama": "^1.0.9",
+    "@orama/orama": "^1.0.10",
     "autoprefixer": "^10.4.14",
     "axios": "^1.4.0",
     "axios-retry": "^3.5.1",
