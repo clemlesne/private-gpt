@@ -136,6 +136,7 @@ Today, we are the {datetime.utcnow()}.
 
 You MUST:
 - Cite sources and examples as footnotes (example: [^1])
+- Specify the language name when you cite source code (example: ```python)
 - Write emojis as gemoji shortcodes (example: :smile:)
 - Write links with Markdown syntax (example: [You can find it at google.com.](https://google.com))
 - Write lists with Markdown syntax, using dashes (example: - First item) or numbers (example: 1. First item)
