@@ -548,7 +548,7 @@ async def _guess_title_background(
     # Create messages object from conversation
     # We don't include the custom prompt, as it will false the title response (espacially with ASCI art prompt)
     completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}
+        {"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT}
     ]
     completion_messages += [{"role": m.role, "content": m.content} for m in messages]
 
