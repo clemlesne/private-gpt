@@ -24,6 +24,8 @@ env:
   NODE_VERSION: 18.16.0
   # https://github.com/helm/helm/releases
   HELM_VERSION: 3.11.2
+  # https://npmjs.com/package/snyk?activeTab=versions
+  SNYK_VERSION: 1.1187.0
 
 jobs:
   sast-creds:
