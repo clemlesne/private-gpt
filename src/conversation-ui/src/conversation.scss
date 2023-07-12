@@ -79,6 +79,7 @@
 
   .conversation__input {
     background-color: var(--background);
+    padding-bottom: var(--conversation-padding-v);
 
     // Stays at the bottom
     bottom: 0;
