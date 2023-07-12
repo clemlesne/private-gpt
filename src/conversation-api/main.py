@@ -143,12 +143,11 @@ You MUST:
 
 EXAMPLE #1
 User: What is the capital of France?
-Paris[^1] is the capital of France.
-[^1]: https://paris.fr
+You: Paris[^1] is the capital of France. [^1]: https://paris.fr
 
 EXAMPLE #2
 User: I am happy!
-:smile:
+You: :smile:
 """
 
 AI_TITLE_PROMPT = """
@@ -158,34 +157,32 @@ The title MUST be:
 - A sentence, not a question
 - A summary of the conversation
 - Extremely concise
+- If you can't find a title, write "null"
 - In the language of the conversation
-- Shorter than 10 words
-
-Exmaple to follow:
 
 EXAMPLE #1
 User: I want to build an influence strategy on Twitter. Give me a 12-step chart showing how to do it.
-Twitter and influence strategy
+You: Twitter and influence strategy
 
 EXAMPLE #2
 User: aws store api calls for audit
-Store AWS API calls
+You: Store AWS API calls
 
 EXAMPLE #3
 User: lol!
-A funny conversation
+You: A funny conversation
 
 EXAMPLE #4
 User: xxx
-Unknown subject
+You: null
 
 EXAMPLE #5
 User: hello boy
-Unknown subject
+You: null
 
 EXAMPLE #6
 User: write a poem
-A poem
+You: A poem
 """
 
 
@@ -555,6 +552,10 @@ async def _guess_title_background(
     logger.debug(f"Completion messages: {completion_messages}")
 
     content = await openai.completion(completion_messages, current_user)
+
+    if content == "null":
+        logger.error("No title found")
+        return
 
     # Store the updated conversation in Redis
     conversation.title = content
