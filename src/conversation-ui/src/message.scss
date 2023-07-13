@@ -9,12 +9,20 @@
     .message__content {
       align-self: flex-start;
     }
+
+    .message__content {
+      background-color: var(--background-muted);
+    }
   }
 
   &:not(.message--assistant) {
     &,
     .message__content {
       align-self: flex-end;
+    }
+
+    .message__content {
+      background-color: var(--background-active);
     }
   }
 
@@ -42,7 +50,6 @@
   }
 
   .message__content {
-    background-color: var(--background-muted);
     border-radius: var(--radius);
     box-sizing: border-box;
     overflow-x: auto;
