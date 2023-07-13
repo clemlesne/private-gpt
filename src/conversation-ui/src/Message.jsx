@@ -82,6 +82,12 @@ function Message({
                     style={darkTheme ? oneDark : oneLight}
                   />
                 );
+              } else {
+                return (
+                  <code {...props} className={className}>
+                    {children}
+                  </code>
+                );
               }
             },
           }}
