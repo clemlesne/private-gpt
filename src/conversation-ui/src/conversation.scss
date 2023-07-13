@@ -15,15 +15,15 @@
     padding: var(--conversation-padding-v) 0;
 
     // Stays at the top
-    top: 0;
     position: sticky;
+    top: 0;
     z-index: 900;
 
     > h2 {
       // Disable line wrapping
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -36,22 +36,32 @@
     > *:not(:last-child) {
       margin-bottom: var(--conversation-padding-v);
     }
+  }
 
-    .conversation__messages__empty {
+  .conversation__empty {
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    justify-content: center;
+
+    > *:not(:last-child) {
+      margin-bottom: calc(var(--conversation-padding-v) * 2);
+    }
+
+    .conversation__empty__header {
       align-items: center;
       display: flex;
       flex-direction: column;
+      text-align: center;
 
-      // Center the content vertically and horizontally
-      align-self: center;
-      margin: auto 0;
-
-      > *:not(:last-child) {
-        margin-bottom: 1em;
+      > span {
+        font-size: 800%;
+        line-height: 1;
       }
     }
 
-    .conversation__messages__empty__doc {
+    .conversation__empty__doc {
       background-color: var(--background-muted);
       border-radius: var(--radius);
       display: grid;
