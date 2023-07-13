@@ -107,7 +107,7 @@ function Message({
             text="Copy"
           />
           <Button
-            emoji="+"
+            emoji="➕"
             onClick={() => setDisplaySub(!displaySub)}
             text="Details"
           />

@@ -28,7 +28,7 @@ function Header() {
               navigate("/");
             }}
             text="New chat"
-            emoji="+"
+            emoji="➕"
             active={true}
           />
           <Button
