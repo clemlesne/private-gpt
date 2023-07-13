@@ -261,9 +261,9 @@ function Conversation() {
 
   return (
     <div className="conversation">
-      <div className="conversation__header">
-        {conversationId && <h2>{conversation.title ? conversation.title : "New chat"}</h2>}
-      </div>
+      {conversationId && <div className="conversation__header">
+        <h2>{conversation.title ? conversation.title : "New chat"}</h2>
+      </div>}
       {conversation.messages.length == 0 && (
         <div className="conversation__empty">
           <div className="conversation__empty__header">
