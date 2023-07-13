@@ -62,24 +62,21 @@ function Message({
           children={content}
           components={{
             code({ node, inline, className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  {...props}
-                  children={String(children).replace(/\n$/, "")}
-                  customStyle={{
-                    borderRadius: "var(--radius)",
-                  }}
-                  language={match[1]}
-                  PreTag="div"
-                  showLineNumbers={true}
-                  style={darkTheme ? oneDark : oneLight}
-                />
-              ) : (
-                <code {...props} className={className}>
-                  {children}
-                </code>
-              );
+              if (!inline) {
+                const match = /language-(\w+)/.exec(className || "");
+                const language = match ? match[1] : null;
+                return (
+                  <SyntaxHighlighter
+                    {...props}
+                    children={String(children).replace(/\n$/, "")}
+                    customStyle={{ borderRadius: "var(--radius)" }}
+                    language={language}
+                    PreTag="div"
+                    showLineNumbers={true}
+                    style={darkTheme ? oneDark : oneLight}
+                  />
+                )
+              }
             },
           }}
         />
