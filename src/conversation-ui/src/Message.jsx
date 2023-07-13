@@ -3,6 +3,7 @@ import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/pris
 import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeContext } from "./App";
 import { useState, useRef, useContext } from "react";
+import Button from "./Button";
 import moment from "moment";
 import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
@@ -28,8 +29,7 @@ function Message({
   // React context
   const [darkTheme,] = useContext(ThemeContext);
 
-  const clipboardHandler = (e) => {
-    e.preventDefault();
+  const clipboardHandler = () => {
     // Copy to clipboard
     navigator.clipboard.writeText(content);
     // Animation feedback
@@ -46,7 +46,6 @@ function Message({
         ref={httpContent}
         className="message__content"
         onClick={() => setDisplaySub(!displaySub)}
-        onDoubleClick={clipboardHandler}
       >
         { }
         <ReactMarkdown
@@ -87,6 +86,10 @@ function Message({
           <span>{moment(date).fromNow()}</span>
         </small>
       )}
+      <small className="message__actions">
+        <Button text="Copy" emoji="📋" onClick={clipboardHandler} />
+        <Button text="Details" emoji="+" onClick={() => setDisplaySub(!displaySub)} />
+      </small>
     </div>
   );
 }

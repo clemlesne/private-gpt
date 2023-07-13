@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   max-width: 70%;
+  position: relative;
 
   &.message--assistant {
     &,
@@ -24,18 +25,40 @@
     }
   }
 
+  &:not(:hover) {
+    .message__actions {
+      display: none;
+    }
+  }
+
+  .message__actions {
+    background-color: var(--background);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: row;
+    outline: 1px solid var(--border);
+    padding: calc(var(--message-padding-v) / 2) calc(var(--message-padding-h) / 2);
+    position: absolute;
+    right: calc(var(--message-padding-h) * -1);
+    top: calc(var(--message-padding-v) * -2);
+
+    > *:not(:last-child) {
+      margin-right: calc(var(--message-padding-h) / 4);
+    }
+  }
+
   .message__content {
     background-color: var(--background-muted);
     border-radius: var(--radius);
     box-sizing: border-box;
     overflow-x: auto;
-    padding: 1em;
+    padding: var(--message-padding-v) var(--message-padding-h);
 
     // Fix overflow with non wrapping content like code and tables
     max-width: 100%;
 
     > *:not(:last-child) {
-      margin-bottom: 1em;
+      margin-bottom: var(--message-padding-v);
     }
 
     table {
@@ -51,7 +74,7 @@
   }
 
   .message__sub {
-    margin: 0 1em;
+    margin: 0 var(--message-padding-h);
     opacity: 0.75;
   }
 }
