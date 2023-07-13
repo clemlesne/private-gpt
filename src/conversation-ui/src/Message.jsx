@@ -47,12 +47,12 @@ function Message({
   return (
     <div
       className={`message message--${role} ${error ? "message--error" : ""}`}
-      onClick={() => setDisplayActions(!displayActions)}
       onMouseEnter={() => setDisplayActions(true)}
       onMouseLeave={() => setDisplayActions(false)}
     >
       <div
         className="message__content"
+        onClick={() => setDisplayActions(!displayActions)}
         ref={httpContent}
       >
         <ReactMarkdown
