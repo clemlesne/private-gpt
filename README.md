@@ -153,4 +153,12 @@ sequenceDiagram
 
 WIP
 
+## [Security](./SECURITY.md)
+
+## Support
+
+This project is open source and maintained by people like you. If you need help or found a bug, please feel free to open an issue on the [clemlesne/private-gpt](https://github.com/clemlesne/private-gpt) GitHub project.
+
+## [Code of conduct](./CODE_OF_CONDUCT.md)
+
 ## [Authors](./AUTHORS.md)
