@@ -26,6 +26,8 @@ env:
   HELM_VERSION: 3.11.2
   # https://npmjs.com/package/snyk?activeTab=versions
   SNYK_VERSION: 1.1187.0
+  # https://github.com/oras-project/oras/releases
+  ORAS_VERSION: 1.0.0
 
 jobs:
   sast-creds:
@@ -295,3 +297,31 @@ jobs:
         uses: github/codeql-action/upload-sarif@v2.20.3
         with:
           sarif_file: semgrep.sarif
+
+  deploy-artifacthub-metadata:
+    name: Deploy ArtifactHub metadata
+    # Only deploy on main branch, as we don't want to break verification with a bad metadata file during development
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.3
+
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@v1.0.0
+        with:
+          version: ${{ env.ORAS_VERSION }}
+
+      - name: Login to registry
+        uses: docker/login-action@v2.2.0
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to registry
+        run: |
+          oras push \
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}:artifacthub.io \
+            artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml
