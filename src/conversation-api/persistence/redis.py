@@ -198,8 +198,8 @@ class RedisStream(IStream):
 
             message_key = self._cache_key(token)
             messages_raw = client.xread(
-                streams={message_key: stream_id},
                 block=10_000,  # Wait 10 seconds
+                streams={message_key: stream_id},
             )
 
             if not messages_raw:

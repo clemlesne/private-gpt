@@ -9,12 +9,20 @@
     .message__content {
       align-self: flex-start;
     }
+
+    .message__content {
+      background-color: var(--background-muted);
+    }
   }
 
   &:not(.message--assistant) {
     &,
     .message__content {
       align-self: flex-end;
+    }
+
+    .message__content {
+      background-color: var(--background-active);
     }
   }
 
@@ -26,15 +34,16 @@
   }
 
   .message__actions {
-    background-color: var(--background);
+    background-color: var(--background-muted);
     border-radius: var(--radius);
+    bottom: calc(100% - calc(var(--message-padding-v) / 2));
     display: flex;
     flex-direction: row;
     outline: 1px solid var(--border);
-    padding: calc(var(--message-padding-v) / 2) calc(var(--message-padding-h) / 2);
+    padding: calc(min(var(--message-padding-v), var(--message-padding-h)) / 2);
     position: absolute;
-    right: calc(var(--message-padding-h) * -1);
-    top: calc(var(--message-padding-v) * -2);
+    right: calc(calc(var(--message-padding-h) / 2) * -1);
+    z-index: 900;
 
     > *:not(:last-child) {
       margin-right: calc(var(--message-padding-h) / 4);
@@ -42,7 +51,6 @@
   }
 
   .message__content {
-    background-color: var(--background-muted);
     border-radius: var(--radius);
     box-sizing: border-box;
     overflow-x: auto;

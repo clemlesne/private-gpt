@@ -47,12 +47,12 @@ function Message({
   return (
     <div
       className={`message message--${role} ${error ? "message--error" : ""}`}
-      onClick={() => setDisplayActions(!displayActions)}
       onMouseEnter={() => setDisplayActions(true)}
       onMouseLeave={() => setDisplayActions(false)}
     >
       <div
         className="message__content"
+        onClick={() => setDisplayActions(!displayActions)}
         ref={httpContent}
       >
         <ReactMarkdown
@@ -82,6 +82,12 @@ function Message({
                     style={darkTheme ? oneDark : oneLight}
                   />
                 );
+              } else {
+                return (
+                  <code {...props} className={className}>
+                    {children}
+                  </code>
+                );
               }
             },
           }}
@@ -95,11 +101,15 @@ function Message({
       )}
       {displayActions && (
         <small className="message__actions">
-          <Button text="Copy" emoji="📋" onClick={clipboardHandler} />
           <Button
-            text="Details"
-            emoji="+"
+            emoji="📋"
+            onClick={clipboardHandler}
+            text="Copy"
+          />
+          <Button
+            emoji="➕"
             onClick={() => setDisplaySub(!displaySub)}
+            text="Details"
           />
         </small>
       )}
@@ -110,9 +120,9 @@ function Message({
 Message.propTypes = {
   content: PropTypes.string.isRequired,
   date: PropTypes.string.isRequired,
-  role: PropTypes.string.isRequired,
   defaultDisplaySub: PropTypes.bool,
   error: PropTypes.bool,
+  role: PropTypes.string.isRequired,
   secret: PropTypes.bool,
 };
 

@@ -24,20 +24,20 @@ function Button({
       type={type ? type : "button"}
     >
       {(loading && <Loader />) || <span>{emoji}</span>}
-      <span className="button__text">{text}</span>
+      {text && <span className="button__text">{text}</span>}
     </button>
   );
 }
 
 Button.propTypes = {
-  emoji: PropTypes.string.isRequired,
-  text: PropTypes.string.isRequired,
   active: PropTypes.bool,
   className: PropTypes.string,
   disabled: PropTypes.bool,
+  emoji: PropTypes.string.isRequired,
   large: PropTypes.bool,
   loading: PropTypes.bool,
   onClick: PropTypes.func,
+  text: PropTypes.string,
   type: PropTypes.string,
 };
 

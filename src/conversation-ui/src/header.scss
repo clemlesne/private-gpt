@@ -33,6 +33,7 @@ html {
       // Make the header full height
       .header {
         min-height: 100vh;
+        overflow-x: auto; // Make it scrollable
       }
 
       // Hide the main content
@@ -70,6 +71,7 @@ html {
     // Header always open, so we need to make sure it is full height
     .header {
       height: 100vh;
+      overflow-x: auto; // Make it scrollable
     }
 
     // Hide the toggle button
@@ -98,10 +100,9 @@ html {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  overflow-x: auto;
 
   > * {
-    padding: calc(var(--header-padding-v) / 2) var(--header-padding-h);
+    margin: var(--header-padding-v) var(--header-padding-h) 0 var(--header-padding-h);
   }
 
   .header__actions {
