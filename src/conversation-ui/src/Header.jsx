@@ -3,7 +3,7 @@ import { header } from "./Utils";
 import { ThemeContext, ConversationContext } from "./App";
 import { useAuth } from "oidc-react";
 import { useContext } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import Button from "./Button";
 import Conversations from "./Conversations";
 
@@ -17,39 +17,36 @@ function Header() {
 
   return (
     <div className="header">
-      <div className="header__top">
-        <Link to="/" className="a--unstyled">
-          <h1>🔒 Private GPT</h1>
-        </Link>
+      <div className="header__actions">
+        {/* This button is never disabled and this is on purpose.
+
+        It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
+        {auth.userData && <>
+          <Button
+            onClick={() => {
+              header(false);
+              navigate("/");
+            }}
+            text="New chat"
+            emoji="+"
+            active={true}
+          />
+          <Button
+            onClick={() => {
+              header(false);
+              navigate("/search");
+            }}
+            text="Search"
+            emoji="🔍"
+          />
+        </>}
         <Button
-          className="header__top__toggle"
+          className="header__actions__toggle"
           emoji="="
           text="Menu"
           onClick={() => header() }
         />
       </div>
-      {auth.userData && <div className="header__actions">
-        {/* This button is never disabled and this is on purpose.
-
-        It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
-        <Button
-          onClick={() => {
-            header(false);
-            navigate("/");
-          }}
-          text="New chat"
-          emoji="+"
-          active={true}
-        />
-        <Button
-          onClick={() => {
-            header(false);
-            navigate("/search");
-          }}
-          text="Search"
-          emoji="🔍"
-        />
-      </div>}
       <div className="header__content">
         {auth.userData && (
           <Conversations
