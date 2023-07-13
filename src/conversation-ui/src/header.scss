@@ -101,7 +101,7 @@ html {
   overflow-x: auto;
 
   > * {
-    padding: calc(var(--header-padding-v) / 2) var(--header-padding-h);
+    margin: var(--header-padding-v) var(--header-padding-h) 0 var(--header-padding-h);
   }
 
   .header__actions {

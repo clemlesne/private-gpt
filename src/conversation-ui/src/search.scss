@@ -2,6 +2,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
+  margin: var(--conversation-padding-v) 0;
 
   > *:not(:last-child) {
     margin-bottom: var(--conversation-padding-v);
