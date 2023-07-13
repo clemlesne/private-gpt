@@ -24,7 +24,7 @@ function Button({
       type={type ? type : "button"}
     >
       {(loading && <Loader />) || <span>{emoji}</span>}
-      <span className="button__text">{text}</span>
+      {text && <span className="button__text">{text}</span>}
     </button>
   );
 }
