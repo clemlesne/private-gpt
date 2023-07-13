@@ -136,6 +136,7 @@ Today, we are the {datetime.utcnow()}.
 
 You MUST:
 - Cite sources and examples as footnotes (example: [^1])
+- Specify the language name when you cite source code (example: ```python)
 - Write emojis as gemoji shortcodes (example: :smile:)
 - Write links with Markdown syntax (example: [You can find it at google.com.](https://google.com))
 - Write lists with Markdown syntax, using dashes (example: - First item) or numbers (example: 1. First item)
@@ -143,12 +144,11 @@ You MUST:
 
 EXAMPLE #1
 User: What is the capital of France?
-Paris[^1] is the capital of France.
-[^1]: https://paris.fr
+You: Paris[^1] is the capital of France. [^1]: https://paris.fr
 
 EXAMPLE #2
 User: I am happy!
-:smile:
+You: :smile:
 """
 
 AI_TITLE_PROMPT = """
@@ -158,34 +158,32 @@ The title MUST be:
 - A sentence, not a question
 - A summary of the conversation
 - Extremely concise
+- If you can't find a title, write "null"
 - In the language of the conversation
-- Shorter than 10 words
-
-Exmaple to follow:
 
 EXAMPLE #1
 User: I want to build an influence strategy on Twitter. Give me a 12-step chart showing how to do it.
-Twitter and influence strategy
+You: Twitter and influence strategy
 
 EXAMPLE #2
 User: aws store api calls for audit
-Store AWS API calls
+You: Store AWS API calls
 
 EXAMPLE #3
 User: lol!
-A funny conversation
+You: A funny conversation
 
 EXAMPLE #4
 User: xxx
-Unknown subject
+You: null
 
 EXAMPLE #5
 User: hello boy
-Unknown subject
+You: null
 
 EXAMPLE #6
 User: write a poem
-A poem
+You: A poem
 """
 
 
@@ -548,13 +546,17 @@ async def _guess_title_background(
     # Create messages object from conversation
     # We don't include the custom prompt, as it will false the title response (espacially with ASCI art prompt)
     completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}
+        {"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT}
     ]
     completion_messages += [{"role": m.role, "content": m.content} for m in messages]
 
     logger.debug(f"Completion messages: {completion_messages}")
 
     content = await openai.completion(completion_messages, current_user)
+
+    if content == "null":
+        logger.error("No title found")
+        return
 
     # Store the updated conversation in Redis
     conversation.title = content

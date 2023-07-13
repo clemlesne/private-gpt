@@ -17,6 +17,7 @@ html {
   --header-width: min(26em, 38vw);
   --line-height-small: 1.5;
   --line-height: 1.7;
+  --message-padding-v: 1em;
   --radius: 1.5em;
   --search-padding-v: 1em;
 
@@ -24,6 +25,7 @@ html {
   @media (max-width: $media--small) {
     --conversation-padding-h: 1em;
     --header-padding-h: 1em;
+    --message-padding-h: 1em;
     --search-padding-h: 1em;
   }
 
@@ -31,6 +33,7 @@ html {
   @media (min-width: $media--small) {
     --conversation-padding-h: 2em;
     --header-padding-h: 2em;
+    --message-padding-h: 2em;
     --search-padding-h: 2em;
   }
 
@@ -116,15 +119,15 @@ body {
   }
 
   h1 {
-    font-size: 1.5rem;
+    font-size: calc(var(--font-size) * 1.75);
   }
 
   h2 {
-    font-size: 1.25rem;
+    font-size: calc(var(--font-size) * 1.5);
   }
 
   h3 {
-    font-size: 1.125rem;
+    font-size: calc(var(--font-size) * 1.25);
   }
 
   strong,
@@ -133,7 +136,7 @@ body {
   }
 
   big {
-    font-size: 3rem;
+    font-size: calc(var(--font-size) * 2.25);
   }
 
   small {
@@ -207,9 +210,9 @@ body {
     &,
     > * {
       // Disable line wrapping
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -286,9 +289,9 @@ body {
       opacity: 0.75;
 
       // Disable line wrapping
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 

@@ -60,7 +60,7 @@ class CosmosStore(IStore):
             return None
 
     async def user_set(self, user: UserModel) -> None:
-        user_client.create_item(body={
+        user_client.upsert_item(body={
             **self._sanitize_before_insert(user.dict()),
             "dummy": "dummy",
         })
@@ -80,7 +80,7 @@ class CosmosStore(IStore):
         return self.conversation_get(conversation_id, user_id) is not None
 
     async def conversation_set(self, conversation: StoredConversationModel) -> None:
-        conversation_client.create_item(body=self._sanitize_before_insert(conversation.dict()))
+        conversation_client.upsert_item(body=self._sanitize_before_insert(conversation.dict()))
 
     async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
@@ -112,7 +112,7 @@ class CosmosStore(IStore):
 
     async def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
-        message_client.create_item(body={
+        message_client.upsert_item(body={
             **self._sanitize_before_insert(message.dict()),
             "_ts": expiry, # TTL in seconds
         })
@@ -127,7 +127,7 @@ class CosmosStore(IStore):
         self._loop.create_task(self._usage_set_background(usage))
 
     async def _usage_set_background(self, usage: UsageModel) -> None:
-        usage_client.create_item(body=self._sanitize_before_insert(usage.dict()))
+        usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
 
     def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:
         for key, value in item.items():

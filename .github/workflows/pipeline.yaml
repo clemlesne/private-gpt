@@ -24,6 +24,10 @@ env:
   NODE_VERSION: 18.16.0
   # https://github.com/helm/helm/releases
   HELM_VERSION: 3.11.2
+  # https://npmjs.com/package/snyk?activeTab=versions
+  SNYK_VERSION: 1.1187.0
+  # https://github.com/oras-project/oras/releases
+  ORAS_VERSION: 1.0.0
 
 jobs:
   sast-creds:
@@ -31,7 +35,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           # We need all Git history for testing credentials
           fetch-depth: 0
@@ -39,7 +43,7 @@ jobs:
           submodules: recursive
 
       - name: SAST - Credentials
-        uses: trufflesecurity/trufflehog@v3.33.0
+        uses: trufflesecurity/trufflehog@v3.44.0
         with:
           base: ${{ github.event.repository.default_branch }}
           head: HEAD
@@ -53,7 +57,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           # We need all Git history for "version.sh"
           fetch-depth: 0
@@ -73,7 +77,7 @@ jobs:
 
       # Required for running "npx" CLI
       - name: Setup Node
-        uses: actions/setup-node@v3.6.0
+        uses: actions/setup-node@v3.7.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -112,20 +116,10 @@ jobs:
             --severity-threshold=medium \
             .helm-template
 
-      # Fix issue "Error: Code Scanning could not process the submitted SARIF file: rejecting SARIF, as there are more runs than allowed (XX > 20)"
-      # See: https://github.com/github/codeql-action/issues/220
-      - name: Merge SARIF files
-        run: |
-          npx --yes @microsoft/sarif-multitool@${{ env.SARIF_MULTITOOL_VERSION }} \
-            merge \
-              --merge-runs \
-              --output-file merged.sarif \
-              snyk.sarif
-
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2.2.12
+        uses: github/codeql-action/upload-sarif@v2.20.3
         with:
-          sarif_file: merged.sarif
+          sarif_file: snyk.sarif
 
   deploy-helm:
     name: Deploy Helm chart
@@ -137,7 +131,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           # Chart Releaser needs to have local access to "gh-pages" plus current branch
           fetch-depth: 0
@@ -177,7 +171,7 @@ jobs:
         src: [conversation-api, conversation-ui]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
         with:
           # We need all Git history for "version.sh"
           fetch-depth: 0
@@ -197,23 +191,23 @@ jobs:
 
       - name: Setup QEMU
         id: setup-qemu
-        uses: docker/setup-qemu-action@v2.1.0
+        uses: docker/setup-qemu-action@v2.2.0
         with:
           platforms: ${{ env.CONTAINER_PLATFORMS }}
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v2.5.0
+        uses: docker/setup-buildx-action@v2.9.1
         with:
           version: v${{ env.BUILDX_VERSION }}
 
       # Required for running "npx" CLI
       - name: Setup Node
-        uses: actions/setup-node@v3.6.0
+        uses: actions/setup-node@v3.7.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Login to container registry
-        uses: docker/login-action@v2.1.0
+        uses: docker/login-action@v2.2.0
         with:
           registry: ${{ env.CONTAINER_REGISTRY }}
           username: ${{ github.actor }}
@@ -221,7 +215,7 @@ jobs:
 
       - name: Container meta
         id: meta
-        uses: docker/metadata-action@v4.4.0
+        uses: docker/metadata-action@v4.6.0
         with:
           images: ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}/${{ matrix.src }}
           tags: |
@@ -244,7 +238,7 @@ jobs:
           echo "tag=$tag" >> $GITHUB_OUTPUT
 
       - name: Build/push container
-        uses: docker/build-push-action@v4.0.0
+        uses: docker/build-push-action@v4.1.1
         with:
           build-args: |
             VERSION=${{ steps.version.outputs.version_full }}
@@ -275,20 +269,10 @@ jobs:
             --severity-threshold=medium \
             ${{ steps.tag.outputs.tag }}
 
-      # Fix issue "Error: Code Scanning could not process the submitted SARIF file: rejecting SARIF, as there are more runs than allowed (XX > 20)"
-      # See: https://github.com/github/codeql-action/issues/220
-      - name: Merge SARIF files
-        run: |
-          npx --yes @microsoft/sarif-multitool@${{ env.SARIF_MULTITOOL_VERSION }} \
-            merge \
-              --merge-runs \
-              --output-file merged.sarif \
-              snyk.sarif
-
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2.2.12
+        uses: github/codeql-action/upload-sarif@v2.20.3
         with:
-          sarif_file: merged.sarif
+          sarif_file: snyk.sarif
 
   sast-semgrep:
     name: SAST - Semgrep
@@ -300,7 +284,7 @@ jobs:
       image: returntocorp/semgrep
     steps:
       - name: Checkout
-        uses: actions/checkout@v3.5.2
+        uses: actions/checkout@v3.5.3
 
       - name: Run tests
         # Semgrep can be used to break the build when it detects security issues. In this case we want to upload the issues to GitHub Security
@@ -310,6 +294,34 @@ jobs:
         run: semgrep ci --sarif --output=semgrep.sarif
 
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2.2.12
+        uses: github/codeql-action/upload-sarif@v2.20.3
         with:
           sarif_file: semgrep.sarif
+
+  deploy-artifacthub-metadata:
+    name: Deploy ArtifactHub metadata
+    # Only deploy on main branch, as we don't want to break verification with a bad metadata file during development
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3.5.3
+
+      - name: Setup ORAS
+        uses: oras-project/setup-oras@v1.0.0
+        with:
+          version: ${{ env.ORAS_VERSION }}
+
+      - name: Login to registry
+        uses: docker/login-action@v2.2.0
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to registry
+        run: |
+          oras push \
+            ${{ env.CONTAINER_REGISTRY }}/${{ env.CONTAINER_NAME }}:artifacthub.io \
+            artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml \
+            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml

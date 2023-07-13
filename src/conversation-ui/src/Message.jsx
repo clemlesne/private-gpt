@@ -1,8 +1,12 @@
 import "./message.scss";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  oneDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeContext } from "./App";
 import { useState, useRef, useContext } from "react";
+import Button from "./Button";
 import moment from "moment";
 import PropTypes from "prop-types";
 import ReactMarkdown from "react-markdown";
@@ -23,13 +27,13 @@ function Message({
 }) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
+  const [displayActions, setDisplayActions] = useState(false);
   // Refs
   const httpContent = useRef(null);
   // React context
-  const [darkTheme,] = useContext(ThemeContext);
+  const [darkTheme] = useContext(ThemeContext);
 
-  const clipboardHandler = (e) => {
-    e.preventDefault();
+  const clipboardHandler = () => {
     // Copy to clipboard
     navigator.clipboard.writeText(content);
     // Animation feedback
@@ -41,45 +45,44 @@ function Message({
   };
 
   return (
-    <div className={`message message--${role} ${error ? "message--error" : ""}`}>
+    <div
+      className={`message message--${role} ${error ? "message--error" : ""}`}
+      onClick={() => setDisplayActions(!displayActions)}
+      onMouseEnter={() => setDisplayActions(true)}
+      onMouseLeave={() => setDisplayActions(false)}
+    >
       <div
-        ref={httpContent}
         className="message__content"
-        onClick={() => setDisplaySub(!displaySub)}
-        onDoubleClick={clipboardHandler}
+        ref={httpContent}
       >
-        { }
         <ReactMarkdown
           linkTarget="_blank"
           remarkPlugins={[
-            remarkGfm,
             remarkBreaks,
-            remarkMath,
             remarkGemoji,
-            remarkNormalizeHeadings,
+            remarkGfm,
             remarkImages,
+            remarkMath,
+            remarkNormalizeHeadings,
           ]}
           children={content}
           components={{
             code({ node, inline, className, children, ...props }) {
-              const match = /language-(\w+)/.exec(className || "");
-              return !inline && match ? (
-                <SyntaxHighlighter
-                  {...props}
-                  children={String(children).replace(/\n$/, "")}
-                  customStyle={{
-                    borderRadius: "var(--radius)",
-                  }}
-                  language={match[1]}
-                  PreTag="div"
-                  showLineNumbers={true}
-                  style={darkTheme ? oneDark : oneLight}
-                />
-              ) : (
-                <code {...props} className={className}>
-                  {children}
-                </code>
-              );
+              if (!inline) {
+                const match = /language-(\w+)/.exec(className || "");
+                const language = match ? match[1] : null;
+                return (
+                  <SyntaxHighlighter
+                    {...props}
+                    children={String(children).replace(/\n$/, "")}
+                    customStyle={{ borderRadius: "var(--radius)" }}
+                    language={language}
+                    PreTag="div"
+                    showLineNumbers={true}
+                    style={darkTheme ? oneDark : oneLight}
+                  />
+                );
+              }
             },
           }}
         />
@@ -88,6 +91,16 @@ function Message({
         <small className="message__sub">
           {secret && <span>Temporary, </span>}
           <span>{moment(date).fromNow()}</span>
+        </small>
+      )}
+      {displayActions && (
+        <small className="message__actions">
+          <Button text="Copy" emoji="📋" onClick={clipboardHandler} />
+          <Button
+            text="Details"
+            emoji="+"
+            onClick={() => setDisplaySub(!displaySub)}
+          />
         </small>
       )}
     </div>

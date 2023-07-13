@@ -14,7 +14,13 @@ html {
       flex-direction: row;
 
       > * {
-        flex-grow: 1;
+        &.header__actions__toggle {
+          flex-grow: 1;
+        }
+
+        &:not(.header__actions__toggle) {
+          flex-grow: 2;
+        }
       }
 
       // Add spaces around actions
@@ -67,7 +73,7 @@ html {
     }
 
     // Hide the toggle button
-    .header__top__toggle {
+    .header__actions__toggle {
       display: none;
     }
 
@@ -96,19 +102,6 @@ html {
 
   > * {
     padding: calc(var(--header-padding-v) / 2) var(--header-padding-h);
-  }
-
-  .header__top {
-    align-items: center;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    justify-content: space-between;
-
-    // Add spaces around title and toggle button
-    > *:not(:last-child) {
-      margin-right: var(--header-padding-h);
-    }
   }
 
   .header__actions {

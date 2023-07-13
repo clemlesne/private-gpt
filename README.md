@@ -1,4 +1,4 @@
-# 🔒 Private GPT
+# Employee communication with Private GPT – AI-powered chatbot you can trust
 
 > 👋🏻 Demo available at [private-gpt.shopping-cart-devops-demo.lesne.pro](https://private-gpt.shopping-cart-devops-demo.lesne.pro).
 
@@ -152,5 +152,13 @@ sequenceDiagram
 ### Architecture
 
 WIP
+
+## [Security](./SECURITY.md)
+
+## Support
+
+This project is open source and maintained by people like you. If you need help or found a bug, please feel free to open an issue on the [clemlesne/private-gpt](https://github.com/clemlesne/private-gpt) GitHub project.
+
+## [Code of conduct](./CODE_OF_CONDUCT.md)
 
 ## [Authors](./AUTHORS.md)

@@ -15,7 +15,7 @@ RUN npm install \
   && npm run build
 
 # Output container
-FROM docker.io/nginxinc/nginx-unprivileged:1.23-alpine3.17
+FROM docker.io/nginxinc/nginx-unprivileged:1.25-alpine3.17
 
 USER root
 
