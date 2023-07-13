@@ -119,15 +119,15 @@ body {
   }
 
   h1 {
-    font-size: 1.5rem;
+    font-size: calc(var(--font-size) * 1.75);
   }
 
   h2 {
-    font-size: 1.25rem;
+    font-size: calc(var(--font-size) * 1.5);
   }
 
   h3 {
-    font-size: 1.125rem;
+    font-size: calc(var(--font-size) * 1.25);
   }
 
   strong,
@@ -136,7 +136,7 @@ body {
   }
 
   big {
-    font-size: 3rem;
+    font-size: calc(var(--font-size) * 2.25);
   }
 
   small {
@@ -210,9 +210,9 @@ body {
     &,
     > * {
       // Disable line wrapping
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -289,9 +289,9 @@ body {
       opacity: 0.75;
 
       // Disable line wrapping
-      white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
