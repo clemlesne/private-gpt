@@ -30,14 +30,14 @@ function Button({
 }
 
 Button.propTypes = {
-  emoji: PropTypes.string.isRequired,
-  text: PropTypes.string.isRequired,
   active: PropTypes.bool,
   className: PropTypes.string,
   disabled: PropTypes.bool,
+  emoji: PropTypes.string.isRequired,
   large: PropTypes.bool,
   loading: PropTypes.bool,
   onClick: PropTypes.func,
+  text: PropTypes.string,
   type: PropTypes.string,
 };
 
