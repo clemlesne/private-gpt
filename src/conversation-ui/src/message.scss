@@ -25,12 +25,6 @@
     }
   }
 
-  &:not(:hover) {
-    .message__actions {
-      display: none;
-    }
-  }
-
   .message__actions {
     background-color: var(--background);
     border-radius: var(--radius);

@@ -24,6 +24,7 @@ function Message({
 }) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
+  const [displayActions, setDisplayActions] = useState(false);
   // Refs
   const httpContent = useRef(null);
   // React context
@@ -41,13 +42,16 @@ function Message({
   };
 
   return (
-    <div className={`message message--${role} ${error ? "message--error" : ""}`}>
+    <div
+      className={`message message--${role} ${error ? "message--error" : ""}`}
+      onClick={() => setDisplayActions(!displayActions)}
+      onMouseEnter={() => setDisplayActions(true)}
+      onMouseLeave={() => setDisplayActions(false)}
+    >
       <div
-        ref={httpContent}
         className="message__content"
-        onClick={() => setDisplaySub(!displaySub)}
+        ref={httpContent}
       >
-        { }
         <ReactMarkdown
           linkTarget="_blank"
           remarkPlugins={[
@@ -86,10 +90,16 @@ function Message({
           <span>{moment(date).fromNow()}</span>
         </small>
       )}
-      <small className="message__actions">
-        <Button text="Copy" emoji="📋" onClick={clipboardHandler} />
-        <Button text="Details" emoji="+" onClick={() => setDisplaySub(!displaySub)} />
-      </small>
+      {displayActions && (
+        <small className="message__actions">
+          <Button text="Copy" emoji="📋" onClick={clipboardHandler} />
+          <Button
+            text="Details"
+            emoji="+"
+            onClick={() => setDisplaySub(!displaySub)}
+          />
+        </small>
+      )}
     </div>
   );
 }
