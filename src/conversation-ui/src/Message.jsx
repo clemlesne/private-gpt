@@ -1,5 +1,8 @@
 import "./message.scss";
-import { oneDark, oneLight } from "react-syntax-highlighter/dist/esm/styles/prism";
+import {
+  oneDark,
+  oneLight,
+} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeContext } from "./App";
 import { useState, useRef, useContext } from "react";
@@ -28,7 +31,7 @@ function Message({
   // Refs
   const httpContent = useRef(null);
   // React context
-  const [darkTheme,] = useContext(ThemeContext);
+  const [darkTheme] = useContext(ThemeContext);
 
   const clipboardHandler = () => {
     // Copy to clipboard
@@ -55,12 +58,12 @@ function Message({
         <ReactMarkdown
           linkTarget="_blank"
           remarkPlugins={[
-            remarkGfm,
             remarkBreaks,
-            remarkMath,
             remarkGemoji,
-            remarkNormalizeHeadings,
+            remarkGfm,
             remarkImages,
+            remarkMath,
+            remarkNormalizeHeadings,
           ]}
           children={content}
           components={{
@@ -78,7 +81,7 @@ function Message({
                     showLineNumbers={true}
                     style={darkTheme ? oneDark : oneLight}
                   />
-                )
+                );
               }
             },
           }}
