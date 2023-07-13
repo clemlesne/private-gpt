@@ -131,7 +131,7 @@ def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
 
 AI_PROMPTS = get_ai_prompt()
 
-AI_CONVERSATION_DEFAULT_PROMPT = f"""
+AI_CONVERSATION_PROMPT = f"""
 Today, we are the {datetime.utcnow()}.
 
 You MUST:
@@ -455,7 +455,7 @@ async def _generate_completion_background(
 
     # Create messages object from conversation
     completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_DEFAULT_PROMPT}
+        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_PROMPT}
     ]
     if conversation.prompt:
         completion_messages += [
