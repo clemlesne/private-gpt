@@ -58,7 +58,7 @@ function Header() {
         <div className="header__bottom__block">
           {auth.userData && (
             <p>
-              Logged as{" "}
+              👤 Logged as{" "}
               {auth.userData.profile.name
                 ? auth.userData.profile.name
                 : "unknown name"}{" "}
