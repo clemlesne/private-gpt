@@ -10,8 +10,8 @@
   > h2,
   > h3 {
     // Disable line wrapping
-    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
