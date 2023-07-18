@@ -86,6 +86,17 @@ body {
   // Reset styles
   appearance: none;
 
+  // Hide scrollbar if not hovered
+  * {
+    &:hover {
+      scrollbar-color: var(--background-muted) transparent;
+    }
+
+    &:not(:hover) {
+      scrollbar-color: transparent transparent;
+    }
+  }
+
   // Code blocks
   pre,
   code,
