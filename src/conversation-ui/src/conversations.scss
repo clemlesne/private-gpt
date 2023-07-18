@@ -2,10 +2,6 @@
   display: flex;
   flex-direction: column;
 
-  > *:not(:last-child) {
-    margin-bottom: var(--conversations-padding);
-  }
-
   > a,
   > h2,
   > h3 {
@@ -13,5 +9,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  h2,
+  h3 {
+    margin-bottom: var(--conversations-padding);
+  }
+
+  a + h2,
+  a + h3 {
+    margin-top: var(--conversations-padding);
+  }
+
+  > a {
+    padding: var(--conversations-padding) 0;
   }
 }
