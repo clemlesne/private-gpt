@@ -17,7 +17,7 @@ html {
   --header-width: min(26em, 38vw);
   --line-height-small: 1.5;
   --line-height: 1.7;
-  --message-padding-v: 1em;
+  --message-padding-v: 0.75em;
   --radius: 1.5em;
   --search-padding-v: 1em;
 
@@ -25,7 +25,7 @@ html {
   @media (max-width: $media--small) {
     --conversation-padding-h: 1em;
     --header-padding-h: 1em;
-    --message-padding-h: 1em;
+    --message-padding-h: 0.75em;
     --search-padding-h: 1em;
   }
 
@@ -33,7 +33,7 @@ html {
   @media (min-width: $media--small) {
     --conversation-padding-h: 2em;
     --header-padding-h: 2em;
-    --message-padding-h: 2em;
+    --message-padding-h: 1.5em;
     --search-padding-h: 2em;
   }
 
@@ -104,7 +104,7 @@ body {
   samp {
     &,
     * {
-      font-family: var(--font-family-mono);
+      font-family: var(--font-family-mono) !important;
     }
   }
 

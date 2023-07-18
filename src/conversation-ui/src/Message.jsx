@@ -75,7 +75,11 @@ function Message({
                   <SyntaxHighlighter
                     {...props}
                     children={String(children).replace(/\n$/, "")}
-                    customStyle={{ borderRadius: "var(--radius)" }}
+                    customStyle={{
+                      borderRadius: "var(--radius)",
+                      margin: "none",
+                      padding: "var(--message-padding-v) var(--message-padding-h)",
+                    }}
                     language={language}
                     PreTag="div"
                     showLineNumbers={true}
