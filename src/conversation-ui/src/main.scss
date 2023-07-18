@@ -43,10 +43,11 @@ html {
   &:not(.theme--dark) {
     // Styles from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
     --background-active: #a9d3f2;
+    --background-bold: #f0f0f0;
     --background-error: #f1bbbc;
-    --background-muted: #f0f0f0;
+    --background-muted: #e0e0e0;
     --background: #ffffff;
-    --border-active: #e6f4ff;
+    --border-active: #004377;
     --border: #c7c7c7;
     --color-active: #004377;
     --color-error: #751d1f;
@@ -57,10 +58,11 @@ html {
   &.theme--dark {
     // Colors come from Microsoft FluentUI (https://react.fluentui.dev/?path=/docs/theme-colors--page)
     --background-active: #004377;
+    --background-bold: #000000;
     --background-error: #751d1f;
-    --background-muted: #1f1f1f;
-    --background: #000000;
-    --border-active: #003054;
+    --background-muted: #2e2e2e;
+    --background: #141414;
+    --border-active: #a9d3f2;
     --border: #737373;
     --color-active: #a9d3f2;
     --color-error: #f1bbbc;

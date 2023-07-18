@@ -97,6 +97,10 @@ html {
 }
 
 .header {
+  --header--background-color: var(--background-bold);
+
+  background-color: var(--header--background-color);
+  border-right: 1px solid var(--background-muted);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -114,7 +118,7 @@ html {
   }
 
   .header__bottom {
-    background-color: var(--background);
+    background-color: var(--header--background-color);
 
     // Stays at the bottom
     bottom: 0;
