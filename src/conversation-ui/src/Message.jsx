@@ -28,6 +28,7 @@ function Message({
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   const [displayActions, setDisplayActions] = useState(false);
+  const [mouseIn, setMouseIn] = useState(false);
   // Refs
   const httpContent = useRef(null);
   // React context
@@ -47,12 +48,20 @@ function Message({
   return (
     <div
       className={`message message--${role} ${error ? "message--error" : ""}`}
-      onMouseEnter={() => setDisplayActions(true)}
-      onMouseLeave={() => setDisplayActions(false)}
+      onMouseEnter={() => {
+        setMouseIn(true);
+        setDisplayActions(true);
+      }}
+      onMouseLeave={() => {
+        setMouseIn(false);
+        setDisplayActions(false);
+      }}
     >
       <div
         className="message__content"
-        onClick={() => setDisplayActions(!displayActions)}
+        onClick={() => {
+          if (!mouseIn) setDisplayActions(!displayActions);
+        }}
         ref={httpContent}
       >
         <ReactMarkdown
