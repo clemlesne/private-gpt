@@ -28,7 +28,7 @@ lint:
 	find . -name "Dockerfile*" -exec bash -c "echo 'File {}:' && hadolint {}" \;
 
 start:
-	npm run dev
+	VITE_VERSION=$(version_full) npm run dev
 
 build:
 	$(docker) build \
