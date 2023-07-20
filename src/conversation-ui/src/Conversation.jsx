@@ -418,10 +418,11 @@ function Conversation() {
           </div>
           <div className="conversation__input__block">
             <textarea
-              placeholder="Message"
-              value={input || ""}
+              autoFocus={true}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={inputKeyHandler}
+              placeholder="Message"
+              value={input || ""}
             />
           </div>
           <div className="conversation__input__block">

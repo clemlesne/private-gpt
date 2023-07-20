@@ -87,10 +87,11 @@ function Search() {
         }}
       >
         <input
-          placeholder="Search messages across all conversations"
-          value={input || ""}
+          autoFocus={true}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={inputKeyHandler}
+          placeholder="Search messages across all conversations"
+          value={input || ""}
         />
         <Button
           disabled={!(input && input.length > 0)}
