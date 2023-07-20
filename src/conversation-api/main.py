@@ -87,7 +87,7 @@ api = FastAPI(
     description="Private GPT is a local version of Chat GPT, using Azure OpenAI.",
     license_info={
         "name": "Apache-2.0",
-        "url": "https://github.com/clemlesne/private-gpt/blob/master/LICENCE",
+        "url": "https://github.com/clemlesne/private-gpt/blob/master/LICENSE",
     },
     root_path=ROOT_PATH,
     title="conversation-api",

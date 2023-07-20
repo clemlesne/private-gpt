@@ -8,10 +8,11 @@ install:
 	npm install
 
 upgrade:
+	@echo "➡️ Upgrading NPM dependencies..."
 	npm update --save
 
 test:
-	@echo "➡️ Scanning for outdated dependencies..."
+	@echo "➡️ Scanning for NPM outdated dependencies..."
 	npm outdated
 
 	@echo "➡️ Running NPM Lint..."

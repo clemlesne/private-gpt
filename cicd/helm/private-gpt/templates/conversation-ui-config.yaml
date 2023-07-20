@@ -32,7 +32,7 @@ data:
         # Rewrite the API URL
         sub_filter 'http://127.0.0.1:8081' 'https://{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}/{{ include "private-gpt.fullname" . }}-conversation-api';
         # Rewrite the UI URL
-        sub_filter 'https://127.0.0.1:8080' 'https://{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}';
+        sub_filter 'http://127.0.0.1:8080' 'https://{{ .Values.ingress.host | required "A value for .Values.ingress.host is required" }}';
         # Rewrite the OIDC authority
         sub_filter 'https://login.microsoftonline.com/common/v2.0' '{{ .Values.oidc.authority | required "A value for .Values.oidc.authority is required" }}';
         # Rewrite the OIDC API audience

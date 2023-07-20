@@ -1,12 +1,11 @@
 import { defineConfig } from "vite";
 import autoprefixer from "autoprefixer";
-import basicSsl from '@vitejs/plugin-basic-ssl';
 import react from "@vitejs/plugin-react";
 
-// https://vitejs.dev/config/
+// https://vitejs.dev/config
 export default defineConfig({
+  clearScreen: false,
   plugins: [
-    basicSsl(),
     react(),
   ],
   css: {
@@ -22,6 +21,6 @@ export default defineConfig({
     },
   },
   server: {
-    https: true,
+    strictPort: true,
   },
 });

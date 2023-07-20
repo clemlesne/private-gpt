@@ -1,9 +1,9 @@
 import "./app.scss";
-import { client } from "./Utils";
+import { client, getIdToken } from "./Utils";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
 import { Outlet, useNavigate } from "react-router-dom";
-import { useAuth } from "oidc-react";
+import { useMsal, useAccount } from "@azure/msal-react";
 import { useState, useEffect, createContext, useMemo } from "react";
 import Header from "./Header";
 import useLocalStorageState from "use-local-storage-state";
@@ -13,28 +13,57 @@ export const ThemeContext = createContext(null);
 
 function App() {
   // Browser context
-  const getPreferredScheme = () =>
-    window?.matchMedia?.("(prefers-color-scheme:dark)")?.matches
+  const getPreferredScheme = async () => {
+    return window?.matchMedia?.("(prefers-color-scheme:dark)")?.matches
       ? "dark"
       : "light";
+  };
   // State
   const [conversations, setConversations] = useState([]);
+  const [isVisible, setIsVisible] = useState(true);
   // Persistance
-  const [darkTheme, setDarkTheme] = useLocalStorageState("darkTheme", {
-    defaultValue: () => getPreferredScheme() == "dark",
-  });
+  let darkTheme, setDarkTheme;
+  // In a browser, we persist the theme in local storage
+  const [localDarkTheme, localSetDarkTheme] = useLocalStorageState(
+    "darkTheme",
+    {
+      defaultValue: async () => (await getPreferredScheme()) == "dark",
+    }
+  );
+  darkTheme = localDarkTheme;
+  setDarkTheme = localSetDarkTheme;
   // Dynamic
-  const auth = useAuth();
   const navigate = useNavigate();
+  // Refresh account
+  const { accounts, instance } = useMsal();
+  const account = useAccount(accounts[0] || null);
+
+  // Watch for window focus
+  useEffect(() => {
+    const handleBlur = () => {
+      setIsVisible(false);
+    };
+    const handleFocus = () => {
+      setIsVisible(true);
+    };
+    window.addEventListener("blur", handleBlur);
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      window.removeEventListener("blur", handleBlur);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
 
   const fetchConversations = async (idToSelect = null) => {
-    if (!auth.userData) return;
+    if (!account) return;
+
+    const idToken = await getIdToken(account, instance);
 
     await client
       .get("/conversation", {
         timeout: 10_000,
         headers: {
-          Authorization: `Bearer ${auth.userData.id_token}`,
+          Authorization: `Bearer ${idToken}`,
         },
       })
       .then((res) => {
@@ -66,18 +95,19 @@ function App() {
 
   useEffect(() => {
     fetchConversations();
-  }, [auth]);
+  }, [account]);
 
-  const themeContextProps = useMemo(() => (
+  const themeContextProps = useMemo(
+    () => [darkTheme, setDarkTheme],
     [darkTheme, setDarkTheme]
-  ), [darkTheme, setDarkTheme]);
+  );
 
   const conversationContextProps = useMemo(() => {
     const refreshConversations = async (id) => {
       fetchConversations(id);
     };
     return [conversations, refreshConversations];
-  }, [conversations, fetchConversations]);
+  }, [conversations]);
 
   return (
     <>
@@ -98,7 +128,7 @@ function App() {
             isAccessibleForFree: true,
             learningResourceType: "workshop",
             license:
-              "https://github.com/clemlesne/private-gpt/blob/main/LICENCE",
+              "https://github.com/clemlesne/private-gpt/blob/main/LICENSE",
             name: "Private GPT",
             releaseNotes: "https://github.com/clemlesne/private-gpt/releases",
             typicalAgeRange: "12-",
@@ -115,7 +145,12 @@ function App() {
             },
           }),
         ]}
-        htmlAttributes={{ class: darkTheme ? "theme--dark" : "theme--light" }}
+        htmlAttributes={{
+          class: `
+            ${darkTheme ? "theme--dark" : "theme--light"}
+            ${isVisible ? "visibility--visible" : "visibility--hidden"}
+          `,
+        }}
       />
       <ThemeContext.Provider value={themeContextProps}>
         <ConversationContext.Provider value={conversationContextProps}>

@@ -11,15 +11,16 @@ html {
 
   // Relative values (em)
   --content-max-width: 80em;
-  --conversation-padding-v: 1em;
+  --conversation-padding-v: var(--titlebar--height);
   --conversations-padding: 0.25em;
-  --header-padding-v: 1em;
+  --header-padding-v: var(--titlebar--height);
   --header-width: min(26em, 38vw);
   --line-height-small: 1.5;
   --line-height: 1.7;
   --message-padding-v: 0.75em;
   --radius: 1.5em;
-  --search-padding-v: 1em;
+  --search-padding-v: var(--titlebar--height);
+  --titlebar--height: 2em;
 
   // Small width
   @media (max-width: $media--small) {
@@ -51,6 +52,7 @@ html {
     --border: #c7c7c7;
     --color-active: #004377;
     --color-error: #751d1f;
+    --color-muted: #737373;
     --color-visited: #58357f;
     --color: #242424;
   }
@@ -66,6 +68,7 @@ html {
     --border: #737373;
     --color-active: #a9d3f2;
     --color-error: #f1bbbc;
+    --color-muted: #c7c7c7;
     --color-visited: #d7c3e3;
     --color: #ffffff;
   }

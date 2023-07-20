@@ -16,13 +16,14 @@ import remarkGfm from "remark-gfm";
 import remarkImages from "remark-images";
 import remarkMath from "remark-math";
 import remarkNormalizeHeadings from "remark-normalize-headings";
+import { AddFilled, ClipboardRegular } from "@fluentui/react-icons";
 
 function Message({
   content,
   date,
-  role,
   defaultDisplaySub = false,
   error = false,
+  role,
   secret = false,
 }) {
   // State
@@ -114,13 +115,9 @@ function Message({
       )}
       {displayActions && (
         <small className="message__actions">
+          <Button emoji={ClipboardRegular} onClick={clipboardHandler} text="Copy" />
           <Button
-            emoji="📋"
-            onClick={clipboardHandler}
-            text="Copy"
-          />
-          <Button
-            emoji="➕"
+            emoji={AddFilled}
             onClick={() => setDisplaySub(!displaySub)}
             text="Details"
           />

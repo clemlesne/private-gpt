@@ -13,6 +13,7 @@ function Button({
   text,
   type,
 }) {
+  const Emoji = emoji;
   return (
     <button
       aria-valuetext={text}
@@ -23,7 +24,7 @@ function Button({
       onClick={onClick}
       type={type ? type : "button"}
     >
-      {(loading && <Loader />) || <span>{emoji}</span>}
+      {(loading && <Loader />) || <Emoji className="button__emoji" />}
       {text && <span className="button__text">{text}</span>}
     </button>
   );
@@ -33,7 +34,7 @@ Button.propTypes = {
   active: PropTypes.bool,
   className: PropTypes.string,
   disabled: PropTypes.bool,
-  emoji: PropTypes.string.isRequired,
+  emoji: PropTypes.element.isRequired,
   large: PropTypes.bool,
   loading: PropTypes.bool,
   onClick: PropTypes.func,
