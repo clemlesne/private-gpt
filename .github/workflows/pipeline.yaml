@@ -183,6 +183,7 @@ jobs:
       # Allow to write to GitHub Packages
       packages: write
     strategy:
+      fail-fast: false
       matrix:
         src: [conversation-api, conversation-ui]
     steps:
