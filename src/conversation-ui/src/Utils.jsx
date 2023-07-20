@@ -1,4 +1,8 @@
 import { InteractionRequiredAuthError } from "@azure/msal-browser";
+import {
+  isPermissionGranted,
+  sendNotification,
+} from "@tauri-apps/api/notification";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 
@@ -20,6 +24,8 @@ axiosRetry(client, {
   },
 });
 
+const IS_TAURI = window.__TAURI_METADATA__ != undefined;
+
 const header = (enabled) => {
   if (enabled == undefined) {
     document.documentElement.classList.toggle(headerOpenClass);
@@ -31,13 +37,15 @@ const header = (enabled) => {
 };
 
 const login = async (instance) => {
-  await instance.loginPopup();
+  IS_TAURI ? await instance.loginRedirect() : await instance.loginPopup();
 };
 
 const logout = async (account, instance) => {
   if (!account) return null;
   const opt = { account };
-  await instance.logoutPopup(opt);
+  IS_TAURI
+    ? await instance.logoutRedirect(opt)
+    : await instance.logoutPopup(opt);
 };
 
 const getIdToken = async (account, instance) => {
@@ -70,6 +78,14 @@ const getIdToken = async (account, instance) => {
         return null;
       };
 
+      if (IS_TAURI) {
+        // Failback to redirect
+        return instance
+          .acquireTokenRedirect(req)
+          .then(onSuccess)
+          .catch(onError);
+      }
+
       // Failback to popup
       return instance.acquireTokenPopup(req).then(onSuccess).catch(onError);
     });
@@ -77,10 +93,19 @@ const getIdToken = async (account, instance) => {
   return idToken;
 };
 
+const notification = async (title, body) => {
+  if (!IS_TAURI) return;
+  const permissionGranted = await isPermissionGranted();
+  if (!permissionGranted) return;
+  sendNotification({ title, body });
+};
+
 export {
   client,
   getIdToken,
   header,
+  IS_TAURI,
   login,
   logout,
+  notification,
 };

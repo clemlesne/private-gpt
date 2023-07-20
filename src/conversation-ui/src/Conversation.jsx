@@ -1,5 +1,5 @@
 import "./conversation.scss";
-import { client, getIdToken, login } from "./Utils";
+import { client, getIdToken, login, notification } from "./Utils";
 import { ConversationContext } from "./App";
 import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
 import { useParams } from "react-router-dom";
@@ -187,6 +187,7 @@ function Conversation() {
           source.onmessage = (e) => {
             if (e.data === "STOP") {
               cleanup();
+              notification(conversation.title, content);
               return;
             }
 

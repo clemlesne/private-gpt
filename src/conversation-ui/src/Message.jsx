@@ -1,4 +1,5 @@
 import "./message.scss";
+import { notification } from "./Utils";
 import {
   oneDark,
   oneLight,
@@ -38,6 +39,8 @@ function Message({
   const clipboardHandler = () => {
     // Copy to clipboard
     navigator.clipboard.writeText(content);
+    // Notification
+    notification("Copied to clipboard");
     // Animation feedback
     const opacity = window.getComputedStyle(httpContent.current).opacity;
     httpContent.current.style.opacity = opacity / 2;

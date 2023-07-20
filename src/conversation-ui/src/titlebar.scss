@@ -1,0 +1,43 @@
+html {
+  &.tauri {
+    &.tauri--win {
+      // See: https://learn.microsoft.com/en-us/windows/apps/design/basics/titlebar-design#standard-design
+      --titlebar--height: 32px;
+    }
+
+    &:not(.tauri--win) {
+      --titlebar--height: 28px;
+    }
+
+    &.visibility--hidden {
+      --titlebar--color: var(--color-muted);
+    }
+
+    &:not(.visibility--hidden) {
+      --titlebar--color: var(--color);
+    }
+  }
+
+  &:not(.tauri) {
+    // Default marign, for readability
+    --titlebar--height: 1em;
+  }
+}
+
+.titlebar {
+  backdrop-filter: blur(4em);
+  color: var(--titlebar--color);
+  cursor: default;
+  font-size: min(calc(var(--titlebar--height) / 2), var(--font-size-small));
+  height: var(--titlebar--height);
+  line-height: var(--titlebar--height);
+  text-align: center;
+  user-select: none;
+  z-index: 10000;
+
+  // Stays at the top
+  left: 0;
+  position: fixed;
+  right: 0;
+  top: 0;
+}

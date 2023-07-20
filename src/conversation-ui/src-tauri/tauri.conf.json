@@ -1,0 +1,85 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devPath": "http://localhost:8080",
+    "distDir": "../dist"
+  },
+  "package": {
+    "productName": "private-gpt",
+    "version": "0.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "clipboard": {
+        "writeText": true
+      },
+      "notification": {
+        "all": true
+      },
+      "window": {
+        "maximize": true,
+        "startDragging": true,
+        "unmaximize": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "DeveloperTool",
+      "copyright": "",
+      "deb": {
+        "depends": []
+      },
+      "externalBin": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "com.github.clemlesne.private-gpt",
+      "longDescription": "Private GPT is a local version of Chat GPT, using Azure OpenAI. It is an enterprise grade platform to deploy a ChatGPT-like interface for your employees.",
+      "macOS": {
+        "entitlements": null,
+        "exceptionDomain": "",
+        "frameworks": [],
+        "license": "../../../LICENSE",
+        "providerShortName": null,
+        "signingIdentity": null
+      },
+      "resources": [],
+      "shortDescription": "Private GPT is a local version of Chat GPT, using Azure OpenAI.",
+      "targets": "all",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": "",
+        "wix": {
+          "license": "../../../LICENSE"
+        }
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 800,
+        "hiddenTitle": true,
+        "minHeight": 400,
+        "minWidth": 600,
+        "resizable": true,
+        "tabbingIdentifier": "private-gpt",
+        "title": "Private GPT",
+        "titleBarStyle": "Overlay",
+        "width": 1200
+      }
+    ]
+  }
+}

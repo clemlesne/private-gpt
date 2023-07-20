@@ -62,7 +62,7 @@ const pcaConfig = {
   system: {
     navigationClient: new CustomNavigationClient(router.navigate),
     loggerOptions: {
-      logLevel: import.meta.env.DEV ? LogLevel.Verbose : LogLevel.Warning,
+      logLevel: import.meta.env.DEV || import.meta.env.TAURI_DEBUG ? LogLevel.Verbose : LogLevel.Warning,
       loggerCallback: (level, message, containsPii) => {
         if (containsPii) {
           return;

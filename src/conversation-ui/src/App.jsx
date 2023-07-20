@@ -1,19 +1,29 @@
 import "./app.scss";
-import { client, getIdToken } from "./Utils";
+import { client, getIdToken, IS_TAURI } from "./Utils";
+import { getCurrent } from "@tauri-apps/api/window";
 import { Helmet } from "react-helmet-async";
 import { helmetJsonLdProp } from "react-schemaorg";
+import { isPermissionGranted, requestPermission } from '@tauri-apps/api/notification';
 import { Outlet, useNavigate } from "react-router-dom";
+import { platform } from "@tauri-apps/api/os";
 import { useMsal, useAccount } from "@azure/msal-react";
 import { useState, useEffect, createContext, useMemo } from "react";
 import Header from "./Header";
+import Titlebar from "./Titlebar";
 import useLocalStorageState from "use-local-storage-state";
 
 export const ConversationContext = createContext(null);
 export const ThemeContext = createContext(null);
 
 function App() {
+  console.debug(IS_TAURI ? "Running in Tauri" : "Running in browser");
+
   // Browser context
   const getPreferredScheme = async () => {
+    if (IS_TAURI) {
+      const theme = await getCurrent().theme();
+      return theme == "dark" ? "dark" : "light";
+    }
     return window?.matchMedia?.("(prefers-color-scheme:dark)")?.matches
       ? "dark"
       : "light";
@@ -23,15 +33,22 @@ function App() {
   const [isVisible, setIsVisible] = useState(true);
   // Persistance
   let darkTheme, setDarkTheme;
-  // In a browser, we persist the theme in local storage
-  const [localDarkTheme, localSetDarkTheme] = useLocalStorageState(
-    "darkTheme",
-    {
-      defaultValue: async () => (await getPreferredScheme()) == "dark",
-    }
-  );
-  darkTheme = localDarkTheme;
-  setDarkTheme = localSetDarkTheme;
+  if (IS_TAURI) {
+    // Tauri does not support dynamic theme change
+    // See: https://github.com/tauri-apps/tauri/issues/4316
+    darkTheme = async () => (await getPreferredScheme()) == "dark";
+    setDarkTheme = () => {};
+  } else {
+    // In a browser, we persist the theme in local storage
+    const [localDarkTheme, localSetDarkTheme] = useLocalStorageState(
+      "darkTheme",
+      {
+        defaultValue: async () => (await getPreferredScheme()) == "dark",
+      }
+    );
+    darkTheme = localDarkTheme;
+    setDarkTheme = localSetDarkTheme;
+  }
   // Dynamic
   const navigate = useNavigate();
   // Refresh account
@@ -52,6 +69,27 @@ function App() {
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
     };
+  }, []);
+
+  // Init notifications
+  useMemo(() => {
+    if (!IS_TAURI) return;
+
+    const grantPermission = async () => {
+      let permissionGranted = await isPermissionGranted();
+      if (!permissionGranted) {
+        const permission = await requestPermission();
+        permissionGranted = permission === 'granted';
+      }
+
+      if (permissionGranted) {
+        console.debug("Permission granted");
+      } else {
+        console.debug("Permission denied");
+      }
+    };
+
+    grantPermission();
   }, []);
 
   const fetchConversations = async (idToSelect = null) => {
@@ -148,12 +186,15 @@ function App() {
         htmlAttributes={{
           class: `
             ${darkTheme ? "theme--dark" : "theme--light"}
+            ${IS_TAURI ? "tauri" : ""}
+            ${IS_TAURI && platform == "Windows_NT" ? "tauri--win" : ""}
             ${isVisible ? "visibility--visible" : "visibility--hidden"}
           `,
         }}
       />
       <ThemeContext.Provider value={themeContextProps}>
         <ConversationContext.Provider value={conversationContextProps}>
+          {IS_TAURI && <Titlebar />}
           <Header />
           <div id="main" className="main">
             <div className="main__container">

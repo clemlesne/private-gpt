@@ -1,6 +1,6 @@
 import "./header.scss";
 import { AddFilled, DoorFilled, EqualOffFilled, KeyFilled, Person12Filled, SearchFilled, WeatherMoonFilled, WeatherSunnyFilled } from "@fluentui/react-icons";
-import { header, login, logout } from "./Utils";
+import { IS_TAURI, header, login, logout } from "./Utils";
 import { ThemeContext, ConversationContext } from "./App";
 import { useContext } from "react";
 import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
@@ -75,11 +75,12 @@ function Header() {
           )}
           {inProgress === "login" && <p>Connecting...</p>}
         </div>
-        <div className="header__bottom__block">
+        {/* Tauri displays a version number in the title bar, at [app_name] > about */}
+        {!IS_TAURI && <div className="header__bottom__block">
           <span>
             App v{import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
           </span>
-        </div>
+        </div>}
         <div className="header__bottom__block">
           <Button
             onClick={() => {
@@ -90,14 +91,16 @@ function Header() {
             loading={inProgress === "login"}
             text={isAuthenticated ? "Signout" : "Signin"}
           />
-          <Button
+          {/* Tauri does not support dynamic theme change
+          See: https://github.com/tauri-apps/tauri/issues/4316 */}
+          {!IS_TAURI && <Button
             onClick={() => {
               header(false);
               setDarkTheme(!darkTheme);
             }}
             emoji={darkTheme ? WeatherSunnyFilled : WeatherMoonFilled}
             text={darkTheme ? "Light" : "Dark"}
-          />
+          />}
         </div>
       </small>
     </div>
