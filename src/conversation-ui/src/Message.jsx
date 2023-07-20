@@ -109,7 +109,7 @@ function Message({
       {displaySub && (
         <small className="message__sub">
           {secret && <span>Temporary, </span>}
-          <span>{moment(date).fromNow()}</span>
+          <span>{moment.utc(date).fromNow()}</span>
         </small>
       )}
       {displayActions && (
