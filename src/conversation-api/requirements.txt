@@ -1,4 +1,4 @@
-aiohttp==3.8.4
+aiohttp==3.8.5
 azure-ai-contentsafety==1.0.0b1
 azure-cosmos==4.4.0
 azure-identity==1.13.0
