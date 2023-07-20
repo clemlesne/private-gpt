@@ -32,4 +32,3 @@ class IndexMessageModel(BaseModel):
     """
     conversation_id: UUID
     id: UUID
-    user_id: UUID

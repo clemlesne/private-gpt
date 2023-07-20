@@ -83,15 +83,16 @@ class QdrantSearch(ISearch):
         raws = client.search(
             collection_name=QD_COLLECTION,
             limit=limit,
-            query_vector=vector,
-            search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
             query_filter=qmodels.Filter(
-                must=[
+                should=[
                     qmodels.FieldCondition(
-                        key="user_id", match=qmodels.MatchValue(value=str(user_id))
+                        key="conversation_id", match=qmodels.MatchValue(value=str(c.id))
                     )
+                    for c in conversations
                 ]
             ),
+            query_vector=vector,
+            search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
         )
 
         logger.debug(f"Got {len(raws)} results from Qdrant")
@@ -129,7 +130,6 @@ class QdrantSearch(ISearch):
         index = IndexMessageModel(
             conversation_id=message.conversation_id,
             id=message.id,
-            user_id=user_id,
         )
 
         client.upsert(
