@@ -1,5 +1,5 @@
 # Import utils
-from utils import (build_logger, get_config, AZ_CREDENTIAL)
+from utils import build_logger, get_config, AZ_CREDENTIAL
 
 # Import misc
 from .istore import IStore
@@ -11,7 +11,7 @@ from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
-from typing import (Any, Dict, List, Union)
+from typing import Any, Dict, List, Union
 from uuid import UUID, uuid4
 import asyncio
 
@@ -41,10 +41,12 @@ class CosmosStore(IStore):
     async def readiness(self) -> ReadinessStatus:
         try:
             # Cosmos DB is not ACID compliant, so we can't use transactions
-            conversation_client.upsert_item(body={
-                "dummy": "dummy",
-                "id": str(uuid4()),
-            })
+            conversation_client.upsert_item(
+                body={
+                    "dummy": "dummy",
+                    "id": str(uuid4()),
+                }
+            )
         except CosmosHttpResponseError:
             logger.warn("Error connecting to Cosmos", exc_info=True)
             return ReadinessStatus.FAIL
@@ -60,10 +62,12 @@ class CosmosStore(IStore):
             return None
 
     async def user_set(self, user: UserModel) -> None:
-        user_client.upsert_item(body={
-            **self._sanitize_before_insert(user.dict()),
-            "dummy": "dummy",
-        })
+        user_client.upsert_item(
+            body={
+                **self._sanitize_before_insert(user.dict()),
+                "dummy": "dummy",
+            }
+        )
 
     async def conversation_get(
         self, conversation_id: UUID, user_id: UUID
@@ -80,18 +84,26 @@ class CosmosStore(IStore):
         return self.conversation_get(conversation_id, user_id) is not None
 
     async def conversation_set(self, conversation: StoredConversationModel) -> None:
-        conversation_client.upsert_item(body=self._sanitize_before_insert(conversation.dict()))
+        conversation_client.upsert_item(
+            body=self._sanitize_before_insert(conversation.dict())
+        )
 
     async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
-        query = f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
-        items = conversation_client.query_items(query=query, enable_cross_partition_query=True)
+        query = (
+            f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
+        )
+        items = conversation_client.query_items(
+            query=query, enable_cross_partition_query=True
+        )
         return [StoredConversationModel(**item) for item in items]
 
     async def message_get(
         self, message_id: UUID, conversation_id: UUID
     ) -> Union[MessageModel, None]:
         try:
-            raw = message_client.read_item(item=str(message_id), partition_key=str(conversation_id))
+            raw = message_client.read_item(
+                item=str(message_id), partition_key=str(conversation_id)
+            )
             return MessageModel(**raw)
         except CosmosHttpResponseError:
             return None
@@ -103,7 +115,8 @@ class CosmosStore(IStore):
         for message_index in message_indexs:
             try:
                 raw = message_client.read_item(
-                    item=str(message_index.id), partition_key=str(message_index.conversation_id)
+                    item=str(message_index.id),
+                    partition_key=str(message_index.conversation_id),
                 )
                 messages.append(MessageModel(**raw))
             except CosmosHttpResponseError:
@@ -112,14 +125,18 @@ class CosmosStore(IStore):
 
     async def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
-        message_client.upsert_item(body={
-            **self._sanitize_before_insert(message.dict()),
-            "_ts": expiry, # TTL in seconds
-        })
+        message_client.upsert_item(
+            body={
+                **self._sanitize_before_insert(message.dict()),
+                "_ts": expiry,  # TTL in seconds
+            }
+        )
 
     async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
-        items = message_client.query_items(query=query, enable_cross_partition_query=True)
+        items = message_client.query_items(
+            query=query, enable_cross_partition_query=True
+        )
         return [MessageModel(**item) for item in items]
 
     async def usage_set(self, usage: UsageModel) -> None:

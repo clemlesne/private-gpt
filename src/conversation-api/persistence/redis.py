@@ -1,5 +1,5 @@
 # Import utils
-from utils import (build_logger, get_config)
+from utils import build_logger, get_config
 
 # Import misc
 from .istore import IStore
@@ -10,7 +10,16 @@ from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
 from redis import Redis
-from typing import (Any, AsyncGenerator, Callable, Awaitable, List, Literal, Optional, Union)
+from typing import (
+    Any,
+    AsyncGenerator,
+    Callable,
+    Awaitable,
+    List,
+    Literal,
+    Optional,
+    Union,
+)
 from uuid import UUID, uuid4
 import asyncio
 

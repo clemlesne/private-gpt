@@ -1,5 +1,5 @@
 # Import utils
-from utils import (build_logger, get_config)
+from utils import build_logger, get_config
 
 # Import misc
 from .isearch import ISearch
@@ -66,9 +66,13 @@ class QdrantSearch(ISearch):
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    async def message_search(self, q: str, user_id: UUID, limit: int) -> SearchModel[MessageModel]:
+    async def message_search(
+        self, q: str, user_id: UUID, limit: int
+    ) -> SearchModel[MessageModel]:
         logger.debug(f"Searching for: {q}")
         start = time.monotonic()
+
+        conversations = await self.store.conversation_list(user_id)
 
         vector = await openai.vector_from_text(
             textwrap.dedent(
@@ -115,9 +119,7 @@ class QdrantSearch(ISearch):
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
 
-    async def message_index(
-        self, message: StoredMessageModel, user_id: UUID
-    ) -> None:
+    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
         logger.debug(f'Indexing message "{message.id}"')
         self._loop.create_task(self._index_background(message, user_id))
 

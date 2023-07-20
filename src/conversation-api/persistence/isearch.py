@@ -20,7 +20,9 @@ class ISearch(ABC):
         pass
 
     @abstractmethod
-    async def message_search(self, query: str, user_id: UUID, limit: int) -> SearchModel[MessageModel]:
+    async def message_search(
+        self, query: str, user_id: UUID, limit: int
+    ) -> SearchModel[MessageModel]:
         pass
 
     @abstractmethod
