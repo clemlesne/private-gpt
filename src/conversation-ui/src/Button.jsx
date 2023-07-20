@@ -20,11 +20,11 @@ function Button({
       className={`button ${active ? "button--active" : ""} ${
         large ? "button--large" : ""
       } ${className ? className : ""}`}
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={onClick}
       type={type ? type : "button"}
     >
-      {(loading && <Loader />) || <Emoji className="button__emoji" />}
+      {(loading && <Loader className="button__loader" />) || <Emoji className="button__emoji" />}
       {text && <span className="button__text">{text}</span>}
     </button>
   );
