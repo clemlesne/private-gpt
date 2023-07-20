@@ -433,11 +433,11 @@ async def _read_message_sse(req: Request, message_id: UUID):
         await clean()
 
 
-@api.get("/message", description="No moderation check, as the content is not stored.")
+@api.get("/message", description="No moderation check, as the content is not stored. Return the 25 most useful messages for the query.")
 async def message_search(
     q: str, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> SearchModel:
-    return await index.message_search(q, current_user.id)
+    return await index.message_search(q, current_user.id, 25)
 
 
 async def _generate_completion_background(

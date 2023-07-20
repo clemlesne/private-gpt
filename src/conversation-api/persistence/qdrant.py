@@ -66,7 +66,7 @@ class QdrantSearch(ISearch):
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    async def message_search(self, q: str, user_id: UUID) -> SearchModel[MessageModel]:
+    async def message_search(self, q: str, user_id: UUID, limit: int) -> SearchModel[MessageModel]:
         logger.debug(f"Searching for: {q}")
         start = time.monotonic()
 
@@ -82,7 +82,7 @@ class QdrantSearch(ISearch):
         total = client.count(collection_name=QD_COLLECTION, exact=False).count
         raws = client.search(
             collection_name=QD_COLLECTION,
-            limit=10,
+            limit=limit,
             query_vector=vector,
             search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
             query_filter=qmodels.Filter(
