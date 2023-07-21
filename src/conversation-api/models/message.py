@@ -1,12 +1,13 @@
 from datetime import datetime
 from enum import Enum
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
 
 class MessageRole(str, Enum):
     ASSISTANT = "assistant"
+    FUNCTION = "function"
     SYSTEM = "system"
     USER = "user"
 
@@ -14,6 +15,7 @@ class MessageRole(str, Enum):
 class MessageModel(BaseModel):
     content: str
     created_at: datetime
+    extra: Optional[Dict[str, Any]] = None
     id: UUID
     role: MessageRole
     secret: bool

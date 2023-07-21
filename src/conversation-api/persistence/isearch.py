@@ -12,6 +12,8 @@ class SearchImplementation(str, Enum):
 
 
 class ISearch(ABC):
+    store: IStore
+
     def __init__(self, store: IStore):
         self.store = store
 
@@ -26,5 +28,5 @@ class ISearch(ABC):
         pass
 
     @abstractmethod
-    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
+    async def message_index(self, message: StoredMessageModel) -> None:
         pass

@@ -11,6 +11,7 @@ from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
+from models.memory import MemoryModel
 from typing import Any, Dict, List, Union
 from uuid import UUID, uuid4
 import asyncio
@@ -28,17 +29,20 @@ DB_NAME = get_config("cosmos", "database", str, required=True)
 client = CosmosClient(url=DB_URL, credential=AZ_CREDENTIAL)
 database = client.get_database_client(DB_NAME)
 conversation_client = database.get_container_client("conversation")
+memory_client = database.get_container_client("memory")
 message_client = database.get_container_client("message")
-user_client = database.get_container_client("user")
 usage_client = database.get_container_client("usage")
+user_client = database.get_container_client("user")
 logger.info(f'Connected to Cosmos DB at "{DB_URL}"')
 
 
 class CosmosStore(IStore):
+    _loop: asyncio.AbstractEventLoop
+
     def __init__(self):
         self._loop = asyncio.get_running_loop()
 
-    async def readiness(self) -> ReadinessStatus:
+    def readiness(self) -> ReadinessStatus:
         try:
             # Cosmos DB is not ACID compliant, so we can't use transactions
             conversation_client.upsert_item(
@@ -52,7 +56,7 @@ class CosmosStore(IStore):
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    def user_get(self, user_external_id: str) -> Union[UserModel, None]:
         query = f"SELECT * FROM c WHERE c.external_id = '{user_external_id}'"
         items = user_client.query_items(query=query, partition_key="dummy")
         try:
@@ -61,7 +65,7 @@ class CosmosStore(IStore):
         except StopIteration:
             return None
 
-    async def user_set(self, user: UserModel) -> None:
+    def user_set(self, user: UserModel) -> None:
         user_client.upsert_item(
             body={
                 **self._sanitize_before_insert(user.dict()),
@@ -69,7 +73,7 @@ class CosmosStore(IStore):
             }
         )
 
-    async def conversation_get(
+    def conversation_get(
         self, conversation_id: UUID, user_id: UUID
     ) -> Union[StoredConversationModel, None]:
         try:
@@ -80,24 +84,32 @@ class CosmosStore(IStore):
         except CosmosHttpResponseError:
             return None
 
-    async def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         return self.conversation_get(conversation_id, user_id) is not None
 
-    async def conversation_set(self, conversation: StoredConversationModel) -> None:
+    def conversation_set(self, conversation: StoredConversationModel) -> None:
         conversation_client.upsert_item(
             body=self._sanitize_before_insert(conversation.dict())
         )
 
-    async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         query = (
             f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         )
-        items = conversation_client.query_items(
+        raws = conversation_client.query_items(
             query=query, enable_cross_partition_query=True
         )
-        return [StoredConversationModel(**item) for item in items]
+        conversations = []
+        for raw in raws:
+            if raw is None:
+                continue
+            try:
+                conversations.append(StoredConversationModel(**raw))
+            except Exception:
+                logger.warn("Error parsing conversation", exc_info=True)
+        return conversations
 
-    async def message_get(
+    def message_get(
         self, message_id: UUID, conversation_id: UUID
     ) -> Union[MessageModel, None]:
         try:
@@ -108,7 +120,7 @@ class CosmosStore(IStore):
         except CosmosHttpResponseError:
             return None
 
-    async def message_get_index(
+    def message_get_index(
         self, message_indexs: List[IndexMessageModel]
     ) -> List[MessageModel]:
         messages = []
@@ -123,7 +135,7 @@ class CosmosStore(IStore):
                 pass
         return messages
 
-    async def message_set(self, message: StoredMessageModel) -> None:
+    def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
         message_client.upsert_item(
             body={
@@ -132,18 +144,38 @@ class CosmosStore(IStore):
             }
         )
 
-    async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
-        items = message_client.query_items(
+        raws = message_client.query_items(
             query=query, enable_cross_partition_query=True
         )
-        return [MessageModel(**item) for item in items]
+        items = []
+        for raw in raws:
+            if raw is None:
+                continue
+            try:
+                items.append(MessageModel(**raw))
+            except Exception:
+                logger.warn("Error parsing message", exc_info=True)
+        return items
 
-    async def usage_set(self, usage: UsageModel) -> None:
+    def usage_set(self, usage: UsageModel) -> None:
         logger.debug(f'Usage set "{usage.id}"')
         self._loop.create_task(self._usage_set_background(usage))
 
-    async def _usage_set_background(self, usage: UsageModel) -> None:
+    def memory_get(self, key: str, user_id: UUID) -> Union[MemoryModel, None]:
+        query = f"SELECT * FROM c WHERE c.key = '{key}' AND c.user_id = '{user_id}'"
+        items = user_client.query_items(query=query, partition_key="user_id")
+        try:
+            raw = next(items)
+            return MemoryModel(**raw)
+        except StopIteration:
+            return None
+
+    def memory_set(self, memory: MemoryModel) -> None:
+        memory_client.upsert_item(body=self._sanitize_before_insert(memory.dict()))
+
+    def _usage_set_background(self, usage: UsageModel) -> None:
         usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
 
     def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:

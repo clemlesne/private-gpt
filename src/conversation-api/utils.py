@@ -162,10 +162,10 @@ metric_exporter = AzureMonitorMetricExporter(
 set_meter_provider(
     MeterProvider([PeriodicExportingMetricReader(ConsoleMetricExporter())])
 )
-SystemMetricsInstrumentor().instrument()  # System
-RedisInstrumentor().instrument()  # Redis
-RequestsInstrumentor().instrument()  # Requests
-URLLib3Instrumentor().instrument(url_filter=strip_query_params)  # Urllib3
+# SystemMetricsInstrumentor().instrument()  # System
+# RedisInstrumentor().instrument()  # Redis
+# RequestsInstrumentor().instrument()  # Requests
+# URLLib3Instrumentor().instrument(url_filter=strip_query_params)  # Urllib3
 trace.set_tracer_provider(TracerProvider())
 trace_exporter = AzureMonitorTraceExporter(
     connection_string=APPINSIGHTS_CONNECTION_STR, credential=AZ_CREDENTIAL

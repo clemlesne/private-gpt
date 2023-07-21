@@ -18,21 +18,23 @@ import time
 
 
 logger = build_logger(__name__)
-openai = OpenAI()
 QD_COLLECTION = "messages"
 QD_DIMENSION = 1536
 QD_HOST = get_config("qd", "host", str, required=True)
 QD_PORT = 6333
 QD_METRIC = qmodels.Distance.DOT
 client = QdrantClient(host=QD_HOST, port=6333)
-logger.info(f'Connected to Qdrant at "{QD_HOST}:{QD_PORT}"')
 
 
 class QdrantSearch(ISearch):
-    def __init__(self, store: IStore):
+    _loop: asyncio.AbstractEventLoop
+    openai: OpenAI
+
+    def __init__(self, store: IStore, openai: OpenAI):
         super().__init__(store)
 
         self._loop = asyncio.get_running_loop()
+        self.openai = openai
 
         # Ensure collection exists
         try:
@@ -72,15 +74,14 @@ class QdrantSearch(ISearch):
         logger.debug(f"Searching for: {q}")
         start = time.monotonic()
 
-        conversations = await self.store.conversation_list(user_id)
+        conversations = self.store.conversation_list(user_id)
 
-        vector = await openai.vector_from_text(
+        vector = await self.openai.vector_from_text(
             textwrap.dedent(
                 f"""
                 Today, we are the {datetime.utcnow()}. {q.capitalize()}
             """
             ),
-            user_id,
         )
 
         total = client.count(collection_name=QD_COLLECTION, exact=False).count
@@ -108,7 +109,7 @@ class QdrantSearch(ISearch):
             except Exception:
                 logger.warn("Error parsing index message", exc_info=True)
 
-        messages = await self.store.message_get_index(index_messages)
+        messages = self.store.message_get_index(index_messages)
 
         return SearchModel[MessageModel](
             answers=[
@@ -119,16 +120,14 @@ class QdrantSearch(ISearch):
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
 
-    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
+    async def message_index(self, message: StoredMessageModel) -> None:
         logger.debug(f'Indexing message "{message.id}"')
-        self._loop.create_task(self._index_background(message, user_id))
+        self._loop.create_task(self._index_background(message))
 
-    async def _index_background(
-        self, message: StoredMessageModel, user_id: UUID
-    ) -> None:
+    async def _index_background(self, message: StoredMessageModel) -> None:
         logger.debug(f"Starting indexing worker for message: {message.id}")
 
-        vector = await openai.vector_from_text(message.content, user_id)
+        vector = await self.openai.vector_from_text(message.content)
         index = IndexMessageModel(
             conversation_id=message.conversation_id,
             id=message.id,

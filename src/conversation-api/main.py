@@ -12,10 +12,6 @@ from utils import (
 from ai.contentsafety import ContentSafety
 from ai.openai import (
     OpenAI,
-    OAI_GPT_MODEL,
-    OAI_GPT_MAX_TOKENS,
-    OAI_ADA_MODEL,
-    OAI_ADA_MAX_TOKENS,
 )
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, status, Request, Depends
@@ -69,12 +65,23 @@ elif store_impl == StoreImplementation.REDIS:
 else:
     raise ValueError(f"Unknown store implementation: {store_impl}")
 
+###
+# Init Generative AI
+###
+
+openai = OpenAI(store)
+content_safety = ContentSafety()
+
+###
+# Init persistence
+###
+
 search_impl = get_config("persistence", "search", SearchImplementation, required=True)
 if search_impl == SearchImplementation.QDRANT:
     logger.info("Using Qdrant search")
     from persistence.qdrant import QdrantSearch
 
-    index = QdrantSearch(store)
+    index = QdrantSearch(store, openai)
 else:
     raise ValueError(f"Unknown search implementation: {search_impl}")
 
@@ -117,14 +124,9 @@ api.add_middleware(
     allow_origins=["*"],
 )
 
-
 ###
 # Init Generative AI
 ###
-
-openai = OpenAI()
-content_safety = ContentSafety()
-
 
 def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
     prompts = {}
@@ -145,27 +147,6 @@ def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
 
 
 AI_PROMPTS = get_ai_prompt()
-
-AI_CONVERSATION_PROMPT = f"""
-Today, we are the {datetime.utcnow()}.
-
-You MUST:
-- Cite sources and examples as footnotes (example: [^1])
-- Prefer tables to bulleted lists
-- Specify the language name when you cite source code (example: ```python)
-- Write emojis as gemoji shortcodes (example: :smile:)
-- Write links with Markdown syntax (example: [You can find it at google.com.](https://google.com))
-- Write lists with Markdown syntax, using dashes (example: - First item) or numbers (example: 1. First item)
-- Write your answer in the language of the conversation
-
-EXAMPLE #1
-User: What is the capital of France?
-You: Paris[^1] is the capital of France. [^1]: https://paris.fr
-
-EXAMPLE #2
-User: I am happy!
-You: :smile:
-"""
 
 AI_TITLE_PROMPT = """
 Your role is to find a title for the conversation.
@@ -201,7 +182,6 @@ EXAMPLE #6
 User: write a poem
 You: A poem
 """
-
 
 @api.get(
     "/health/liveness",
@@ -253,10 +233,10 @@ async def get_current_user(
         logger.error("Token does not contain a sub claim")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    user = await store.user_get(sub)
+    user = store.user_get(sub)
     if not user:
         user = UserModel(external_id=sub, id=uuid4())
-        await store.user_set(user)
+        store.user_set(user)
 
     logger.info(f'User "{user.id}" logged in')
     logger.debug(f"JWT: {jwt}")
@@ -273,13 +253,13 @@ async def prompt_list() -> ListPromptsModel:
 async def conversation_get(
     id: UUID, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> GetConversationModel:
-    conversation = await store.conversation_get(id, current_user.id)
+    conversation = store.conversation_get(id, current_user.id)
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
-    messages = await store.message_list(conversation.id)
+    messages = store.message_list(conversation.id)
     return GetConversationModel(
         **conversation.dict(),
         messages=messages,
@@ -290,7 +270,7 @@ async def conversation_get(
 async def conversation_list(
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> ListConversationsModel:
-    conversations = await store.conversation_list(current_user.id)
+    conversations = store.conversation_list(current_user.id)
     return ListConversationsModel(conversations=conversations)
 
 
@@ -323,7 +303,7 @@ async def message_post(
         logger.info(
             f"Adding message to conversation (conversation_id={conversation_id})"
         )
-        if not await store.conversation_exists(conversation_id, current_user.id):
+        if not store.conversation_exists(conversation_id, current_user.id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
@@ -340,11 +320,11 @@ async def message_post(
             token=uuid4(),
         )
 
-        tokens_nb = await _validate_message_length(message=message)
+        # tokens_nb = await _validate_message_length(message=message)
 
         # Update conversation
-        await store.message_set(message)
-        conversation = await store.conversation_get(conversation_id, current_user.id)
+        store.message_set(message)
+        conversation = store.conversation_get(conversation_id, current_user.id)
         if not conversation:
             logger.warn("ACID error: conversation not found after testing existence")
             raise HTTPException(
@@ -353,17 +333,17 @@ async def message_post(
             )
         await _message_index(message, current_user, conversation.prompt)
 
-        # Build usage
-        usage = UsageModel(
-            ai_model=OAI_GPT_MODEL,
-            conversation_id=conversation_id,
-            created_at=datetime.utcnow(),
-            id=uuid4(),
-            tokens=tokens_nb,
-            user_id=current_user.id,
-            prompt_name=conversation.prompt.name if conversation.prompt else None,
-        )
-        await store.usage_set(usage)
+        # # Build usage
+        # usage = UsageModel(
+        #     ai_model=OAI_GPT_MODEL,
+        #     conversation_id=conversation_id,
+        #     created_at=datetime.utcnow(),
+        #     id=uuid4(),
+        #     tokens=tokens_nb,
+        #     user_id=current_user.id,
+        #     prompt_name=conversation.prompt.name if conversation.prompt else None,
+        # )
+        # store.usage_set(usage)
     else:
         # Test prompt ID if provided
         if prompt_id and prompt_id not in AI_PROMPTS:
@@ -372,7 +352,7 @@ async def message_post(
                 detail="Prompt ID not found",
             )
 
-        tokens_nb = await _validate_message_length(content=content)
+        # tokens_nb = await _validate_message_length(content=content)
 
         # Build conversation
         conversation = StoredConversationModel(
@@ -381,19 +361,19 @@ async def message_post(
             prompt=AI_PROMPTS[prompt_id] if prompt_id else None,
             user_id=current_user.id,
         )
-        await store.conversation_set(conversation)
+        store.conversation_set(conversation)
 
-        # Build usage
-        usage = UsageModel(
-            ai_model=OAI_GPT_MODEL,
-            conversation_id=conversation.id,
-            created_at=datetime.utcnow(),
-            id=uuid4(),
-            tokens=tokens_nb,
-            user_id=current_user.id,
-            prompt_name=conversation.prompt.name if conversation.prompt else None,
-        )
-        await store.usage_set(usage)
+        # # Build usage
+        # usage = UsageModel(
+        #     ai_model=OAI_GPT_MODEL,
+        #     conversation_id=conversation.id,
+        #     created_at=datetime.utcnow(),
+        #     id=uuid4(),
+        #     tokens=tokens_nb,
+        #     user_id=current_user.id,
+        #     prompt_name=conversation.prompt.name if conversation.prompt else None,
+        # )
+        # await store.usage_set(usage)
 
         # Build message
         message = StoredMessageModel(
@@ -405,10 +385,10 @@ async def message_post(
             secret=secret,
             token=uuid4(),
         )
-        await store.message_set(message)
+        store.message_set(message)
         await _message_index(message, current_user, conversation.prompt)
 
-    messages = await store.message_list(conversation.id)
+    messages = store.message_list(conversation.id)
 
     if conversation.title is None:
         loop.create_task(_guess_title_background(conversation, messages, current_user))
@@ -475,24 +455,12 @@ async def _generate_completion_background(
         logger.error("No token provided")
         return
 
-    # Create messages object from conversation
-    completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_CONVERSATION_PROMPT}
-    ]
-    if conversation.prompt:
-        completion_messages += [
-            {"role": MessageRole.SYSTEM, "content": conversation.prompt.content}
-        ]
-    completion_messages += [{"role": m.role, "content": m.content} for m in messages]
-
-    logger.debug(f"Completion messages: {completion_messages}")
-
     content_full = ""
-    async for content in openai.completion_stream(completion_messages, current_user):
-        logger.debug(f"Completion result: {content}")
+    async for message in openai.chain(last_message, conversation.id, current_user.id):
+        logger.debug(f"Completion result: {message}")
         # Add content to the redis stream cache_key
-        await stream.push(content, last_message.token)
-        content_full += content
+        await stream.push(message, last_message.token)
+        content_full += message
 
     # First, store the updated conversation in Redis
     res_message = StoredMessageModel(
@@ -503,7 +471,7 @@ async def _generate_completion_background(
         role=MessageRole.ASSISTANT,
         secret=last_message.secret,
     )
-    await store.message_set(res_message)
+    store.message_set(res_message)
     await _message_index(res_message, current_user, conversation.prompt)
 
     # Then, send the end of stream message
@@ -515,56 +483,56 @@ async def _message_index(
     current_user: UserModel,
     prompt: Optional[StoredPromptModel],
 ) -> None:
-    tokens_nb = oai_tokens_nb(message.content, OAI_ADA_MODEL)
-    if tokens_nb > OAI_ADA_MAX_TOKENS:
-        logger.info(f"Message ({tokens_nb}) too long for indexing")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Conversation history is too long",
-        )
+    # tokens_nb = oai_tokens_nb(message.content, OAI_ADA_MODEL)
+    # if tokens_nb > OAI_ADA_MAX_TOKENS:
+    #     logger.info(f"Message ({tokens_nb}) too long for indexing")
+    #     raise HTTPException(
+    #         status_code=status.HTTP_400_BAD_REQUEST,
+    #         detail="Conversation history is too long",
+    #     )
 
-    usage = UsageModel(
-        ai_model=OAI_ADA_MODEL,
-        conversation_id=message.conversation_id,
-        created_at=datetime.utcnow(),
-        id=uuid4(),
-        tokens=oai_tokens_nb(message.content, OAI_ADA_MODEL),
-        user_id=current_user.id,
-        prompt_name=prompt.name if prompt else None,
-    )
-    await store.usage_set(usage)
-    await index.message_index(message, current_user.id)
+    # usage = UsageModel(
+    #     ai_model=OAI_ADA_MODEL,
+    #     conversation_id=message.conversation_id,
+    #     created_at=datetime.utcnow(),
+    #     id=uuid4(),
+    #     tokens=oai_tokens_nb(message.content, OAI_ADA_MODEL),
+    #     user_id=current_user.id,
+    #     prompt_name=prompt.name if prompt else None,
+    # )
+    # store.usage_set(usage)
+    await index.message_index(message)
 
 
-async def _validate_message_length(
-    message: Optional[StoredMessageModel] = None,
-    content: Optional[str] = None,
-) -> int:
-    if content:
-        tokens_nb = oai_tokens_nb(content, OAI_GPT_MODEL)
-    elif message:
-        tokens_nb = oai_tokens_nb(
-            message.content
-            + "".join(
-                [m.content for m in await store.message_list(message.conversation_id)]
-            ),
-            OAI_GPT_MODEL,
-        )
-    else:
-        raise ValueError(
-            'Either message or content must be provided to "validate_usage"'
-        )
+# async def _validate_message_length(
+#     message: Optional[StoredMessageModel] = None,
+#     content: Optional[str] = None,
+# ) -> int:
+#     if content:
+#         tokens_nb = oai_tokens_nb(content, OAI_GPT_MODEL)
+#     elif message:
+#         tokens_nb = oai_tokens_nb(
+#             message.content
+#             + "".join(
+#                 [m.content for m in store.message_list(message.conversation_id)]
+#             ),
+#             OAI_GPT_MODEL,
+#         )
+#     else:
+#         raise ValueError(
+#             'Either message or content must be provided to "validate_usage"'
+#         )
 
-    logger.debug(f"{tokens_nb} tokens in the conversation")
+#     logger.debug(f"{tokens_nb} tokens in the conversation")
 
-    if tokens_nb > OAI_GPT_MAX_TOKENS:
-        logger.info(f"Message ({tokens_nb}) too long for conversation")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Conversation history is too long",
-        )
+#     if tokens_nb > OAI_GPT_MAX_TOKENS:
+#         logger.info(f"Message ({tokens_nb}) too long for conversation")
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="Conversation history is too long",
+#         )
 
-    return tokens_nb
+#     return tokens_nb
 
 
 async def _guess_title_background(
@@ -574,22 +542,18 @@ async def _guess_title_background(
 ) -> None:
     logger.info(f"Guessing title for conversation {conversation.id}")
 
-    # Create messages object from conversation
-    # We don't include the custom prompt, as it will false the title response (espacially with ASCI art prompt)
-    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT}]
-    completion_messages += [{"role": m.role, "content": m.content} for m in messages]
+    last_message = messages[-1]
 
-    logger.debug(f"Completion messages: {completion_messages}")
+    message = await openai.completion(last_message, conversation.id, current_user.id)
 
-    content = await openai.completion(completion_messages, current_user)
-
-    if content == "null":
+    if message.content == "null":
         logger.error("No title found")
         return
 
     # Store the updated conversation in Redis
-    conversation.title = content
-    await store.conversation_set(conversation)
+    logger.debug(f"Title found: {message.content}")
+    conversation.title = message.content
+    store.conversation_set(conversation)
 
 
 # Instrument FastAPI with OpenTelemetry

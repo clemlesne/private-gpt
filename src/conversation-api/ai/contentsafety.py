@@ -25,7 +25,6 @@ ACS_SEVERITY_THRESHOLD = 2
 ACS_API_BASE = get_config("acs", "api_base", str, required=True)
 ACS_API_TOKEN = get_config("acs", "api_token", str, required=True)
 ACS_MAX_LENGTH = get_config("acs", "max_length", int, required=True)
-logger.info(f"Connected Azure Content Safety to {ACS_API_BASE}")
 acs_client = azure_cs.ContentSafetyClient(
     ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
 )
