@@ -8,10 +8,11 @@ install:
 	npm install
 
 upgrade:
+	@echo "➡️ Upgrading NPM dependencies..."
 	npm update --save
 
 test:
-	@echo "➡️ Scanning for outdated dependencies..."
+	@echo "➡️ Scanning for NPM outdated dependencies..."
 	npm outdated
 
 	@echo "➡️ Running NPM Lint..."
@@ -28,7 +29,7 @@ lint:
 	find . -name "Dockerfile*" -exec bash -c "echo 'File {}:' && hadolint {}" \;
 
 start:
-	npm run dev
+	VITE_VERSION=$(version_full) npm run dev
 
 build:
 	$(docker) build \

@@ -1,12 +1,17 @@
 import "./main.scss";
 import "normalize.css/normalize.css";
-import { AppInsightsContext, ReactPlugin } from "@microsoft/applicationinsights-react-js";
+import {
+  AppInsightsContext,
+  ReactPlugin,
+} from "@microsoft/applicationinsights-react-js";
 import { ApplicationInsights } from "@microsoft/applicationinsights-web";
-import { AuthProvider } from "oidc-react";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { CustomNavigationClient } from "./utils/NavigationClient";
 import { HelmetProvider } from "react-helmet-async";
+import { LogLevel } from "@azure/msal-common";
+import { MsalProvider } from "@azure/msal-react";
+import { PublicClientApplication } from "@azure/msal-browser";
 import App from "./App";
-import Auth from "./Auth";
 import Conversation from "./Conversation";
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -15,7 +20,7 @@ import Search from "./Search";
 const reactPlugin = new ReactPlugin();
 const appInsights = new ApplicationInsights({
   config: {
-    connectionString: "InstrumentationKey=0b860d29-2a55-4d29-ab57-88cdd85a8da0;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com",
+    connectionString: import.meta.env.VITE_APP_INSIGHTS_CONNECTION_STR,
     extensions: [reactPlugin],
     enableAutoRouteTracking: true,
   },
@@ -38,35 +43,65 @@ const router = createBrowserRouter([
       {
         path: "search",
         element: <Search />,
-      },
-      {
-        path: "auth",
-        element: <Auth />,
-      },
+      }
     ],
   },
 ]);
 
-const oidcConfig = {
-  onSignIn: () => {
-    router.navigate("/");
+const pcaConfig = {
+  auth: {
+    clientId: import.meta.env.VITE_OIDC_CLIENT_ID,
+    navigateToLoginRequestUrl: true, // Go back to the original page after login
+    postLogoutRedirectUri: "/", // Go back to the app root after logout
+    redirectUri: "/", // Go back to the app root after login
   },
-  authority: "https://login.microsoftonline.com/common/v2.0",
-  autoSignIn: false, // Not automatically sign in, it is perceived as weird for users to be signed in without clicking a button
-  autoSignOut: false, // Not automatically sign out, it is perceived as weird for users to be signed out "randomly"
-  clientId: "e9d5f20f-7f14-4204-a9a2-0d91d6af5c82",
-  redirectUri: "https://127.0.0.1:8080/auth",
-  scope: "openid profile email",
-  silentRedirectUri: "https://127.0.0.1:8080/auth",
+  cache: {
+    cacheLocation: "localStorage",
+    temporaryCacheLocation: "sessionStorage",
+  },
+  system: {
+    navigationClient: new CustomNavigationClient(router.navigate),
+    loggerOptions: {
+      logLevel: import.meta.env.DEV ? LogLevel.Verbose : LogLevel.Warning,
+      loggerCallback: (level, message, containsPii) => {
+        if (containsPii) {
+          return;
+        }
+        switch (level) {
+          case LogLevel.Error:
+            console.error(message);
+            return;
+          case LogLevel.Info:
+            console.info(message);
+            return;
+          case LogLevel.Verbose:
+            console.debug(message);
+            return;
+          case LogLevel.Warning:
+            console.warn(message);
+            return;
+        }
+      },
+      piiLoggingEnabled: false,
+    },
+  },
 };
+const pca = new PublicClientApplication(pcaConfig);
+
+// Set the default account
+pca.addEventCallback((event) => {
+  if (event.eventType === "msal:loginSuccess") {
+    pca.setActiveAccount(event.payload.account);
+  }
+});
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <AppInsightsContext.Provider value={reactPlugin}>
       <HelmetProvider>
-        <AuthProvider {...oidcConfig}>
+        <MsalProvider instance={pca}>
           <RouterProvider router={router} />
-        </AuthProvider>
+        </MsalProvider>
       </HelmetProvider>
     </AppInsightsContext.Provider>
   </React.StrictMode>

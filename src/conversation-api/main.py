@@ -10,12 +10,22 @@ from utils import (
 
 # Import misc
 from ai.contentsafety import ContentSafety
-from ai.openai import OpenAI, OAI_GPT_MODEL, OAI_GPT_MAX_TOKENS, OAI_ADA_MODEL, OAI_ADA_MAX_TOKENS
+from ai.openai import (
+    OpenAI,
+    OAI_GPT_MODEL,
+    OAI_GPT_MAX_TOKENS,
+    OAI_ADA_MODEL,
+    OAI_ADA_MAX_TOKENS,
+)
 from datetime import datetime
 from fastapi import FastAPI, HTTPException, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from models.conversation import (GetConversationModel, ListConversationsModel, StoredConversationModel)
+from models.conversation import (
+    GetConversationModel,
+    ListConversationsModel,
+    StoredConversationModel,
+)
 from models.message import MessageModel, MessageRole, StoredMessageModel
 from models.prompt import StoredPromptModel, ListPromptsModel
 from models.readiness import ReadinessModel, ReadinessCheckModel, ReadinessStatus
@@ -49,10 +59,12 @@ store_impl = get_config("persistence", "store", StoreImplementation, required=Tr
 if store_impl == StoreImplementation.COSMOS:
     logger.info("Using CosmosDB store")
     from persistence.cosmos import CosmosStore
+
     store = CosmosStore()
 elif store_impl == StoreImplementation.REDIS:
     logger.info("Using Redis store")
     from persistence.redis import RedisStore
+
     store = RedisStore()
 else:
     raise ValueError(f"Unknown store implementation: {store_impl}")
@@ -61,6 +73,7 @@ search_impl = get_config("persistence", "search", SearchImplementation, required
 if search_impl == SearchImplementation.QDRANT:
     logger.info("Using Qdrant search")
     from persistence.qdrant import QdrantSearch
+
     index = QdrantSearch(store)
 else:
     raise ValueError(f"Unknown search implementation: {search_impl}")
@@ -69,6 +82,7 @@ stream_impl = get_config("persistence", "stream", StreamImplementation, required
 if stream_impl == StreamImplementation.REDIS:
     logger.info("Using Redis stream")
     from persistence.redis import RedisStream, STREAM_STOPWORD
+
     stream = RedisStream()
 else:
     raise ValueError(f"Unknown stream implementation: {stream_impl}")
@@ -87,7 +101,7 @@ api = FastAPI(
     description="Private GPT is a local version of Chat GPT, using Azure OpenAI.",
     license_info={
         "name": "Apache-2.0",
-        "url": "https://github.com/clemlesne/private-gpt/blob/master/LICENCE",
+        "url": "https://github.com/clemlesne/private-gpt/blob/master/LICENSE",
     },
     root_path=ROOT_PATH,
     title="conversation-api",
@@ -110,6 +124,7 @@ api.add_middleware(
 
 openai = OpenAI()
 content_safety = ContentSafety()
+
 
 def get_ai_prompt() -> Dict[UUID, StoredPromptModel]:
     prompts = {}
@@ -202,7 +217,9 @@ async def health_liveness_get() -> None:
     name="Healthckeck readiness",
 )
 async def health_readiness_get() -> ReadinessModel:
-    index_check, store_check, stream_check = await asyncio.gather(index.readiness(), store.readiness(), stream.readiness())
+    index_check, store_check, stream_check = await asyncio.gather(
+        index.readiness(), store.readiness(), stream.readiness()
+    )
 
     readiness = ReadinessModel(
         status=ReadinessStatus.OK,
@@ -397,7 +414,9 @@ async def message_post(
         loop.create_task(_guess_title_background(conversation, messages, current_user))
 
     # Execute the message completion
-    loop.create_task(_generate_completion_background(conversation, messages, current_user))
+    loop.create_task(
+        _generate_completion_background(conversation, messages, current_user)
+    )
 
     return GetConversationModel(
         **conversation.dict(),
@@ -433,11 +452,14 @@ async def _read_message_sse(req: Request, message_id: UUID):
         await clean()
 
 
-@api.get("/message", description="No moderation check, as the content is not stored.")
+@api.get(
+    "/message",
+    description="No moderation check, as the content is not stored. Return the 25 most useful messages for the query.",
+)
 async def message_search(
     q: str, current_user: Annotated[UserModel, Depends(get_current_user)]
-) -> SearchModel:
-    return await index.message_search(q, current_user.id)
+) -> SearchModel[MessageModel]:
+    return await index.message_search(q, current_user.id, 25)
 
 
 async def _generate_completion_background(
@@ -488,7 +510,11 @@ async def _generate_completion_background(
     await stream.push(STREAM_STOPWORD, last_message.token)
 
 
-async def _message_index(message: StoredMessageModel, current_user: UserModel, prompt: Optional[StoredPromptModel]) -> None:
+async def _message_index(
+    message: StoredMessageModel,
+    current_user: UserModel,
+    prompt: Optional[StoredPromptModel],
+) -> None:
     tokens_nb = oai_tokens_nb(message.content, OAI_ADA_MODEL)
     if tokens_nb > OAI_ADA_MAX_TOKENS:
         logger.info(f"Message ({tokens_nb}) too long for indexing")
@@ -519,11 +545,15 @@ async def _validate_message_length(
     elif message:
         tokens_nb = oai_tokens_nb(
             message.content
-            + "".join([m.content for m in await store.message_list(message.conversation_id)]),
+            + "".join(
+                [m.content for m in await store.message_list(message.conversation_id)]
+            ),
             OAI_GPT_MODEL,
         )
     else:
-        raise ValueError('Either message or content must be provided to "validate_usage"')
+        raise ValueError(
+            'Either message or content must be provided to "validate_usage"'
+        )
 
     logger.debug(f"{tokens_nb} tokens in the conversation")
 
@@ -546,9 +576,7 @@ async def _guess_title_background(
 
     # Create messages object from conversation
     # We don't include the custom prompt, as it will false the title response (espacially with ASCI art prompt)
-    completion_messages = [
-        {"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT}
-    ]
+    completion_messages = [{"role": MessageRole.SYSTEM, "content": AI_TITLE_PROMPT}]
     completion_messages += [{"role": m.role, "content": m.content} for m in messages]
 
     logger.debug(f"Completion messages: {completion_messages}")

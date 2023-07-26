@@ -16,18 +16,20 @@ import remarkGfm from "remark-gfm";
 import remarkImages from "remark-images";
 import remarkMath from "remark-math";
 import remarkNormalizeHeadings from "remark-normalize-headings";
+import { AddFilled, ClipboardRegular } from "@fluentui/react-icons";
 
 function Message({
   content,
   date,
-  role,
   defaultDisplaySub = false,
   error = false,
+  role,
   secret = false,
 }) {
   // State
   const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   const [displayActions, setDisplayActions] = useState(false);
+  const [mouseIn, setMouseIn] = useState(false);
   // Refs
   const httpContent = useRef(null);
   // React context
@@ -47,12 +49,20 @@ function Message({
   return (
     <div
       className={`message message--${role} ${error ? "message--error" : ""}`}
-      onMouseEnter={() => setDisplayActions(true)}
-      onMouseLeave={() => setDisplayActions(false)}
+      onMouseEnter={() => {
+        setMouseIn(true);
+        setDisplayActions(true);
+      }}
+      onMouseLeave={() => {
+        setMouseIn(false);
+        setDisplayActions(false);
+      }}
     >
       <div
         className="message__content"
-        onClick={() => setDisplayActions(!displayActions)}
+        onClick={() => {
+          if (!mouseIn) setDisplayActions(!displayActions);
+        }}
         ref={httpContent}
       >
         <ReactMarkdown
@@ -75,7 +85,11 @@ function Message({
                   <SyntaxHighlighter
                     {...props}
                     children={String(children).replace(/\n$/, "")}
-                    customStyle={{ borderRadius: "var(--radius)" }}
+                    customStyle={{
+                      borderRadius: "var(--radius)",
+                      margin: "none",
+                      padding: "var(--message-padding-v) var(--message-padding-h)",
+                    }}
                     language={language}
                     PreTag="div"
                     showLineNumbers={true}
@@ -96,18 +110,14 @@ function Message({
       {displaySub && (
         <small className="message__sub">
           {secret && <span>Temporary, </span>}
-          <span>{moment(date).fromNow()}</span>
+          <span>{moment.utc(date).fromNow()}</span>
         </small>
       )}
       {displayActions && (
         <small className="message__actions">
+          <Button emoji={ClipboardRegular} onClick={clipboardHandler} text="Copy" />
           <Button
-            emoji="📋"
-            onClick={clipboardHandler}
-            text="Copy"
-          />
-          <Button
-            emoji="➕"
+            emoji={AddFilled}
             onClick={() => setDisplaySub(!displaySub)}
             text="Details"
           />

@@ -23,7 +23,13 @@
     }
   }
 
+  .button__loader,
+  .button__emoji {
+    font-size: 150%;
+  }
+
   .button__text {
+    line-height: 1; // Reset height to align with icon
     margin-left: 0.5em;
   }
 }

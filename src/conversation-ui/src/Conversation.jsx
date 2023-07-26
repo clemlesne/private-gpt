@@ -1,7 +1,7 @@
 import "./conversation.scss";
-import { client } from "./Utils";
+import { client, getIdToken, login } from "./Utils";
 import { ConversationContext } from "./App";
-import { useAuth } from "oidc-react";
+import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
 import { useParams } from "react-router-dom";
 import { useState, useEffect, useMemo, useContext } from "react";
 import { v4 as uuidv4 } from "uuid";
@@ -9,6 +9,16 @@ import * as XLSX from "xlsx";
 import Button from "./Button";
 import Message from "./Message";
 import Select, { createFilter } from "react-select";
+import {
+  ArrowDownFilled,
+  ArrowUpFilled,
+  EyeLinesFilled,
+  FlashFilled,
+  KeyFilled,
+  LightbulbFilled,
+  SaveFilled,
+  WarningFilled,
+} from "@fluentui/react-icons";
 
 function Conversation() {
   // State
@@ -22,20 +32,25 @@ function Conversation() {
   // Browser context
   const { conversationId } = useParams();
   // Dynamic
-  const auth = useAuth();
+  const { instance, accounts, inProgress } = useMsal();
+  const account = useAccount(accounts[0] || null);
+  const isAuthenticated = useIsAuthenticated();
   // React context
   const [, refreshConversations] = useContext(ConversationContext);
 
   useEffect(() => {
+    if (!account) return;
+
     const fetchPrompts = async () => {
-      if (!auth.userData) return;
       if (conversationId) return;
+
+      const idToken = await getIdToken(account, instance);
 
       await client
         .get("/prompt", {
           timeout: 10_000,
           headers: {
-            Authorization: `Bearer ${auth.userData.id_token}`,
+            Authorization: `Bearer ${idToken}`,
           },
         })
         .then((res) => {
@@ -52,7 +67,7 @@ function Conversation() {
     };
 
     fetchPrompts();
-  }, [auth, conversationId]);
+  }, [account, conversationId]);
 
   useMemo(() => {
     if (conversationId) return;
@@ -78,19 +93,21 @@ function Conversation() {
   }, [prompts, conversationId]);
 
   useEffect(() => {
-    const fetchConversation = async () => {
-      if (!auth.userData) return;
+    if (!account) return;
 
+    const fetchConversation = async () => {
       if (!conversationId) {
         setConversation({ messages: [] });
         return;
       }
 
+      const idToken = await getIdToken(account, instance);
+
       await client
         .get(`/conversation/${conversationId}`, {
           timeout: 10_000,
           headers: {
-            Authorization: `Bearer ${auth.userData.id_token}`,
+            Authorization: `Bearer ${idToken}`,
           },
         })
         .then((res) => {
@@ -103,7 +120,7 @@ function Conversation() {
     };
 
     fetchConversation();
-  }, [auth, conversationId]);
+  }, [account, conversationId]);
 
   const sendMessage = () => {
     // Create a locache state cache, as state props wont't be updated until the next render
@@ -129,9 +146,11 @@ function Conversation() {
     };
 
     const fetchMessage = async () => {
-      if (!auth.userData) return;
+      if (!isAuthenticated) return;
 
       setLoading(true);
+
+      const idToken = await getIdToken(account, instance);
 
       // First, create the message
       await client
@@ -145,7 +164,7 @@ function Conversation() {
           },
           timeout: 10_000,
           headers: {
-            Authorization: `Bearer ${auth.userData.id_token}`,
+            Authorization: `Bearer ${idToken}`,
           },
         })
         .then((res) => {
@@ -194,7 +213,8 @@ function Conversation() {
           }
 
           // Capitalize the first letter only
-          content = content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
+          content =
+            content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
 
           updateLastMessage({
             content,
@@ -261,67 +281,95 @@ function Conversation() {
 
   return (
     <div className="conversation">
-      {conversationId && <div className="conversation__header">
-        <h2>{conversation.title ? conversation.title : "New chat"}</h2>
-      </div>}
+      {conversation.messages.length > 0 && (
+        <div className="conversation__header">
+          <h2>{conversation.title ? conversation.title : "New chat"}</h2>
+        </div>
+      )}
       {conversation.messages.length == 0 && (
         <div className="conversation__empty">
           <div className="conversation__empty__header">
-            <span>🔒</span>
+            <img src="/favicon.ico" alt="Website favicon" />
             <big>Welcome to Private GPT</big>
           </div>
           <div className="conversation__empty__doc">
             <div>
-              <h2>💡</h2>
+              <h2>
+                <LightbulbFilled />
+              </h2>
             </div>
             <div>
               <h2>Examples</h2>
-              <p>Generating content that is tailored to specific audiences or personas.</p>
-              <p>Help on technical language and jargon in specific industries (such as finance or healthcare).</p>
+              <p>
+                Generating content that is tailored to specific audiences or
+                personas.
+              </p>
+              <p>
+                Help on technical language and jargon in specific industries
+                (such as finance or healthcare).
+              </p>
             </div>
             <div>
-              <h2>⚡️</h2>
+              <h2>
+                <FlashFilled />
+              </h2>
             </div>
             <div>
               <h2>Capabilities</h2>
-              <p>Analyzing large amounts of qualitative data (such as news articles or earnings calls) to inform investment decisions.</p>
-              <p>Generating summaries of court cases or contracts to save time on manual review.</p>
+              <p>
+                Analyzing large amounts of qualitative data (such as news
+                articles or earnings calls) to inform investment decisions.
+              </p>
+              <p>
+                Generating summaries of court cases or contracts to save time on
+                manual review.
+              </p>
             </div>
             <div>
-              <h2>⚠️</h2>
+              <h2>
+                <WarningFilled />
+              </h2>
             </div>
             <div>
               <h2>Limitations</h2>
-              <p>Ensuring that generated content adheres to applicable regulations in a given industry or region.</p>
-              <p>Mitigating any risks associated with automated content creation (such as reputational harm or inadvertent bias).</p>
+              <p>
+                Ensuring that generated content adheres to applicable
+                regulations in a given industry or region.
+              </p>
+              <p>
+                Mitigating any risks associated with automated content creation
+                (such as reputational harm or inadvertent bias).
+              </p>
             </div>
           </div>
-          {!auth.userData && (
+          {!isAuthenticated && (
             <Button
               active={true}
-              emoji="🔑"
+              emoji={KeyFilled}
               large={true}
-              loading={auth.isLoading}
-              onClick={() => auth.signIn()}
+              loading={inProgress === "login"}
+              onClick={() => login(instance)}
               text="Signin"
             />
           )}
         </div>
       )}
-      {conversation.messages.length > 0 && <div className="conversation__messages">
-        {conversation.messages.map((message) => (
-          <Message
-            content={message.content}
-            date={message.created_at}
-            defaultDisplaySub={message.secret}
-            error={message.error}
-            key={message.id}
-            role={message.role}
-            secret={message.secret}
-          />
-        ))}
-      </div>}
-      {auth.userData && (
+      {conversation.messages.length > 0 && (
+        <div className="conversation__messages">
+          {conversation.messages.map((message) => (
+            <Message
+              content={message.content}
+              date={message.created_at}
+              defaultDisplaySub={message.secret}
+              error={message.error}
+              key={message.id}
+              role={message.role}
+              secret={message.secret}
+            />
+          ))}
+        </div>
+      )}
+      {isAuthenticated && (
         <form
           className="conversation__input"
           onSubmit={(e) => {
@@ -352,33 +400,36 @@ function Conversation() {
             {conversation.prompt && (
               <p>Converse as {conversation.prompt.name.toLowerCase()}.</p>
             )}
-            {conversationId && <Button
-              disabled={loading}
-              emoji="⬇️"
-              onClick={() => downloadToExcel()}
-              text="Download"
-            />}
+            {conversationId && (
+              <Button
+                disabled={loading}
+                emoji={ArrowDownFilled}
+                onClick={() => downloadToExcel()}
+                text="Download"
+              />
+            )}
             <Button
               active={secret}
               disabled={loading}
-              emoji={secret ? "💾" : "🙈"}
+              emoji={secret ? SaveFilled : EyeLinesFilled}
               onClick={() => setSecret(!secret)}
               text={secret ? "Stored" : "Temporary"}
             />
           </div>
           <div className="conversation__input__block">
             <textarea
-              placeholder="Message"
-              value={input || ""}
+              autoFocus={true}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={inputKeyHandler}
+              placeholder="Message"
+              value={input || ""}
             />
           </div>
           <div className="conversation__input__block">
             <Button
               active={true}
               disabled={!(input && input.length > 0)}
-              emoji="⬆️"
+              emoji={ArrowUpFilled}
               loading={loading}
               text="Send"
               type="submit"

@@ -1,15 +1,18 @@
 import "./header.scss";
-import { header } from "./Utils";
+import { AddFilled, DoorFilled, EqualOffFilled, KeyFilled, Person12Filled, SearchFilled, WeatherMoonFilled, WeatherSunnyFilled } from "@fluentui/react-icons";
+import { header, login, logout } from "./Utils";
 import { ThemeContext, ConversationContext } from "./App";
-import { useAuth } from "oidc-react";
 import { useContext } from "react";
+import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
 import { useNavigate } from "react-router-dom";
 import Button from "./Button";
 import Conversations from "./Conversations";
 
 function Header() {
   // Dynamic
-  const auth = useAuth();
+  const { instance, accounts, inProgress } = useMsal();
+  const account = useAccount(accounts[0] || null);
+  const isAuthenticated = useIsAuthenticated();
   const navigate = useNavigate();
   // React context
   const [conversations] = useContext(ConversationContext);
@@ -21,14 +24,14 @@ function Header() {
         {/* This button is never disabled and this is on purpose.
 
         It is the central point of the application and should always be clickable. UX interviews with users showed that they were confused when the button was disabled. They thought that the application was broken. */}
-        {auth.userData && <>
+        {isAuthenticated && <>
           <Button
             onClick={() => {
               header(false);
               navigate("/");
             }}
             text="New chat"
-            emoji="➕"
+            emoji={AddFilled}
             active={true}
           />
           <Button
@@ -37,18 +40,18 @@ function Header() {
               navigate("/search");
             }}
             text="Search"
-            emoji="🔍"
+            emoji={SearchFilled}
           />
         </>}
         <Button
           className="header__actions__toggle"
-          emoji="="
+          emoji={EqualOffFilled}
           text="Menu"
           onClick={() => header() }
         />
       </div>
       <div className="header__content">
-        {auth.userData && (
+        {isAuthenticated && (
           <Conversations
             conversations={conversations}
           />
@@ -56,42 +59,43 @@ function Header() {
       </div>
       <small className="header__bottom">
         <div className="header__bottom__block">
-          {auth.userData && (
+          {isAuthenticated && (
             <p>
-              👤 Logged as{" "}
-              {auth.userData.profile.name
-                ? auth.userData.profile.name
+              <Person12Filled />
+              {" "}Logged as{" "}
+              {account.name
+                ? account.name
                 : "unknown name"}{" "}
               (
-              {auth.userData.profile.email
-                ? auth.userData.profile.email
-                : "unknown email"}
+              {account.username
+                ? account.username
+                : "unknown username"}
               ).
             </p>
           )}
-          {auth.isLoading && <p>Connecting...</p>}
+          {inProgress === "login" && <p>Connecting...</p>}
         </div>
         <div className="header__bottom__block">
           <span>
-            {import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
+            App v{import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
           </span>
         </div>
         <div className="header__bottom__block">
           <Button
             onClick={() => {
               header(false);
-              auth.userData ? auth.signOut() : auth.signIn()
+              isAuthenticated ? logout(account, instance) : login(instance);
             }}
-            emoji={auth.userData ? "🚪" : "🔑"}
-            loading={auth.isLoading}
-            text={auth.userData ? "Signout" : "Signin"}
+            emoji={isAuthenticated ? DoorFilled : KeyFilled}
+            loading={inProgress === "login"}
+            text={isAuthenticated ? "Signout" : "Signin"}
           />
           <Button
             onClick={() => {
               header(false);
               setDarkTheme(!darkTheme);
             }}
-            emoji={darkTheme ? "☀️" : "🌕"}
+            emoji={darkTheme ? WeatherSunnyFilled : WeatherMoonFilled}
             text={darkTheme ? "Light" : "Dark"}
           />
         </div>

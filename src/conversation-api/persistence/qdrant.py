@@ -1,5 +1,5 @@
 # Import utils
-from utils import (build_logger, get_config)
+from utils import build_logger, get_config
 
 # Import misc
 from .isearch import ISearch
@@ -66,9 +66,13 @@ class QdrantSearch(ISearch):
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    async def message_search(self, q: str, user_id: UUID) -> SearchModel[MessageModel]:
+    async def message_search(
+        self, q: str, user_id: UUID, limit: int
+    ) -> SearchModel[MessageModel]:
         logger.debug(f"Searching for: {q}")
         start = time.monotonic()
+
+        conversations = await self.store.conversation_list(user_id)
 
         vector = await openai.vector_from_text(
             textwrap.dedent(
@@ -82,16 +86,17 @@ class QdrantSearch(ISearch):
         total = client.count(collection_name=QD_COLLECTION, exact=False).count
         raws = client.search(
             collection_name=QD_COLLECTION,
-            limit=10,
-            query_vector=vector,
-            search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
+            limit=limit,
             query_filter=qmodels.Filter(
-                must=[
+                should=[
                     qmodels.FieldCondition(
-                        key="user_id", match=qmodels.MatchValue(value=str(user_id))
+                        key="conversation_id", match=qmodels.MatchValue(value=str(c.id))
                     )
+                    for c in conversations
                 ]
             ),
+            query_vector=vector,
+            search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
         )
 
         logger.debug(f"Got {len(raws)} results from Qdrant")
@@ -114,9 +119,7 @@ class QdrantSearch(ISearch):
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
 
-    async def message_index(
-        self, message: StoredMessageModel, user_id: UUID
-    ) -> None:
+    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
         logger.debug(f'Indexing message "{message.id}"')
         self._loop.create_task(self._index_background(message, user_id))
 
@@ -129,14 +132,11 @@ class QdrantSearch(ISearch):
         index = IndexMessageModel(
             conversation_id=message.conversation_id,
             id=message.id,
-            user_id=user_id,
         )
 
         client.upsert(
             collection_name=QD_COLLECTION,
-            points=qmodels.Batch(
-                ids=[message.id.hex],
-                payloads=[index],
-                vectors=[vector],
-            ),
+            points=[
+                qmodels.PointStruct(id=message.id.hex, payload=index, vector=vector)
+            ],
         )

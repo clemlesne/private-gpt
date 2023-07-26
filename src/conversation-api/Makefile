@@ -8,6 +8,7 @@ install:
 	python3 -m pip install -r requirements.txt
 
 upgrade:
+	@echo "➡️ Upgrading Python dependencies..."
 	pur -r requirements.txt
 
 test:

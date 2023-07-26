@@ -4,10 +4,9 @@ html {
   // Small width
   @media (max-width: $media--small) {
     #root {
-      display: grid;
       grid-template-areas: "header" "main";
+      grid-template-columns: auto;
       grid-template-rows: min-content auto;
-      min-height: 100vh;
     }
 
     .header__actions {
@@ -32,8 +31,10 @@ html {
     &.header--open {
       // Make the header full height
       .header {
-        min-height: 100vh;
+        box-sizing: border-box;
+        height: 100vh;
         overflow-x: auto; // Make it scrollable
+        padding-top: calc(var(--titlebar--height) * 1.25);
       }
 
       // Hide the main content
@@ -44,7 +45,8 @@ html {
 
     &:not(.header--open) {
       .header {
-        backdrop-filter: blur(8vw);
+        backdrop-filter: blur(4em);
+        padding: calc(var(--titlebar--height) * 1.25) 0 calc(var(--titlebar--height) * 0.25) 0;
 
         // Stays at the top
         top: 0;
@@ -63,15 +65,17 @@ html {
   // Full width
   @media (min-width: $media--small) {
     #root {
-      display: grid;
-      grid-template-areas: "header" "main";
+      grid-template-areas: "header main";
       grid-template-columns: var(--header-width) auto;
+      grid-template-rows: auto;
     }
 
-    // Header always open, so we need to make sure it is full height
+    // header always open, so we need to make sure it is full height
     .header {
+      box-sizing: border-box;
       height: 100vh;
       overflow-x: auto; // Make it scrollable
+      padding-top: calc(var(--titlebar--height) * 1.25);
     }
 
     // Hide the toggle button
@@ -91,18 +95,38 @@ html {
 
     // Make content to scroll
     .main {
+      box-sizing: border-box;
       height: 100vh;
+      padding-top: calc(var(--titlebar--height) * 1.25);
     }
   }
 }
 
+#root {
+  display: grid;
+}
+
 .header {
+  --header--background-color: var(--background-bold);
+
+  background-color: var(--header--background-color);
+  border-right: 1px solid var(--background-muted);
   display: flex;
   flex-direction: column;
+  grid-area: header;
   justify-content: space-between;
 
   > * {
-    margin: var(--header-padding-v) var(--header-padding-h) 0 var(--header-padding-h);
+    margin-left: var(--header-padding-h);
+    margin-right: var(--header-padding-h);
+  }
+
+  > *:last-child {
+    margin-bottom: var(--header-padding-v);
+  }
+
+  > *:not(:first-child) {
+    margin-top: var(--header-padding-v);
   }
 
   .header__actions {
@@ -114,7 +138,7 @@ html {
   }
 
   .header__bottom {
-    background-color: var(--background);
+    background-color: var(--header--background-color);
 
     // Stays at the bottom
     bottom: 0;

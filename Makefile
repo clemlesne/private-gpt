@@ -21,6 +21,10 @@ lint:
 	@make -C src/conversation-api lint
 	@make -C src/conversation-ui lint
 
+upgrade:
+	@make -C src/conversation-api upgrade
+	@make -C src/conversation-ui upgrade
+
 start:
 	docker-compose up -d
 

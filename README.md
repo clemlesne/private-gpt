@@ -68,11 +68,11 @@ issuers = ["https://login.microsoftonline.com/00000000-0000-0000-0000-0000000000
 jwks = "https://login.microsoftonline.com/common/discovery/v2.0/keys"
 
 [qd]
-host = "localhost"
+host = "127.0.0.1"
 
 [redis]
 db = 0
-host = "localhost"
+host = "127.0.0.1"
 
 [cosmos]
 # Containers "conversation" (/user_id), "message" (/conversation_id), "user" (/dummy), "usage" (/user_id) must exist

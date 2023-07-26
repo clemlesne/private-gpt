@@ -1,7 +1,7 @@
 .message {
   display: flex;
   flex-direction: column;
-  max-width: 70%;
+  max-width: 90%;
   position: relative;
 
   &.message--assistant {
@@ -11,7 +11,7 @@
     }
 
     .message__content {
-      background-color: var(--background-muted);
+      background-color: var(--background-bold);
     }
   }
 
@@ -34,7 +34,7 @@
   }
 
   .message__actions {
-    background-color: var(--background-muted);
+    background-color: var(--background-bold);
     border-radius: var(--radius);
     bottom: calc(100% - calc(var(--message-padding-v) / 2));
     display: flex;

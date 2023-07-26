@@ -1,9 +1,10 @@
 import "./search.scss";
-import { client } from "./Utils";
-import { useAuth } from "oidc-react";
+import { client, getIdToken } from "./Utils";
+import { useMsal, useAccount } from "@azure/msal-react";
 import { useState, useMemo, useRef } from "react";
 import Button from "./Button";
 import Message from "./Message";
+import { SearchFilled } from "@fluentui/react-icons";
 
 function Search() {
   // State
@@ -13,13 +14,16 @@ function Search() {
   // Ref
   const self = useRef(null);
   // Dynamic
-  const auth = useAuth();
+  const { accounts, instance } = useMsal();
+  const account = useAccount(accounts[0] || null);
 
   const fetchSearch = async () => {
-    if (!auth.userData) return;
+    if (!account) return;
     if (!input || input.length === 0) return;
 
     setLoading(true);
+
+    const idToken = await getIdToken(account, instance);
 
     await client
       .get("/message", {
@@ -28,7 +32,7 @@ function Search() {
         },
         timeout: 10_000,
         headers: {
-          Authorization: `Bearer ${auth.userData.id_token}`,
+          Authorization: `Bearer ${idToken}`,
         },
       })
       .then((res) => {
@@ -45,7 +49,7 @@ function Search() {
 
   useMemo(() => {
     fetchSearch();
-  }, [auth]);
+  }, [account]);
 
   // Hide search when clicking outside of the container
   useMemo(() => {
@@ -83,14 +87,15 @@ function Search() {
         }}
       >
         <input
-          placeholder="Search messages across all conversations"
-          value={input || ""}
+          autoFocus={true}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={inputKeyHandler}
+          placeholder="Search messages across all conversations"
+          value={input || ""}
         />
         <Button
           disabled={!(input && input.length > 0)}
-          emoji="🔍"
+          emoji={SearchFilled}
           loading={loading}
           text="Search"
           type="submit"

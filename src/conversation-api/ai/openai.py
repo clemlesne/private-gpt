@@ -1,6 +1,6 @@
 # Import utils
 from uuid import UUID
-from utils import (build_logger, get_config, hash_token, AZ_CREDENTIAL)
+from utils import build_logger, get_config, hash_token, AZ_CREDENTIAL
 
 # Import misc
 from azure.identity import DefaultAzureCredential
@@ -23,6 +23,7 @@ loop = asyncio.get_running_loop()
 # Init OpenIA
 ###
 
+
 async def refresh_oai_token_background():
     """
     Refresh OpenAI token every 15 minutes.
@@ -33,7 +34,9 @@ async def refresh_oai_token_background():
     """
     while True:
         logger.info("Refreshing OpenAI token")
-        oai_token = AZ_CREDENTIAL.get_token("https://cognitiveservices.azure.com/.default")
+        oai_token = AZ_CREDENTIAL.get_token(
+            "https://cognitiveservices.azure.com/.default"
+        )
         openai.api_key = oai_token.token
         # Execute every 20 minutes
         await asyncio.sleep(15 * 60)
@@ -90,7 +93,9 @@ class OpenAI:
         stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=0.5, max=30),
     )
-    async def completion(self, messages: List[Dict[str, str]], current_user: UserModel) -> Union[str, None]:
+    async def completion(
+        self, messages: List[Dict[str, str]], current_user: UserModel
+    ) -> Union[str, None]:
         try:
             # Use chat completion to get a more natural response and lower the usage cost
             completion = openai.ChatCompletion.create(
@@ -112,7 +117,9 @@ class OpenAI:
         stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=0.5, max=30),
     )
-    async def completion_stream(self, messages: List[Dict[str, str]], current_user: UserModel) -> AsyncGenerator[Any, None]:
+    async def completion_stream(
+        self, messages: List[Dict[str, str]], current_user: UserModel
+    ) -> AsyncGenerator[Any, None]:
         try:
             # Use chat completion to get a more natural response and lower the usage cost
             chunks = openai.ChatCompletion.create(
