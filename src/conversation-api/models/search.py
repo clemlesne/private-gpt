@@ -1,11 +1,12 @@
 from pydantic import BaseModel
+from pydantic.generics import GenericModel
 from typing import List, TypeVar, Generic
 
 
-T = TypeVar("T")
+T = TypeVar("T", bound=BaseModel)
 
 
-class SearchAnswerModel(BaseModel, Generic[T]):
+class SearchAnswerModel(GenericModel, Generic[T]):
     data: T
     score: float
 
@@ -15,7 +16,7 @@ class SearchStatsModel(BaseModel):
     total: int
 
 
-class SearchModel(BaseModel, Generic[T]):
+class SearchModel(GenericModel, Generic[T]):
     answers: List[SearchAnswerModel[T]]
     query: str
     stats: SearchStatsModel

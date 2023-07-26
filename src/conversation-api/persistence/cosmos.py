@@ -92,10 +92,18 @@ class CosmosStore(IStore):
         query = (
             f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         )
-        items = conversation_client.query_items(
+        raws = conversation_client.query_items(
             query=query, enable_cross_partition_query=True
         )
-        return [StoredConversationModel(**item) for item in items]
+        conversations = []
+        for raw in raws:
+            if raw is None:
+                continue
+            try:
+                conversations.append(StoredConversationModel(**raw))
+            except Exception:
+                logger.warn("Error parsing conversation", exc_info=True)
+        return conversations
 
     async def message_get(
         self, message_id: UUID, conversation_id: UUID
@@ -134,10 +142,18 @@ class CosmosStore(IStore):
 
     async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
-        items = message_client.query_items(
+        raws = message_client.query_items(
             query=query, enable_cross_partition_query=True
         )
-        return [MessageModel(**item) for item in items]
+        items = []
+        for raw in raws:
+            if raw is None:
+                continue
+            try:
+                items.append(MessageModel(**raw))
+            except Exception:
+                logger.warn("Error parsing message", exc_info=True)
+        return items
 
     async def usage_set(self, usage: UsageModel) -> None:
         logger.debug(f'Usage set "{usage.id}"')

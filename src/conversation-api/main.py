@@ -458,7 +458,7 @@ async def _read_message_sse(req: Request, message_id: UUID):
 )
 async def message_search(
     q: str, current_user: Annotated[UserModel, Depends(get_current_user)]
-) -> SearchModel:
+) -> SearchModel[MessageModel]:
     return await index.message_search(q, current_user.id, 25)
 
 
