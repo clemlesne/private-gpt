@@ -38,7 +38,7 @@ data:
         # Rewrite the OIDC API audience
         sub_filter 'e9d5f20f-7f14-4204-a9a2-0d91d6af5c82' '{{ .Values.oidc.api_audience | required "A value for .Values.oidc.api_audience is required" }}';
         # Rewrite the Azure App Insights connection string
-        sub_filter 'InstrumentationKey=0b860d29-2a55-4d29-ab57-88cdd85a8da0;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com' '{{ .Values.appinsights.connection_str | required "A value for .Values.appinsights.connection_str" }}';
+        sub_filter 'InstrumentationKey=0b860d29-2a55-4d29-ab57-88cdd85a8da0;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com' '{{ .Values.monitoring.azure_app_insights.connection_str | required "A value for .Values.monitoring.azure_app_insights.connection_str" }}';
         # Rewrite recursively
         sub_filter_once off;
         # Rewrite every content type

@@ -104,8 +104,9 @@ function Search() {
       {messages.length > 0 && (
         <div className="search__messages">
           <h2 className="search__title">Search results</h2>
-          {messages.map((message) => (
+          {messages.map((message) => message.data.content && (
             <Message
+              actions={message.actions}
               content={message.data.content}
               date={message.data.created_at}
               defaultDisplaySub={true}

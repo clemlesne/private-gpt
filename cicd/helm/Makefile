@@ -1,14 +1,26 @@
 .PHONY: deploy
+namespace ?= private-gpt
+instance ?= default
 
 deploy:
-	test -n "$(NAMESPACE)"  # $$NAMESPACE
-
 	helm upgrade \
 		--atomic \
 		--dependency-update \
 		--install \
-		--namespace $(NAMESPACE) \
+		--namespace $(namespace) \
 		--timeout 5m \
 		--values .values.yaml \
 		--wait \
-		default private-gpt
+		$(instance) private-gpt
+
+dry-run:
+	helm upgrade \
+		--atomic \
+		--dependency-update \
+		--dry-run \
+		--install \
+		--namespace $(namespace) \
+		--timeout 5m \
+		--values .values.yaml \
+		--wait \
+		$(instance) private-gpt

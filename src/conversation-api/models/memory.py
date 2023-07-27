@@ -1,14 +1,13 @@
 from datetime import datetime
-from typing import Optional
+from enum import Enum
 from pydantic import BaseModel, Field
+from typing import Optional
 from uuid import UUID, uuid4
 
 
-class UsageModel(BaseModel):
-    ai_model: str
-    conversation_id: UUID
+class MemoryModel(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     id: UUID = Field(default_factory=uuid4)
-    prompt_name: Optional[str] = None
-    tokens: int
+    key: str
     user_id: UUID  # Partition key
+    value: Optional[str] = None

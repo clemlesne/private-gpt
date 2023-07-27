@@ -1,5 +1,5 @@
 import "./conversation.scss";
-import { client, getIdToken, login } from "./Utils";
+import { client, getIdToken, login, userLang } from "./Utils";
 import { ConversationContext } from "./App";
 import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
 import { useParams } from "react-router-dom";
@@ -161,6 +161,7 @@ function Conversation() {
             prompt_id:
               !conversationId && selectedPrompt ? selectedPrompt.id : null,
             secret: secret,
+            language: userLang,
           },
           timeout: 10_000,
           headers: {
@@ -181,6 +182,7 @@ function Conversation() {
           // Then, fetch the message
           const lastMessage = res.data.messages[res.data.messages.length - 1];
           let content = "";
+          let actions = [];
           const source = new EventSource(
             `${client.defaults.baseURL}/message/${lastMessage.id}?token=${lastMessage.token}`
           );
@@ -190,9 +192,11 @@ function Conversation() {
               return;
             }
 
-            // Update the last message
-            content += e.data;
+            const json = JSON.parse(e.data);
+            if (json.content) content += json.content;
+            if (json.action) actions.push(json.action);
             updateLastMessage({
+              actions,
               content,
             });
           };
@@ -358,6 +362,7 @@ function Conversation() {
         <div className="conversation__messages">
           {conversation.messages.map((message) => (
             <Message
+              actions={message.actions}
               content={message.content}
               date={message.created_at}
               defaultDisplaySub={message.secret}

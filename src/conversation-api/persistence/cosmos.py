@@ -11,30 +11,32 @@ from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 import asyncio
 
 
-logger = build_logger(__name__)
+_logger = build_logger(__name__)
 SECRET_TTL_SECS = 60 * 60 * 24  # 1 day
 
 # Configuration
 CONVERSATION_PREFIX = "conversation"
-DB_URL = get_config("cosmos", "url", str, required=True)
-DB_NAME = get_config("cosmos", "database", str, required=True)
+DB_URL = get_config(["persistence", "cosmos"], "url", str, required=True)
+DB_NAME = get_config(["persistence", "cosmos"], "database", str, required=True)
 
 # Cosmos DB Client
 client = CosmosClient(url=DB_URL, credential=AZ_CREDENTIAL)
 database = client.get_database_client(DB_NAME)
 conversation_client = database.get_container_client("conversation")
+memory_client = database.get_container_client("memory")
 message_client = database.get_container_client("message")
-user_client = database.get_container_client("user")
 usage_client = database.get_container_client("usage")
-logger.info(f'Connected to Cosmos DB at "{DB_URL}"')
+user_client = database.get_container_client("user")
 
 
 class CosmosStore(IStore):
+    _loop: asyncio.AbstractEventLoop
+
     def __init__(self):
         self._loop = asyncio.get_running_loop()
 
@@ -48,11 +50,11 @@ class CosmosStore(IStore):
                 }
             )
         except CosmosHttpResponseError:
-            logger.warn("Error connecting to Cosmos", exc_info=True)
+            _logger.warn("Error connecting to Cosmos", exc_info=True)
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    def user_get(self, user_external_id: str) -> Optional[UserModel]:
         query = f"SELECT * FROM c WHERE c.external_id = '{user_external_id}'"
         items = user_client.query_items(query=query, partition_key="dummy")
         try:
@@ -61,7 +63,7 @@ class CosmosStore(IStore):
         except StopIteration:
             return None
 
-    async def user_set(self, user: UserModel) -> None:
+    def user_set(self, user: UserModel) -> None:
         user_client.upsert_item(
             body={
                 **self._sanitize_before_insert(user.dict()),
@@ -69,9 +71,9 @@ class CosmosStore(IStore):
             }
         )
 
-    async def conversation_get(
+    def conversation_get(
         self, conversation_id: UUID, user_id: UUID
-    ) -> Union[StoredConversationModel, None]:
+    ) -> Optional[StoredConversationModel]:
         try:
             raw = conversation_client.read_item(
                 item=str(conversation_id), partition_key=str(user_id)
@@ -80,15 +82,15 @@ class CosmosStore(IStore):
         except CosmosHttpResponseError:
             return None
 
-    async def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
-        return self.conversation_get(conversation_id, user_id) is not None
+    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+        return self.conversation_get(conversation_id, user_id) != None
 
-    async def conversation_set(self, conversation: StoredConversationModel) -> None:
+    def conversation_set(self, conversation: StoredConversationModel) -> None:
         conversation_client.upsert_item(
             body=self._sanitize_before_insert(conversation.dict())
         )
 
-    async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
         query = (
             f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         )
@@ -102,12 +104,12 @@ class CosmosStore(IStore):
             try:
                 conversations.append(StoredConversationModel(**raw))
             except Exception:
-                logger.warn("Error parsing conversation", exc_info=True)
+                _logger.warn("Error parsing conversation", exc_info=True)
         return conversations
 
-    async def message_get(
+    def message_get(
         self, message_id: UUID, conversation_id: UUID
-    ) -> Union[MessageModel, None]:
+    ) -> Optional[MessageModel]:
         try:
             raw = message_client.read_item(
                 item=str(message_id), partition_key=str(conversation_id)
@@ -116,7 +118,7 @@ class CosmosStore(IStore):
         except CosmosHttpResponseError:
             return None
 
-    async def message_get_index(
+    def message_get_index(
         self, message_indexs: List[IndexMessageModel]
     ) -> List[MessageModel]:
         messages = []
@@ -131,7 +133,7 @@ class CosmosStore(IStore):
                 pass
         return messages
 
-    async def message_set(self, message: StoredMessageModel) -> None:
+    def message_set(self, message: StoredMessageModel) -> None:
         expiry = SECRET_TTL_SECS if message.secret else None
         message_client.upsert_item(
             body={
@@ -140,7 +142,7 @@ class CosmosStore(IStore):
             }
         )
 
-    async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    def message_list(self, conversation_id: UUID) -> List[MessageModel]:
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
         raws = message_client.query_items(
             query=query, enable_cross_partition_query=True
@@ -152,24 +154,22 @@ class CosmosStore(IStore):
             try:
                 items.append(MessageModel(**raw))
             except Exception:
-                logger.warn("Error parsing message", exc_info=True)
+                _logger.warn("Error parsing message", exc_info=True)
         return items
 
-    async def usage_set(self, usage: UsageModel) -> None:
-        logger.debug(f'Usage set "{usage.id}"')
+    def usage_set(self, usage: UsageModel) -> None:
+        _logger.debug(f'Usage set "{usage.id}"')
         self._loop.create_task(self._usage_set_background(usage))
 
     async def _usage_set_background(self, usage: UsageModel) -> None:
         usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
 
-    def _sanitize_before_insert(self, item: dict) -> Dict[str, Any]:
-        for key, value in item.items():
+    def _sanitize_before_insert(self, item: Union[dict, list]) -> Union[dict, list]:
+        for key, value in item.items() if isinstance(item, dict) else enumerate(item):
             if isinstance(value, UUID):
                 item[key] = str(value)
             elif isinstance(value, datetime):
                 item[key] = value.isoformat()
-            elif isinstance(value, dict):
+            elif isinstance(value, dict) or isinstance(value, list):
                 item[key] = self._sanitize_before_insert(value)
-            elif isinstance(value, list):
-                item[key] = [self._sanitize_before_insert(i) for i in value]
         return item
