@@ -73,6 +73,12 @@
         padding: 0.25em;
       }
     }
+
+    img {
+      display: block;
+      max-height: 50vh;
+      max-width: 100%;
+    }
   }
 
   .message__sub {

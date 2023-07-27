@@ -3,9 +3,10 @@ import {
   oneDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { AddFilled, ClipboardRegular } from "@fluentui/react-icons";
 import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeContext } from "./App";
-import { useState, useRef, useContext } from "react";
+import { useState, useRef, useContext, useMemo } from "react";
 import Button from "./Button";
 import moment from "moment";
 import PropTypes from "prop-types";
@@ -16,9 +17,9 @@ import remarkGfm from "remark-gfm";
 import remarkImages from "remark-images";
 import remarkMath from "remark-math";
 import remarkNormalizeHeadings from "remark-normalize-headings";
-import { AddFilled, ClipboardRegular } from "@fluentui/react-icons";
 
 function Message({
+  actions,
   content,
   date,
   defaultDisplaySub = false,
@@ -27,8 +28,9 @@ function Message({
   secret = false,
 }) {
   // State
-  const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
+  const [actionsString, setActionsString] = useState(null);
   const [displayActions, setDisplayActions] = useState(false);
+  const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   const [mouseIn, setMouseIn] = useState(false);
   // Refs
   const httpContent = useRef(null);
@@ -45,6 +47,16 @@ function Message({
       httpContent.current.style.opacity = opacity;
     }, 250);
   };
+
+  // Format actions string
+  useMemo(() => {
+    if (!actions || actions.length == 0) return null;
+    let res = "";
+    for (const action of actions) {
+      res += ", " + action.charAt(0).toUpperCase() + action.replace(/[_-]/g, " ").slice(1);
+    }
+    setActionsString(res.slice(2));
+  }, [actions]);
 
   return (
     <div
@@ -88,7 +100,8 @@ function Message({
                     customStyle={{
                       borderRadius: "var(--radius)",
                       margin: "none",
-                      padding: "var(--message-padding-v) var(--message-padding-h)",
+                      padding:
+                        "var(--message-padding-v) var(--message-padding-h)",
                     }}
                     language={language}
                     PreTag="div"
@@ -107,15 +120,22 @@ function Message({
           }}
         />
       </div>
+      {actionsString && <small className="message__sub">
+        Actions: {actionsString}
+      </small>}
       {displaySub && (
         <small className="message__sub">
-          {secret && <span>Temporary, </span>}
           <span>{moment.utc(date).fromNow()}</span>
+          {secret && <span>, temporary</span>}
         </small>
       )}
       {displayActions && (
         <small className="message__actions">
-          <Button emoji={ClipboardRegular} onClick={clipboardHandler} text="Copy" />
+          <Button
+            emoji={ClipboardRegular}
+            onClick={clipboardHandler}
+            text="Copy"
+          />
           <Button
             emoji={AddFilled}
             onClick={() => setDisplaySub(!displaySub)}
@@ -128,6 +148,7 @@ function Message({
 }
 
 Message.propTypes = {
+  actions: PropTypes.arrayOf(PropTypes.string),
   content: PropTypes.string.isRequired,
   date: PropTypes.string.isRequired,
   defaultDisplaySub: PropTypes.bool,

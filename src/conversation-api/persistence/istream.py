@@ -10,13 +10,19 @@ class StreamImplementation(str, Enum):
 
 
 class IStream(ABC):
+    def stopword(self) -> str:
+        return "STOP"
+
     @abstractmethod
     async def readiness(self) -> ReadinessStatus:
         pass
 
     @abstractmethod
-    async def push(self, content: str, token: UUID) -> None:
+    def push(self, content: str, token: UUID) -> None:
         pass
+
+    def end(self, token: UUID) -> None:
+        self.push(self.stopword(), token)
 
     @abstractmethod
     async def get(

@@ -17,22 +17,24 @@ import textwrap
 import time
 
 
-logger = build_logger(__name__)
-openai = OpenAI()
+_logger = build_logger(__name__)
 QD_COLLECTION = "messages"
 QD_DIMENSION = 1536
-QD_HOST = get_config("qd", "host", str, required=True)
+QD_HOST = get_config(["persistence", "qdrant"], "host", str, required=True)
 QD_PORT = 6333
 QD_METRIC = qmodels.Distance.DOT
 client = QdrantClient(host=QD_HOST, port=6333)
-logger.info(f'Connected to Qdrant at "{QD_HOST}:{QD_PORT}"')
 
 
 class QdrantSearch(ISearch):
-    def __init__(self, store: IStore):
+    _loop: asyncio.AbstractEventLoop
+    openai: OpenAI
+
+    def __init__(self, store: IStore, openai: OpenAI):
         super().__init__(store)
 
         self._loop = asyncio.get_running_loop()
+        self.openai = openai
 
         # Ensure collection exists
         try:
@@ -62,25 +64,24 @@ class QdrantSearch(ISearch):
             client.retrieve(collection_name=QD_COLLECTION, ids=[tmp_id])
             client.delete(collection_name=QD_COLLECTION, points_selector=[tmp_id])
         except Exception:
-            logger.warn("Error connecting to Qdrant", exc_info=True)
+            _logger.warn("Error connecting to Qdrant", exc_info=True)
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    async def message_search(
+    def message_search(
         self, q: str, user_id: UUID, limit: int
     ) -> SearchModel[MessageModel]:
-        logger.debug(f"Searching for: {q}")
+        _logger.debug(f"Searching for: {q}")
         start = time.monotonic()
 
-        conversations = await self.store.conversation_list(user_id)
+        conversations = self.store.conversation_list(user_id)
 
-        vector = await openai.vector_from_text(
+        vector = self.openai.vector_from_text(
             textwrap.dedent(
                 f"""
-                Today, we are the {datetime.utcnow()}. {q.capitalize()}
-            """
-            ),
-            user_id,
+            Today, we are the {datetime.utcnow()}. {q.capitalize()}
+        """
+            )
         )
 
         total = client.count(collection_name=QD_COLLECTION, exact=False).count
@@ -99,16 +100,17 @@ class QdrantSearch(ISearch):
             search_params=qmodels.SearchParams(hnsw_ef=128, exact=False),
         )
 
-        logger.debug(f"Got {len(raws)} results from Qdrant")
+        _logger.debug(f"Got {len(raws)} results from Qdrant")
 
         index_messages = []
         for raw in raws:
             try:
                 index_messages.append(IndexMessageModel(**raw.payload))
             except Exception:
-                logger.warn("Error parsing index message", exc_info=True)
+                _logger.warn("Error parsing index message", exc_info=True)
 
-        messages = await self.store.message_get_index(index_messages)
+        messages = self.store.message_get_index(index_messages)
+        _logger.debug(f"Messages: {messages}")
 
         return SearchModel[MessageModel](
             answers=[
@@ -119,16 +121,14 @@ class QdrantSearch(ISearch):
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
 
-    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
-        logger.debug(f'Indexing message "{message.id}"')
-        self._loop.create_task(self._index_background(message, user_id))
+    def message_index(self, message: StoredMessageModel) -> None:
+        _logger.debug(f'Indexing message "{message.id}"')
+        self._loop.create_task(self._index_background(message))
 
-    async def _index_background(
-        self, message: StoredMessageModel, user_id: UUID
-    ) -> None:
-        logger.debug(f"Starting indexing worker for message: {message.id}")
+    async def _index_background(self, message: StoredMessageModel) -> None:
+        _logger.debug(f"Starting indexing worker for message: {message.id}")
 
-        vector = await openai.vector_from_text(message.content, user_id)
+        vector = self.openai.vector_from_text(message.content)
         index = IndexMessageModel(
             conversation_id=message.conversation_id,
             id=message.id,

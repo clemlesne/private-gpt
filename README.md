@@ -22,6 +22,88 @@ Includes:
 
 ![Application screenshot](docs/main.png)
 
+## How it works
+
+### High level
+
+```mermaid
+sequenceDiagram
+    autonumber
+
+    actor User
+    participant PWA
+    participant API
+    participant OpenAI
+
+    PWA ->> API: Ask for conversations
+    activate API
+    API ->> API: Get conversations from storage
+    API ->> PWA: Answer with conversations
+    deactivate API
+    User ->> PWA: Select a conversation
+    User ->> PWA: Insert a message
+    PWA ->> API: Send the message
+    activate API
+    API ->> OpenAI: Ask for a completion
+    activate OpenAI
+    OpenAI ->> API: Send completion
+    deactivate OpenAI
+    API ->> API: Save conversation and message
+    API ->> PWA: Answer with the message
+    deactivate API
+    User ->> PWA: See results
+```
+
+### Architecture
+
+```mermaid
+graph
+    user(["User"])
+
+    api["Conversation service\n(REST API)"]
+    ui["Conversation UI\n(PWA)"]
+
+    subgraph tools["Tools"]
+    subgraph "Business data"
+        form_recognizer["Form recognizer"]
+        cognitive_services["Cognitive services"]
+        storage_blob["Blob storage"]
+        mssql["SQL Server"]
+    end
+
+    subgraph "Public data"
+        tmdb["TMDB"]
+        news["News"]
+        listen_notes["Listen notes"]
+        bing["Bing"]
+    end
+    end
+
+    subgraph "Persistence"
+    cosmosdb[("Cosmos DB\n(disk)")]
+    qdrant[("Qdrant\n(disk)")]
+    redis[("Redis\n(memory)")]
+    end
+
+    subgraph "Azure OpenAI services"
+    oai_ada["ADA embedding"]
+    oai_gpt["GPT completions"]
+    safety["Content Safety"]
+    end
+
+    api -- Cache low-level AI results --> redis
+    api -- Generate completions --> oai_gpt
+    api -- Generate embeddings --> oai_ada
+    api -- Index messages --> qdrant
+    api -- Persist conversations --> cosmosdb
+    api -- Test moderation --> safety
+    api -- Orchestrate external capabilities --> tools
+    ui -- Use APIs --> api
+    user -- Use UI --> ui
+    cognitive_services -- Index data --> mssql
+    cognitive_services -- Index data --> storage_blob
+```
+
 ## How to use
 
 ### Run locally
@@ -31,53 +113,74 @@ Create a local configuration file, a file named `config.toml` at the root of the
 ```toml
 # config.toml
 # /!\ All the file values are for example, you must change them
-[persistence]
-# Enum: "qdrant"
-search = "qdrant"
-# Enum: "redis", "cosmos"
-store = "cosmos"
-# Enum: "redis"
-stream = "redis"
-
 [api]
-root_path = ""
-
-[appinsights]
-connection_str = "InstrumentationKey=00000000-0000-0000-0000-000000000000;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com"
-
-[openai]
-ada_deploy_id = "ada"
-ada_max_tokens = 2049
-api_base = "https://moaw-dev-clesne-moaw-search-oai.openai.azure.com"
-gpt_deploy_id = "gpt"
-gpt_max_tokens = 4096
-
-[acs]
-api_base = "https://moaw-dev-clesne-moaw-search-acs.cognitiveservices.azure.com"
-api_token = "00000000000000000000000000000000"
-max_length = 1000
-
-[logging]
-app_level = "DEBUG"
-sys_level = "WARN"
+# root_path = "[api-path]"
 
 [oidc]
 algorithms = ["RS256"]
-api_audience = "00000000-0000-0000-0000-000000000000"
-issuers = ["https://login.microsoftonline.com/00000000-0000-0000-0000-000000000000/v2.0"]
+api_audience = "[aad_app_id]"
+issuers = ["https://login.microsoftonline.com/[tenant_id]/v2.0"]
 jwks = "https://login.microsoftonline.com/common/discovery/v2.0/keys"
 
-[qd]
-host = "127.0.0.1"
+[monitoring]
 
-[redis]
+[monitoring.logging]
+app_level = "DEBUG" # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+sys_level = "WARN" # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+
+[monitoring.azure_app_insights]
+connection_str = "InstrumentationKey=[key];[...]"
+
+[persistence]
+cache = "redis" # Enum: "redis"
+search = "qdrant" # Enum: "qdrant"
+store = "cosmos" # Enum: "redis", "cosmos"
+stream = "redis" # Enum: "redis"
+
+[persistence.qdrant]
+host = "[host]"
+
+[persistence.redis]
 db = 0
-host = "127.0.0.1"
+host = "[host]"
 
-[cosmos]
+[persistence.cosmos]
 # Containers "conversation" (/user_id), "message" (/conversation_id), "user" (/dummy), "usage" (/user_id) must exist
-url = "https://private-gpt.documents.azure.com:443"
-database = "private-gpt"
+url = "https://[deployment].documents.azure.com:443"
+database = "[db_name]"
+
+[ai]
+
+[ai.openai]
+ada_deploy_id = "ada"
+ada_max_tokens = 2049
+api_base = "https://[deployment].openai.azure.com"
+gpt_deploy_id = "gpt"
+gpt_max_tokens = 4096
+
+[ai.azure_content_safety]
+api_base = "https://[deployment].cognitiveservices.azure.com"
+api_token = "[api_token]"
+max_length = 1000
+
+[tools]
+
+[tools.azure_form_recognizer]
+api_base = "https://[deployment].cognitiveservices.azure.com"
+api_token = "[api_token]"
+
+[tools.bing]
+search_url = "https://api.bing.microsoft.com/v7.0/search"
+subscription_key = "[api_token]"
+
+[tools.tmdb]
+bearer_token = "[jwt_token]"
+
+[tools.news]
+api_key = "[api_token]"
+
+[tools.listen_notes]
+api_key = "[api_token]"
 ```
 
 Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.
@@ -116,42 +219,6 @@ helm upgrade --install default clemlesne-private-gpt/private-gpt
 Go to [http://127.0.0.1:8081/redoc](http://127.0.0.1:8081/redoc).
 
 ![Documentation endpoint](docs/doc.png)
-
-## How it works
-
-### High level
-
-```mermaid
-sequenceDiagram
-    autonumber
-
-    actor User
-    participant PWA
-    participant API
-    participant OpenAI
-
-    PWA ->> API: Ask for conversations
-    activate API
-    API ->> API: Get conversations from storage
-    API ->> PWA: Answer with conversations
-    deactivate API
-    User ->> PWA: Select a conversation
-    User ->> PWA: Insert a message
-    PWA ->> API: Send the message
-    activate API
-    API ->> OpenAI: Ask for a completion
-    activate OpenAI
-    OpenAI ->> API: Send completion
-    deactivate OpenAI
-    API ->> API: Save conversation and message
-    API ->> PWA: Answer with the message
-    deactivate API
-    User ->> PWA: See results
-```
-
-### Architecture
-
-WIP
 
 ## [Security](./SECURITY.md)
 

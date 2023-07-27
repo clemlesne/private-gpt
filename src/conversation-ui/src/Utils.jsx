@@ -2,6 +2,8 @@ import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 
+const userLang = navigator.language || navigator.userLanguage;
+
 const headerOpenClass = "header--open";
 
 const client = axios.create({
@@ -83,4 +85,5 @@ export {
   header,
   login,
   logout,
+  userLang,
 };

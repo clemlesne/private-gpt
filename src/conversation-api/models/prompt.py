@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
-from uuid import UUID
+from uuid import UUID, uuid4
 
 
 class BasePromptModel(BaseModel):
     group: str
-    id: UUID
+    id: UUID = Field(default_factory=uuid4)
     name: str
 
 

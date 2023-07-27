@@ -10,6 +10,7 @@ from azure.monitor.opentelemetry.exporter import (
     AzureMonitorMetricExporter,
     AzureMonitorTraceExporter,
 )
+from enum import Enum
 from fastapi import HTTPException, status
 from opentelemetry import trace
 from opentelemetry._logs import get_logger_provider, set_logger_provider
@@ -17,25 +18,21 @@ from opentelemetry.instrumentation.redis import RedisInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from opentelemetry.instrumentation.system_metrics import SystemMetricsInstrumentor
 from opentelemetry.instrumentation.urllib3 import URLLib3Instrumentor
-from opentelemetry.metrics import set_meter_provider
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
-from opentelemetry.sdk.metrics import MeterProvider
-from opentelemetry.sdk.metrics.export import (
-    ConsoleMetricExporter,
-    PeriodicExportingMetricReader,
-)
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pathlib import Path
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from tiktoken import encoding_for_model
-from typing import Dict, Optional, TypeVar, Union, Hashable
+from typing import Dict, Optional, Type, TypeVar, Union, Hashable
 from uuid import UUID
+import html
 import jwt
 import logging
 import mmh3
 import os
+import re
 import tomllib
 
 
@@ -50,7 +47,7 @@ AZ_CREDENTIAL = DefaultAzureCredential()
 # Init config
 ###
 
-T = TypeVar("T")
+T = TypeVar("T", bool, int, float, UUID, str, Enum, None)
 
 
 class ConfigNotFound(Exception):
@@ -58,7 +55,7 @@ class ConfigNotFound(Exception):
 
 
 def get_config(
-    section: Optional[str],
+    sections: Optional[Union[str, list[str]]],
     key: str,
     validate: T,
     default: T = None,
@@ -68,23 +65,31 @@ def get_config(
     Get config from environment variable or config file.
     """
 
-    def get_env(key: str, res_default: T) -> Union[str, T]:
+    def get_env(key: Union[str, list[str]], res_default: T) -> Union[str, T]:
         """
         Get config from environment variable.
         """
+        if isinstance(key, list):
+            key = "_".join(key)
         key = f"pg_{key}".upper()
         return os.environ.get(key, res_default)
 
     # Get config from file
     res = None
-    if section:
-        res = CONFIG.get(section, {}).get(key, get_env(f"{section}_{key}", default))
+    if sections:
+        if isinstance(sections, list):
+            res = CONFIG
+            for section in sections:
+                res = res.get(section, {})
+        else:
+            res = CONFIG.get(sections, {})
+        res = res.get(key, get_env(f"{sections}_{key}", default))
     else:
         res = CONFIG.get(key, get_env(key, default))
 
     # Check if required
     if required and not res:
-        raise ConfigNotFound(f'Cannot find config "{section}/{key}"')
+        raise ConfigNotFound(f'Cannot find config "{sections}/{key}"')
 
     # Convert to res_type
     try:
@@ -103,13 +108,13 @@ def get_config(
                 pass
     except Exception:
         raise ConfigNotFound(
-            f'Cannot convert config "{section}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
+            f'Cannot convert config "{sections}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
         )
 
     # Check res type
     if not isinstance(res, validate):
         raise ConfigNotFound(
-            f'Cannot validate config "{section}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
+            f'Cannot validate config "{sections}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
         )
 
     return res
@@ -145,7 +150,7 @@ def strip_query_params(url: str) -> str:
 
 
 APPINSIGHTS_CONNECTION_STR = get_config(
-    "appinsights", "connection_str", str, required=True
+    ["monitoring", "azure_app_insights"], "connection_str", str, required=True
 )
 # Logs
 set_logger_provider(LoggerProvider())
@@ -159,12 +164,9 @@ metric_exporter = AzureMonitorMetricExporter(
 )
 # Traces
 # TODO: Enable sampling
-set_meter_provider(
-    MeterProvider([PeriodicExportingMetricReader(ConsoleMetricExporter())])
-)
-SystemMetricsInstrumentor().instrument()  # System
 RedisInstrumentor().instrument()  # Redis
 RequestsInstrumentor().instrument()  # Requests
+SystemMetricsInstrumentor().instrument()  # System
 URLLib3Instrumentor().instrument(url_filter=strip_query_params)  # Urllib3
 trace.set_tracer_provider(TracerProvider())
 trace_exporter = AzureMonitorTraceExporter(
@@ -186,10 +188,10 @@ def build_logger(name: str) -> logging.Logger:
     return logger
 
 
-LOGGING_SYS_LEVEL = get_config("logging", "sys_level", str, "WARN")
+LOGGING_SYS_LEVEL = get_config(["monitoring", "logging"], "sys_level", str, "WARN")
 logging.basicConfig(level=LOGGING_SYS_LEVEL)
-LOGGING_APP_LEVEL = get_config("logging", "app_level", str, "INFO")
-logger = build_logger(__name__)
+LOGGING_APP_LEVEL = get_config(["monitoring", "logging"], "app_level", str, "INFO")
+_logger = build_logger(__name__)
 
 ###
 # Init OIDC
@@ -199,6 +201,48 @@ OIDC_ALGORITHMS = get_config("oidc", "algorithms", list, required=True)
 OIDC_API_AUDIENCE = get_config("oidc", "api_audience", str, required=True)
 OIDC_ISSUERS = get_config("oidc", "issuers", list, required=True)
 OIDC_JWKS = get_config("oidc", "jwks", str, required=True)
+
+
+def sanitize(raw: Optional[str]) -> Optional[str]:
+    """
+    Takes a raw string of HTML and removes all HTML tags, Markdown tables, and line returns.
+    """
+    if not raw:
+        return None
+
+    # Remove HTML doctype
+    raw = re.sub(r"<!DOCTYPE[^>]*>", " ", raw)
+    # Remove HTML head
+    raw = re.sub(r"<head\b[^>]*>[\s\S]*<\/head>", " ", raw)
+    # Remove HTML scripts
+    raw = re.sub(r"<script\b[^>]*>[\s\S]*?<\/script>", " ", raw)
+    # Remove HTML styles
+    raw = re.sub(r"<style\b[^>]*>[\s\S]*?<\/style>", " ", raw)
+    # Extract href from HTML links, in the form of "(href) text"
+    raw = re.sub(r"<a\b[^>]*href=\"([^\"]*)\"[^>]*>([^<]*)<\/a>", r"(\1) \2", raw)
+    # Remove HTML tags
+    raw = re.sub(r"<[^>]*>", " ", raw)
+    # Remove Markdown tables
+    raw = re.sub(r"[-|]{2,}", " ", raw)
+    # Remove Markdown code blocks
+    raw = re.sub(r"```[\s\S]*```", " ", raw)
+    # Remove Markdown bold, italic, strikethrough, code, heading, table delimiters, links, images, comments, and horizontal rules
+    raw = re.sub(r"[*_`~#|!\[\]<>-]+", " ", raw)
+    # Remove line returns, tabs and spaces
+    raw = re.sub(r"[\n\t\v ]+", " ", raw)
+    # Remove HTML entities
+    raw = html.unescape(raw)
+    # Remove leading and trailing spaces
+    raw = raw.strip()
+
+    return raw
+
+
+def try_or_none(func, *args, **kwargs):
+    try:
+        return func(*args, **kwargs)
+    except Exception:
+        return None
 
 
 def oai_tokens_nb(content: str, encoding_name: str) -> int:
@@ -220,7 +264,7 @@ class VerifyToken:
         try:
             self._load_jwks()
         except Exception:
-            logger.error("Cannot load signing key from JWT", exc_info=True)
+            _logger.error("Cannot load signing key from JWT", exc_info=True)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         succeed = False
@@ -237,22 +281,22 @@ class VerifyToken:
                     options={"require": ["exp", "iss", "sub"]},
                 )
                 succeed = True
-                logger.debug(f"Successfully validate JWT with issuer: {issuer}")
+                _logger.debug(f"Successfully validate JWT with issuer: {issuer}")
                 break
             except Exception as e:
-                logger.debug(f"Fails validate JWT with issuer: {issuer}")
+                _logger.debug(f"Fails validate JWT with issuer: {issuer}")
                 last_error = e
 
         if not succeed:
-            logger.info("JWT token is invalid")
-            logger.debug(last_error)
+            _logger.info("JWT token is invalid")
+            _logger.debug(last_error)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="JWT token is invalid",
             )
 
         if not payload:
-            logger.error("Incoherent payload, shouldn't be None")
+            _logger.error("Incoherent payload, shouldn't be None")
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         return payload
