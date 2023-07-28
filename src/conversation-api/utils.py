@@ -24,7 +24,6 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pathlib import Path
 from tenacity import retry, stop_after_attempt, wait_random_exponential
-from tiktoken import encoding_for_model
 from typing import Dict, Optional, Type, TypeVar, Union, Hashable
 from uuid import UUID
 import html
@@ -243,11 +242,6 @@ def try_or_none(func, *args, **kwargs):
         return func(*args, **kwargs)
     except Exception:
         return None
-
-
-def oai_tokens_nb(content: str, encoding_name: str) -> int:
-    encoding = encoding_for_model(encoding_name)
-    return len(encoding.encode(content))
 
 
 def hash_token(str: Union[str, Hashable]) -> UUID:

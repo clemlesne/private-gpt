@@ -3,7 +3,6 @@ from utils import (
     build_logger,
     get_config,
     hash_token,
-    oai_tokens_nb,
     VerifyToken,
     VERSION,
 )
@@ -377,8 +376,6 @@ async def message_post(
             secret=secret,
         )
 
-        # tokens_nb = await _validate_message_length(message=message)
-
         # Update conversation
         store.message_set(message)
         conversation = store.conversation_get(conversation_id, current_user.id)
@@ -388,17 +385,7 @@ async def message_post(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
             )
-        await _message_index(message, current_user, conversation.prompt)
-
-        # # Build usage
-        # usage = UsageModel(
-        #     ai_model=OAI_GPT_MODEL,
-        #     conversation_id=conversation_id,
-        #     tokens=tokens_nb,
-        #     user_id=current_user.id,
-        #     prompt_name=conversation.prompt.name if conversation.prompt else None,
-        # )
-        # store.usage_set(usage)
+        index.message_index(message)
     else:
         # Test prompt ID if provided
         if prompt_id and prompt_id not in AI_PROMPTS:
@@ -407,24 +394,12 @@ async def message_post(
                 detail="Prompt ID not found",
             )
 
-        # tokens_nb = await _validate_message_length(content=content)
-
         # Build conversation
         conversation = StoredConversationModel(
             prompt=AI_PROMPTS[prompt_id] if prompt_id else None,
             user_id=current_user.id,
         )
         store.conversation_set(conversation)
-
-        # # Build usage
-        # usage = UsageModel(
-        #     ai_model=OAI_GPT_MODEL,
-        #     conversation_id=conversation.id,
-        #     tokens=tokens_nb,
-        #     user_id=current_user.id,
-        #     prompt_name=conversation.prompt.name if conversation.prompt else None,
-        # )
-        # await store.usage_set(usage)
 
         # Build message
         message = StoredMessageModel(
@@ -434,7 +409,7 @@ async def message_post(
             secret=secret,
         )
         store.message_set(message)
-        await _message_index(message, current_user, conversation.prompt)
+        index.message_index(message)
 
     messages = store.message_list(conversation.id)
 
@@ -513,13 +488,23 @@ async def _generate_completion_background(
         stream.push(message.json(), last_message.token)
         messages.append(message)
 
+    def usage(total_tokens: int, model_name: str) -> None:
+        usage = UsageModel(
+            ai_model=model_name,
+            conversation_id=conversation.id,
+            prompt_name=conversation.prompt.name if conversation.prompt else None,
+            tokens=total_tokens,
+            user_id=conversation.user_id,
+        )
+        store.usage_set(usage)
+
     await openai.chain(
-        last_message, conversation.id, current_user, language, new_message
+        last_message, conversation.id, current_user, language, new_message, usage
     )
 
     _logger.debug(f"Final completion results: {messages}")
 
-    # First, store the updated conversation in Redis
+    # First, store the updated conversation
     res_message = StoredMessageModel(
         actions=list(set([m.action for m in messages if m.action])),
         content="".join([m.content for m in messages if m.content]),
@@ -528,65 +513,10 @@ async def _generate_completion_background(
         secret=last_message.secret,
     )
     store.message_set(res_message)
-    await _message_index(res_message, current_user, conversation.prompt)
+    index.message_index(res_message)
 
     # Then, send the end of stream message
     stream.end(last_message.token)
-
-
-async def _message_index(
-    message: StoredMessageModel,
-    current_user: UserModel,
-    prompt: Optional[StoredPromptModel],
-) -> None:
-    # tokens_nb = oai_tokens_nb(message.content, OAI_ADA_MODEL)
-    # if tokens_nb > OAI_ADA_MAX_TOKENS:
-    #     logger.info(f"Message ({tokens_nb}) too long for indexing")
-    #     raise HTTPException(
-    #         status_code=status.HTTP_400_BAD_REQUEST,
-    #         detail="Conversation history is too long",
-    #     )
-
-    # usage = UsageModel(
-    #     ai_model=OAI_ADA_MODEL,
-    #     conversation_id=message.conversation_id,
-    #     tokens=oai_tokens_nb(message.content, OAI_ADA_MODEL),
-    #     user_id=current_user.id,
-    #     prompt_name=prompt.name if prompt else None,
-    # )
-    # store.usage_set(usage)
-    index.message_index(message)
-
-
-# async def _validate_message_length(
-#     message: Optional[StoredMessageModel] = None,
-#     content: Optional[str] = None,
-# ) -> int:
-#     if content:
-#         tokens_nb = oai_tokens_nb(content, OAI_GPT_MODEL)
-#     elif message:
-#         tokens_nb = oai_tokens_nb(
-#             message.content
-#             + "".join(
-#                 [m.content for m in store.message_list(message.conversation_id)]
-#             ),
-#             OAI_GPT_MODEL,
-#         )
-#     else:
-#         raise ValueError(
-#             'Either message or content must be provided to "validate_usage"'
-#         )
-
-#     logger.debug(f"{tokens_nb} tokens in the conversation")
-
-#     if tokens_nb > OAI_GPT_MAX_TOKENS:
-#         logger.info(f"Message ({tokens_nb}) too long for conversation")
-#         raise HTTPException(
-#             status_code=status.HTTP_400_BAD_REQUEST,
-#             detail="Conversation history is too long",
-#         )
-
-#     return tokens_nb
 
 
 async def _guess_title_background(
@@ -598,16 +528,26 @@ async def _guess_title_background(
 
     last_message = messages[-1]
 
-    message = await openai.completion(last_message, AI_TITLE_PROMPT, language)
+    def new_message(message: str) -> None:
+        if message == "null":
+            _logger.error("No title found")
+            return
+        # Store the updated conversation
+        _logger.debug(f"Title found: {message}")
+        conversation.title = message
+        store.conversation_set(conversation)
 
-    if message == "null":
-        _logger.error("No title found")
-        return
+    def usage(total_tokens: int, model_name: str) -> None:
+        usage = UsageModel(
+            ai_model=model_name,
+            conversation_id=conversation.id,
+            prompt_name=conversation.prompt.name if conversation.prompt else None,
+            tokens=total_tokens,
+            user_id=conversation.user_id,
+        )
+        store.usage_set(usage)
 
-    # Store the updated conversation in Redis
-    _logger.debug(f"Title found: {message}")
-    conversation.title = message
-    store.conversation_set(conversation)
+    await openai.completion(last_message, AI_TITLE_PROMPT, language, new_message, usage)
 
 
 # Instrument FastAPI with OpenTelemetry

@@ -202,14 +202,17 @@ class OpenAI:
         return self.embeddings.embed_query(prompt)
 
     async def completion(
-        self, message: MessageModel, template: str, language: str
-    ) -> str:
+        self, message: MessageModel, template: str, language: str, message_callback: Callable[[str], None], usage_callback: Callable[[int, str], None],
+    ) -> None:
         builder = PromptTemplate(
             template=template, input_variables=["query", "language"]
         )
         prompt = builder.format(query=message.content, language=language)
         _logger.debug(f"Asking completion with prompt: {prompt}")
-        return self.chat.predict(prompt)
+
+        with get_openai_callback() as cb:
+            message_callback(self.chat.predict(prompt))
+            usage_callback(cb.total_tokens, self.chat.model_name)
 
     @retry(
         reraise=True,
@@ -223,7 +226,8 @@ class OpenAI:
         conversation_id: UUID,
         current_user: UserModel,
         language: str,
-        callback: Callable[[StreamMessageModel], None],
+        message_callback: Callable[[StreamMessageModel], None],
+        usage_callback: Callable[[int, str], None],
     ) -> None:
         message_history = CustomHistory(
             conversation_id=conversation_id,
@@ -282,13 +286,14 @@ class OpenAI:
 
         def on_agent_action(action: AgentAction, **kwargs):
             if action.tool != "_Exception":
-                callback(StreamMessageModel(action=action.tool))
+                message_callback(StreamMessageModel(action=action.tool))
 
         with get_openai_callback() as cb:
             cb.on_agent_action = on_agent_action
             res = agent.run(input=message.content, language=language)
             _logger.debug(f"Agent response: {res}")
-            callback(StreamMessageModel(content=res))
+            message_callback(StreamMessageModel(content=res))
+            usage_callback(cb.total_tokens, self.chat.model_name)
 
     async def _refresh_token_background(self):
         """
