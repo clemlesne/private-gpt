@@ -20,10 +20,11 @@ import remarkNormalizeHeadings from "remark-normalize-headings";
 
 function Message({
   actions,
-  content,
+  content = null,
   date,
   defaultDisplaySub = false,
   error = false,
+  loading = false,
   role,
   secret = false,
 }) {
@@ -53,7 +54,10 @@ function Message({
     if (!actions || actions.length == 0) return null;
     let res = "";
     for (const action of actions) {
-      res += ", " + action.charAt(0).toUpperCase() + action.replace(/[_-]/g, " ").slice(1);
+      res +=
+        ", " +
+        action.charAt(0).toUpperCase() +
+        action.replace(/[_-]/g, " ").slice(1);
     }
     setActionsString(res.slice(2));
   }, [actions]);
@@ -71,58 +75,61 @@ function Message({
       }}
     >
       <div
-        className="message__content"
+        className={`message__content ${loading ? "message__content--loading" : ""}`}
         onClick={() => {
           if (!mouseIn) setDisplayActions(!displayActions);
         }}
         ref={httpContent}
       >
-        <ReactMarkdown
-          linkTarget="_blank"
-          remarkPlugins={[
-            remarkBreaks,
-            remarkGemoji,
-            remarkGfm,
-            remarkImages,
-            remarkMath,
-            remarkNormalizeHeadings,
-          ]}
-          children={content}
-          components={{
-            code({ node, inline, className, children, ...props }) {
-              if (!inline) {
-                const match = /language-(\w+)/.exec(className || "");
-                const language = match ? match[1] : null;
-                return (
-                  <SyntaxHighlighter
-                    {...props}
-                    children={String(children).replace(/\n$/, "")}
-                    customStyle={{
-                      borderRadius: "var(--radius)",
-                      margin: "none",
-                      padding:
-                        "var(--message-padding-v) var(--message-padding-h)",
-                    }}
-                    language={language}
-                    PreTag="div"
-                    showLineNumbers={true}
-                    style={darkTheme ? oneDark : oneLight}
-                  />
-                );
-              } else {
-                return (
-                  <code {...props} className={className}>
-                    {children}
-                  </code>
-                );
-              }
-            },
-          }}
-        />
+        {loading && <>Thinking...</>}
+        {content && (
+          <ReactMarkdown
+            linkTarget="_blank"
+            remarkPlugins={[
+              remarkBreaks,
+              remarkGemoji,
+              remarkGfm,
+              remarkImages,
+              remarkMath,
+              remarkNormalizeHeadings,
+            ]}
+            children={content}
+            components={{
+              code({ node, inline, className, children, ...props }) {
+                if (!inline) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  const language = match ? match[1] : null;
+                  return (
+                    <SyntaxHighlighter
+                      {...props}
+                      children={String(children).replace(/\n$/, "")}
+                      customStyle={{
+                        borderRadius: "var(--radius)",
+                        margin: "none",
+                        padding:
+                          "var(--message-padding-v) var(--message-padding-h)",
+                      }}
+                      language={language}
+                      PreTag="div"
+                      showLineNumbers={true}
+                      style={darkTheme ? oneDark : oneLight}
+                    />
+                  );
+                } else {
+                  return (
+                    <code {...props} className={className}>
+                      {children}
+                    </code>
+                  );
+                }
+              },
+            }}
+          />
+        )}
       </div>
-      {actionsString && <small className="message__sub">
-        Actions: {actionsString}
-      </small>}
+      {actionsString && (
+        <small className="message__sub">Actions: {actionsString}</small>
+      )}
       {displaySub && (
         <small className="message__sub">
           <span>{moment.utc(date).fromNow()}</span>
@@ -149,10 +156,11 @@ function Message({
 
 Message.propTypes = {
   actions: PropTypes.arrayOf(PropTypes.string),
-  content: PropTypes.string.isRequired,
+  content: PropTypes.string,
   date: PropTypes.string.isRequired,
   defaultDisplaySub: PropTypes.bool,
   error: PropTypes.bool,
+  loading: PropTypes.bool,
   role: PropTypes.string.isRequired,
   secret: PropTypes.bool,
 };

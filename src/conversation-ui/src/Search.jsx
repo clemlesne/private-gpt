@@ -107,12 +107,12 @@ function Search() {
           {messages.map((message) => message.data.content && (
             <Message
               actions={message.actions}
-              content={message.data.content}
-              date={message.data.created_at}
+              content={message?.content}
+              date={message.created_at}
               defaultDisplaySub={true}
-              key={message.data.id}
-              role={message.data.role}
-              secret={message.secret}
+              key={message.id}
+              role={message.role}
+              secret={message?.secret}
             />
           ))}
         </div>

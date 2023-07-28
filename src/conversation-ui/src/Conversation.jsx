@@ -172,11 +172,18 @@ function Conversation() {
           if (!res.data) return;
 
           const cleanup = () => {
+            // Free backend resources
             source.close();
+
+            // Stop loading
+            updateLastMessage({
+              loading: false,
+            });
+
+            setLoading(false);
             // Ask to refresh the conversation, if it is not loaded, or if the title is not either
             if (!conversationId || !conversation.title)
               refreshConversations(res.data.id);
-            setLoading(false);
           };
 
           // Then, fetch the message
@@ -220,11 +227,12 @@ function Conversation() {
           content =
             content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
 
+          // Stop loading
           updateLastMessage({
             content,
             error: true,
+            loading: false,
           });
-
           setLoading(false);
         });
     };
@@ -238,9 +246,9 @@ function Conversation() {
         secret,
       },
       {
-        content: "Loading…",
         created_at: new Date().toISOString(),
         id: uuidv4(),
+        loading: true,
         role: "assistant",
         secret,
       },
@@ -363,13 +371,14 @@ function Conversation() {
           {conversation.messages.map((message) => (
             <Message
               actions={message.actions}
-              content={message.content}
+              content={message?.content}
               date={message.created_at}
               defaultDisplaySub={message.secret}
-              error={message.error}
+              error={message?.error}
               key={message.id}
+              loading={message?.loading}
               role={message.role}
-              secret={message.secret}
+              secret={message?.secret}
             />
           ))}
         </div>

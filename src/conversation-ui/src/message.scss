@@ -59,6 +59,22 @@
     // Fix overflow with non wrapping content like code and tables
     max-width: 100%;
 
+    &.message__content--loading {
+      animation: skeleton 2s infinite linear;
+      background-image: linear-gradient(90deg, transparent 0, var(--background-muted) 50%, transparent 100%);
+      background-repeat: no-repeat;
+      background-size: 12rem 100%;
+
+      @keyframes skeleton {
+        0% {
+          background-position: -12rem;
+        }
+        60%, 100% {
+          background-position: calc(100% + 12rem);
+        }
+      }
+    }
+
     > *:not(:last-child) {
       margin-bottom: var(--message-padding-v);
     }
