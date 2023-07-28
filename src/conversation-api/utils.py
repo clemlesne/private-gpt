@@ -33,6 +33,7 @@ import mmh3
 import os
 import re
 import tomllib
+import json
 
 
 ###
@@ -71,7 +72,11 @@ def get_config(
         if isinstance(key, list):
             key = "_".join(key)
         key = f"pg_{key}".upper()
-        return os.environ.get(key, res_default)
+        res = os.environ.get(key, res_default)
+        try:
+            return json.loads(res)
+        except Exception:
+            return res or res_default
 
     # Get config from file
     res = None
