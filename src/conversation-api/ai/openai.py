@@ -22,7 +22,7 @@ from langchain.utilities.requests import TextRequestsWrapper
 from models.message import MessageRole
 from models.message import StoredMessageModel, MessageModel, StreamMessageModel
 from models.user import UserModel
-from openai.error import InvalidRequestError
+from openai.error import InvalidRequestError, APIError
 from persistence.icache import ICache
 from persistence.isearch import ISearch
 from persistence.istore import IStore
@@ -213,7 +213,7 @@ class OpenAI:
 
     @retry(
         reraise=True,
-        retry=(retry_if_result(lambda res: res == "Agent stopped due to iteration limit or time limit.") | retry_if_exception_type(InvalidRequestError)),
+        retry=(retry_if_result(lambda res: res == "Agent stopped due to iteration limit or time limit.") | retry_if_exception_type((InvalidRequestError, APIError))),
         stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=0.5, max=30),
     )
