@@ -41,10 +41,6 @@
       margin-bottom: calc(var(--conversation-padding-v) * 2);
     }
 
-    > :first-child {
-      margin-top: calc(var(--conversation-padding-v) * 2);
-    }
-
     .conversation__empty__header {
       align-items: center;
       display: flex;
