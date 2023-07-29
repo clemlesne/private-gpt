@@ -21,13 +21,17 @@ axiosRetry(client, {
 });
 
 const login = async (instance) => {
-  await instance.loginPopup();
+  // Browsers are increasingly blocking third party cookies by default. Detect that option is combersome. Thus, we always use redirect instead of popup.
+  // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/3118#issuecomment-1655932572
+  await instance.loginRedirect();
 };
 
 const logout = async (account, instance) => {
   if (!account) return null;
   const opt = { account };
-  await instance.logoutPopup(opt);
+  // Browsers are increasingly blocking third party cookies by default. Detect that option is combersome. Thus, we always use redirect instead of popup.
+  // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/3118#issuecomment-1655932572
+  await instance.logoutRedirect(opt);
 };
 
 const getIdToken = async (account, instance) => {
