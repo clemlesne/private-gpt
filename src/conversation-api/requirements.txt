@@ -5,8 +5,8 @@ azure-ai-formrecognizer==3.2.1
 azure-cosmos==4.4.0
 azure-identity==1.13.0
 azure-monitor-opentelemetry==1.0.0b14
-fastapi==0.100.0
-langchain==0.0.244
+fastapi==0.100.1
+langchain==0.0.247
 mmh3==4.0.1
 openai==0.27.8
 opentelemetry-instrumentation-fastapi==0.39b0
