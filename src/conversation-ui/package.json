@@ -14,7 +14,7 @@
     "@azure/msal-node": "^1.18.0",
     "@azure/msal-react": "^1.5.9",
     "@fluentui/react-icons": "^2.0.209",
-    "@microsoft/applicationinsights-react-js": "^3.4.3",
+    "@microsoft/applicationinsights-react-js": "^17.0.0",
     "@microsoft/applicationinsights-web": "^3.0.2",
     "@orama/orama": "^1.1.1",
     "autoprefixer": "^10.4.14",
