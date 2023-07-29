@@ -1,5 +1,5 @@
 import "./header.scss";
-import { AddFilled, ArrowDownFilled, ArrowUpFilled, DoorFilled, KeyFilled, Person12Filled, SearchFilled, WeatherMoonFilled, WeatherSunnyFilled } from "@fluentui/react-icons";
+import { AddFilled, ArrowDownFilled, ArrowUpFilled, DoorFilled, KeyFilled, SearchFilled, WeatherMoonFilled, WeatherSunnyFilled } from "@fluentui/react-icons";
 import { login, logout } from "./Utils";
 import { ThemeContext, ConversationContext, HeaderOpenContext } from "./App";
 import { useContext } from "react";
@@ -62,8 +62,7 @@ function Header() {
         <div className="header__bottom__block">
           {isAuthenticated && (
             <p>
-              <Person12Filled />
-              {" "}Logged as{" "}
+              Logged as{" "}
               {account.name
                 ? account.name
                 : "unknown name"}{" "}
