@@ -1,7 +1,7 @@
 import "./header.scss";
-import { AddFilled, DoorFilled, EqualOffFilled, KeyFilled, Person12Filled, SearchFilled, WeatherMoonFilled, WeatherSunnyFilled } from "@fluentui/react-icons";
-import { header, login, logout } from "./Utils";
-import { ThemeContext, ConversationContext } from "./App";
+import { AddFilled, ArrowDownFilled, ArrowUpFilled, DoorFilled, KeyFilled, Person12Filled, SearchFilled, WeatherMoonFilled, WeatherSunnyFilled } from "@fluentui/react-icons";
+import { login, logout } from "./Utils";
+import { ThemeContext, ConversationContext, HeaderOpenContext } from "./App";
 import { useContext } from "react";
 import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ function Header() {
   // React context
   const [conversations] = useContext(ConversationContext);
   const [darkTheme, setDarkTheme] = useContext(ThemeContext);
+  const [headerOpen, setHeaderOpen] = useContext(HeaderOpenContext);
 
   return (
     <div className="header">
@@ -27,7 +28,7 @@ function Header() {
         {isAuthenticated && <>
           <Button
             onClick={() => {
-              header(false);
+              setHeaderOpen(false);
               navigate("/");
             }}
             text="New chat"
@@ -36,7 +37,7 @@ function Header() {
           />
           <Button
             onClick={() => {
-              header(false);
+              setHeaderOpen(false);
               navigate("/search");
             }}
             text="Search"
@@ -45,9 +46,9 @@ function Header() {
         </>}
         <Button
           className="header__actions__toggle"
-          emoji={EqualOffFilled}
+          emoji={headerOpen ? ArrowUpFilled : ArrowDownFilled}
           text="Menu"
-          onClick={() => header() }
+          onClick={() => setHeaderOpen(!headerOpen) }
         />
       </div>
       <div className="header__content">
@@ -83,7 +84,7 @@ function Header() {
         <div className="header__bottom__block">
           <Button
             onClick={() => {
-              header(false);
+              setHeaderOpen(false);
               isAuthenticated ? logout(account, instance) : login(instance);
             }}
             emoji={isAuthenticated ? DoorFilled : KeyFilled}
@@ -92,7 +93,7 @@ function Header() {
           />
           <Button
             onClick={() => {
-              header(false);
+              setHeaderOpen(false);
               setDarkTheme(!darkTheme);
             }}
             emoji={darkTheme ? WeatherSunnyFilled : WeatherMoonFilled}
