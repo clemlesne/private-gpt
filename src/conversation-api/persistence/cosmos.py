@@ -11,7 +11,8 @@ from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
-from typing import Any, Dict, List, Optional, Union
+from pydantic import ValidationError
+from typing import List, Optional, Union
 from uuid import UUID, uuid4
 import asyncio
 
@@ -103,8 +104,8 @@ class CosmosStore(IStore):
                 continue
             try:
                 conversations.append(StoredConversationModel(**raw))
-            except Exception:
-                _logger.warn("Error parsing conversation", exc_info=True)
+            except ValidationError as e:
+                _logger.warn(f'Error parsing conversation, "{e}"')
         return conversations
 
     def message_get(
@@ -153,8 +154,8 @@ class CosmosStore(IStore):
                 continue
             try:
                 items.append(MessageModel(**raw))
-            except Exception:
-                _logger.warn("Error parsing message", exc_info=True)
+            except ValidationError as e:
+                _logger.warn(f'Error parsing message, "{e}"')
         return items
 
     def usage_set(self, usage: UsageModel) -> None:

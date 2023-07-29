@@ -9,6 +9,7 @@ from datetime import datetime
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.search import SearchModel, SearchStatsModel, SearchAnswerModel
+from pydantic import ValidationError
 from qdrant_client import QdrantClient
 from uuid import UUID, uuid4
 import asyncio
@@ -106,8 +107,8 @@ class QdrantSearch(ISearch):
         for raw in raws:
             try:
                 index_messages.append(IndexMessageModel(**raw.payload))
-            except Exception:
-                _logger.warn("Error parsing index message", exc_info=True)
+            except ValidationError as e:
+                _logger.warn(f'Error parsing index message, "{e}"')
 
         messages = self.store.message_get_index(index_messages)
         _logger.debug(f"Messages: {messages}")

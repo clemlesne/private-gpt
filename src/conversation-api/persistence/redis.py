@@ -2,26 +2,26 @@
 from utils import build_logger, get_config
 
 # Import misc
+from .icache import ICache
 from .istore import IStore
 from .istream import IStream
-from .icache import ICache
 from models.conversation import StoredConversationModel, StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
+from pydantic import ValidationError
 from redis import Redis
 from typing import (
     Any,
     AsyncGenerator,
-    Callable,
     Awaitable,
+    Callable,
     Dict,
     List,
     Literal,
     Mapping,
     Optional,
-    Union,
 )
 from uuid import UUID, uuid4
 import asyncio
@@ -96,8 +96,8 @@ class RedisStore(IStore):
                 continue
             try:
                 conversations.append(StoredConversationModel.parse_raw(raw))
-            except Exception:
-                _logger.warn("Error parsing conversation", exc_info=True)
+            except ValidationError as e:
+                _logger.warn(f'Error parsing conversation, "{e}"')
         # Sort by created_at desc
         conversations.sort(key=lambda x: x.created_at, reverse=True)
         return conversations
@@ -126,8 +126,8 @@ class RedisStore(IStore):
                 continue
             try:
                 messages.append(MessageModel.parse_raw(raw))
-            except Exception:
-                _logger.warn("Error parsing message", exc_info=True)
+            except ValidationError as e:
+                _logger.warn(f'Error parsing message, "{e}"')
         return messages
 
     def message_set(self, message: StoredMessageModel) -> None:
@@ -149,8 +149,8 @@ class RedisStore(IStore):
                 continue
             try:
                 messages.append(MessageModel.parse_raw(raw))
-            except Exception:
-                _logger.warn("Error parsing conversation", exc_info=True)
+            except ValidationError as e:
+                _logger.warn(f'Error parsing conversation, "{e}"')
         # Sort by created_at asc
         messages.sort(key=lambda x: x.created_at)
         return messages
