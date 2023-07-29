@@ -149,7 +149,7 @@ html {
   }
 
   .header__bottom {
-    background-color: var(--header--background-color);
+    background: linear-gradient(0deg, var(--header--background-color) calc(100% - var(--header-padding-v)), transparent 100%);
 
     // Stays at the bottom
     bottom: 0;
