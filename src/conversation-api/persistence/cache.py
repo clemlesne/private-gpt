@@ -61,8 +61,6 @@ class CacheStore(IStore):
                 conversations.append(StoredConversationModel.parse_raw(raws))
             except ValidationError as e:
                 _logger.warn(f'Error parsing conversation, "{e}"')
-        # Sort by created_at desc
-        conversations.sort(key=lambda x: x.created_at, reverse=True)
         return conversations or None
 
     def message_get(
@@ -107,8 +105,6 @@ class CacheStore(IStore):
                 messages.append(MessageModel.parse_raw(raw))
             except ValidationError as e:
                 _logger.warn(f'Error parsing conversation, "{e}"')
-        # Sort by created_at asc
-        messages.sort(key=lambda x: x.created_at)
         return messages or None
 
     def usage_set(self, usage: UsageModel) -> None:

@@ -313,6 +313,7 @@ async def conversation_get(
             detail="Conversation not found",
         )
     messages = store.message_list(conversation.id) or []
+    messages.sort(key=lambda x: x.created_at)  # Sort ASC
     return GetConversationModel(
         **conversation.dict(),
         messages=messages,
@@ -324,6 +325,7 @@ async def conversation_list(
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> ListConversationsModel:
     conversations = store.conversation_list(current_user.id) or []
+    conversations.sort(key=lambda x: x.created_at, reverse=True)  # Sort DESC
     return ListConversationsModel(conversations=conversations)
 
 
@@ -407,6 +409,7 @@ async def message_post(
         index.message_index(message)
 
     messages = store.message_list(conversation.id) or []
+    messages.sort(key=lambda x: x.created_at)  # Sort ASC
 
     # Execute message completion in background
     _loop.create_task(
@@ -458,7 +461,9 @@ async def _read_message_sse(req: Request, message_id: UUID):
 async def message_search(
     q: str, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> SearchModel[MessageModel]:
-    return index.message_search(q, current_user.id, 25)
+    messages = index.message_search(q, current_user.id, 25)
+    messages.answers.sort(key=lambda x: x.score, reverse=True)  # Sort DESC
+    return messages
 
 
 async def _generate_completion_background(

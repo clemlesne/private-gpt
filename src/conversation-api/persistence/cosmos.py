@@ -152,8 +152,6 @@ class CosmosStore(IStore):
                 conversations.append(StoredConversationModel(**raw))
             except ValidationError as e:
                 _logger.warn(f'Error parsing conversation, "{e}"')
-        # Sort by created_at desc
-        conversations.sort(key=lambda x: x.created_at, reverse=True)
         # Update cache
         self.cache.hset(cache_key, {str(c.id): c.json() for c in conversations})
         return conversations or None
@@ -247,8 +245,6 @@ class CosmosStore(IStore):
                 messages.append(MessageModel(**raw))
             except ValidationError as e:
                 _logger.warn(f'Error parsing message, "{e}"')
-        # Sort by created_at asc
-        messages.sort(key=lambda x: x.created_at)
         # Update cache
         self.cache.hset(cache_key, {str(m.id): m.json() for m in messages})
         return messages or None
