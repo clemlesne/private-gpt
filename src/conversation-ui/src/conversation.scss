@@ -109,6 +109,16 @@
     > textarea {
       resize: vertical;
       width: 100%;
+      z-index: 1;  // Abose nearby elements
+
+      &:not(:disabled):not([disabled]) {
+        &:active,
+        &:focus {
+          box-shadow: 0 0 1.25rem var(--border-active);
+          transition-property: box-shadow outline;
+          transition-duration: 0.125s;
+        }
+      }
     }
   }
 }
