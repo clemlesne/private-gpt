@@ -482,13 +482,13 @@ async def _generate_completion_background(
 
     messages = []
 
-    def new_message(message: StreamMessageModel) -> None:
+    def on_message(message: StreamMessageModel) -> None:
         _logger.debug(f"Completion result: {message}")
         # Add content to the redis stream cache_key
         stream.push(message.json(), last_message.token)
         messages.append(message)
 
-    def usage(total_tokens: int, model_name: str) -> None:
+    def on_usage(total_tokens: int, model_name: str) -> None:
         usage = UsageModel(
             ai_model=model_name,
             conversation_id=conversation.id,
@@ -499,7 +499,7 @@ async def _generate_completion_background(
         store.usage_set(usage)
 
     await openai.chain(
-        last_message, conversation.id, current_user, language, new_message, usage
+        last_message, conversation, current_user, language, on_message, on_usage
     )
 
     _logger.debug(f"Final completion results: {messages}")

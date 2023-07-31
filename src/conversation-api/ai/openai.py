@@ -19,6 +19,7 @@ from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
 from langchain.tools.base import Tool
 from langchain.tools.requests.tool import RequestsGetTool
 from langchain.utilities.requests import TextRequestsWrapper
+from models.conversation import StoredConversationModel
 from models.message import MessageRole
 from models.message import StoredMessageModel, MessageModel, StreamMessageModel
 from models.user import UserModel
@@ -223,14 +224,14 @@ class OpenAI:
     async def chain(
         self,
         message: MessageModel,
-        conversation_id: UUID,
+        conversation: StoredConversationModel,
         current_user: UserModel,
         language: str,
         message_callback: Callable[[StreamMessageModel], None],
         usage_callback: Callable[[int, str], None],
     ) -> None:
         message_history = CustomHistory(
-            conversation_id=conversation_id,
+            conversation_id=conversation.id,
             secret=message.secret,
             store=self.store,
             user_id=current_user.id,
@@ -256,6 +257,9 @@ class OpenAI:
         prefix = textwrap.dedent(
             f"""
             {CHAT_PREFIX}
+
+            Only in its final answer, Assistant SHOULD:
+            {conversation.prompt.content if conversation.prompt else "None"}
 
             User profile:
             - Email: {current_user.email}
