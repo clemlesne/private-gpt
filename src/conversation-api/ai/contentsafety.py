@@ -13,7 +13,7 @@ import azure.core.exceptions as azure_exceptions
 # Init misc
 ###
 
-logger = build_logger(__name__)
+_logger = build_logger(__name__)
 
 ###
 # Init Azure Content Safety
@@ -22,10 +22,15 @@ logger = build_logger(__name__)
 # Score are following: 0 - Safe, 2 - Low, 4 - Medium, 6 - High
 # See: https://review.learn.microsoft.com/en-us/azure/cognitive-services/content-safety/concepts/harm-categories?branch=release-build-content-safety#severity-levels
 ACS_SEVERITY_THRESHOLD = 2
-ACS_API_BASE = get_config("acs", "api_base", str, required=True)
-ACS_API_TOKEN = get_config("acs", "api_token", str, required=True)
-ACS_MAX_LENGTH = get_config("acs", "max_length", int, required=True)
-logger.info(f"Connected Azure Content Safety to {ACS_API_BASE}")
+ACS_API_BASE = get_config(
+    ["ai", "azure_content_safety"], "api_base", str, required=True
+)
+ACS_API_TOKEN = get_config(
+    ["ai", "azure_content_safety"], "api_token", str, required=True
+)
+ACS_MAX_LENGTH = get_config(
+    ["ai", "azure_content_safety"], "max_length", int, required=True
+)
 acs_client = azure_cs.ContentSafetyClient(
     ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
 )
@@ -38,10 +43,10 @@ class ContentSafety:
         wait=wait_random_exponential(multiplier=0.5, max=30),
     )
     async def is_moderated(self, prompt: str) -> bool:
-        logger.debug(f"Checking moderation for text: {prompt}")
+        _logger.debug(f"Checking moderation for text: {prompt}")
 
         if len(prompt) > ACS_MAX_LENGTH:
-            logger.info(f"Message ({len(prompt)}) too long for moderation")
+            _logger.info(f"Message ({len(prompt)}) too long for moderation")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Message too long",
@@ -60,7 +65,7 @@ class ContentSafety:
         try:
             res = acs_client.analyze_text(req)
         except azure_exceptions.ClientAuthenticationError as e:
-            logger.exception(e)
+            _logger.exception(e)
             return False
 
         is_moderated = any(
@@ -73,7 +78,7 @@ class ContentSafety:
             ]
         )
         if is_moderated:
-            logger.info(f"Message is moderated: {prompt}")
-            logger.debug(f"Moderation result: {res}")
+            _logger.info(f"Message is moderated: {prompt}")
+            _logger.debug(f"Moderation result: {res}")
 
         return is_moderated

@@ -23,7 +23,6 @@
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-    min-height: 8em;
 
     > *:not(:last-child) {
       margin-bottom: var(--conversation-padding-v);
@@ -40,10 +39,6 @@
 
     > *:not(:last-child) {
       margin-bottom: calc(var(--conversation-padding-v) * 2);
-    }
-
-    > :first-child {
-      margin-top: calc(var(--conversation-padding-v) * 2);
     }
 
     .conversation__empty__header {
@@ -114,6 +109,16 @@
     > textarea {
       resize: vertical;
       width: 100%;
+      z-index: 1;  // Abose nearby elements
+
+      &:not(:disabled):not([disabled]) {
+        &:active,
+        &:focus {
+          box-shadow: 0 0 1.25rem var(--border-active);
+          transition-property: box-shadow outline;
+          transition-duration: 0.125s;
+        }
+      }
     }
   }
 }

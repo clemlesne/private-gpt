@@ -3,9 +3,10 @@ import {
   oneDark,
   oneLight,
 } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { AddFilled, ClipboardRegular } from "@fluentui/react-icons";
 import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import { ThemeContext } from "./App";
-import { useState, useRef, useContext } from "react";
+import { useState, useRef, useContext, useMemo } from "react";
 import Button from "./Button";
 import moment from "moment";
 import PropTypes from "prop-types";
@@ -16,19 +17,21 @@ import remarkGfm from "remark-gfm";
 import remarkImages from "remark-images";
 import remarkMath from "remark-math";
 import remarkNormalizeHeadings from "remark-normalize-headings";
-import { AddFilled, ClipboardRegular } from "@fluentui/react-icons";
 
 function Message({
-  content,
+  actions,
+  content = null,
   date,
   defaultDisplaySub = false,
   error = false,
+  loading = false,
   role,
   secret = false,
 }) {
   // State
-  const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
+  const [actionsString, setActionsString] = useState(null);
   const [displayActions, setDisplayActions] = useState(false);
+  const [displaySub, setDisplaySub] = useState(defaultDisplaySub);
   const [mouseIn, setMouseIn] = useState(false);
   // Refs
   const httpContent = useRef(null);
@@ -46,6 +49,19 @@ function Message({
     }, 250);
   };
 
+  // Format actions string
+  useMemo(() => {
+    if (!actions || actions.length == 0) return null;
+    let res = "";
+    for (const action of actions) {
+      res +=
+        ", " +
+        action.charAt(0).toUpperCase() +
+        action.replace(/[_-]/g, " ").slice(1);
+    }
+    setActionsString(res.slice(2));
+  }, [actions]);
+
   return (
     <div
       className={`message message--${role} ${error ? "message--error" : ""}`}
@@ -59,63 +75,74 @@ function Message({
       }}
     >
       <div
-        className="message__content"
+        className={`message__content ${loading ? "message__content--loading" : ""}`}
         onClick={() => {
           if (!mouseIn) setDisplayActions(!displayActions);
         }}
         ref={httpContent}
       >
-        <ReactMarkdown
-          linkTarget="_blank"
-          remarkPlugins={[
-            remarkBreaks,
-            remarkGemoji,
-            remarkGfm,
-            remarkImages,
-            remarkMath,
-            remarkNormalizeHeadings,
-          ]}
-          children={content}
-          components={{
-            code({ node, inline, className, children, ...props }) {
-              if (!inline) {
-                const match = /language-(\w+)/.exec(className || "");
-                const language = match ? match[1] : null;
-                return (
-                  <SyntaxHighlighter
-                    {...props}
-                    children={String(children).replace(/\n$/, "")}
-                    customStyle={{
-                      borderRadius: "var(--radius)",
-                      margin: "none",
-                      padding: "var(--message-padding-v) var(--message-padding-h)",
-                    }}
-                    language={language}
-                    PreTag="div"
-                    showLineNumbers={true}
-                    style={darkTheme ? oneDark : oneLight}
-                  />
-                );
-              } else {
-                return (
-                  <code {...props} className={className}>
-                    {children}
-                  </code>
-                );
-              }
-            },
-          }}
-        />
+        {loading && <>Thinking...</>}
+        {content && (
+          <ReactMarkdown
+            linkTarget="_blank"
+            remarkPlugins={[
+              remarkBreaks,
+              remarkGemoji,
+              remarkGfm,
+              remarkImages,
+              remarkMath,
+              remarkNormalizeHeadings,
+            ]}
+            children={content}
+            components={{
+              code({ node, inline, className, children, ...props }) {
+                if (!inline) {
+                  const match = /language-(\w+)/.exec(className || "");
+                  const language = match ? match[1] : null;
+                  return (
+                    <SyntaxHighlighter
+                      {...props}
+                      children={String(children).replace(/\n$/, "")}
+                      customStyle={{
+                        borderRadius: "var(--radius)",
+                        margin: "none",
+                        padding:
+                          "var(--message-padding-v) var(--message-padding-h)",
+                      }}
+                      language={language}
+                      PreTag="div"
+                      showLineNumbers={true}
+                      style={darkTheme ? oneDark : oneLight}
+                    />
+                  );
+                } else {
+                  return (
+                    <code {...props} className={className}>
+                      {children}
+                    </code>
+                  );
+                }
+              },
+            }}
+          />
+        )}
       </div>
+      {actionsString && (
+        <small className="message__sub">Actions: {actionsString}</small>
+      )}
       {displaySub && (
         <small className="message__sub">
-          {secret && <span>Temporary, </span>}
           <span>{moment.utc(date).fromNow()}</span>
+          {secret && <span>, temporary</span>}
         </small>
       )}
       {displayActions && (
         <small className="message__actions">
-          <Button emoji={ClipboardRegular} onClick={clipboardHandler} text="Copy" />
+          <Button
+            emoji={ClipboardRegular}
+            onClick={clipboardHandler}
+            text="Copy"
+          />
           <Button
             emoji={AddFilled}
             onClick={() => setDisplaySub(!displaySub)}
@@ -128,10 +155,12 @@ function Message({
 }
 
 Message.propTypes = {
-  content: PropTypes.string.isRequired,
+  actions: PropTypes.arrayOf(PropTypes.string),
+  content: PropTypes.string,
   date: PropTypes.string.isRequired,
   defaultDisplaySub: PropTypes.bool,
   error: PropTypes.bool,
+  loading: PropTypes.bool,
   role: PropTypes.string.isRequired,
   secret: PropTypes.bool,
 };

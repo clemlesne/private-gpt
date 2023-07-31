@@ -23,8 +23,12 @@ resources:
     cpu: .5
     memory: 512Mi
 
-appinsights:
-  connection_str: null
+monitoring:
+  logging:
+    app: DEBUG
+    sys: WARN
+  azure_app_insights:
+    connection_str: null
 
 oidc:
   algorithms: []
@@ -33,22 +37,45 @@ oidc:
   issuers: []
   jwks: null
 
-api:
-  acs:
+ai:
+  azure_content_safety:
     # https://[deployment].cognitiveservices.azure.com
     base: null
     token: null
-  logging:
-    app: DEBUG
-    sys: WARN
   openai:
+    ada_deploy_id: ada
     base: null
-    gpt_deploy_id: gpt-35-turbo
+    gpt_deploy_id: gpt
 
-cosmos:
-  # https://[db].documents.azure.com
-  url: null
-  database: null
+tools:
+  azure_form_recognizer:
+    api_base: null
+    api_token: null
+  bing:
+    search_url: null
+    subscription_key: null
+  tmdb:
+    bearer_token: null
+  news:
+    api_key: null
+  listen_notes:
+    api_key: null
+  open_weather_map:
+    api_key: null
+  azure_cognitive_search:
+    []
+    # - api_key: xxx
+    #   content_key: content
+    #   displayed_name: Légifrance
+    #   index_name: legifrance-xml
+    #   service_name: samples-v2
+    #   top_k: 10
+    #   usage: Useful when you need legal content contained in one of the codes (incl. civil, commercial, labor, electoral) derived from French legislation. Use this in priority for legal content in France.
+
+persistence:
+  cosmos:
+    database: null
+    url: null
 
 redis:
   auth:

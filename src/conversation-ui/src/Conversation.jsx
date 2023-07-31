@@ -1,5 +1,5 @@
 import "./conversation.scss";
-import { client, getIdToken, login } from "./Utils";
+import { client, getIdToken, login, userLang } from "./Utils";
 import { ConversationContext } from "./App";
 import { useMsal, useAccount, useIsAuthenticated } from "@azure/msal-react";
 import { useParams } from "react-router-dom";
@@ -161,6 +161,7 @@ function Conversation() {
             prompt_id:
               !conversationId && selectedPrompt ? selectedPrompt.id : null,
             secret: secret,
+            language: userLang,
           },
           timeout: 10_000,
           headers: {
@@ -171,16 +172,24 @@ function Conversation() {
           if (!res.data) return;
 
           const cleanup = () => {
+            // Free backend resources
             source.close();
+
+            // Stop loading
+            updateLastMessage({
+              loading: false,
+            });
+
+            setLoading(false);
             // Ask to refresh the conversation, if it is not loaded, or if the title is not either
             if (!conversationId || !conversation.title)
               refreshConversations(res.data.id);
-            setLoading(false);
           };
 
           // Then, fetch the message
           const lastMessage = res.data.messages[res.data.messages.length - 1];
           let content = "";
+          let actions = [];
           const source = new EventSource(
             `${client.defaults.baseURL}/message/${lastMessage.id}?token=${lastMessage.token}`
           );
@@ -190,9 +199,11 @@ function Conversation() {
               return;
             }
 
-            // Update the last message
-            content += e.data;
+            const json = JSON.parse(e.data);
+            if (json.content) content += json.content;
+            if (json.action) actions.push(json.action);
             updateLastMessage({
+              actions,
               content,
             });
           };
@@ -216,11 +227,12 @@ function Conversation() {
           content =
             content.charAt(0).toUpperCase() + content.slice(1).toLowerCase();
 
+          // Stop loading
           updateLastMessage({
             content,
             error: true,
+            loading: false,
           });
-
           setLoading(false);
         });
     };
@@ -234,9 +246,9 @@ function Conversation() {
         secret,
       },
       {
-        content: "Loading…",
         created_at: new Date().toISOString(),
         id: uuidv4(),
+        loading: true,
         role: "assistant",
         secret,
       },
@@ -358,13 +370,15 @@ function Conversation() {
         <div className="conversation__messages">
           {conversation.messages.map((message) => (
             <Message
-              content={message.content}
+              actions={message?.actions}
+              content={message?.content}
               date={message.created_at}
               defaultDisplaySub={message.secret}
-              error={message.error}
+              error={message?.error}
               key={message.id}
+              loading={message?.loading}
               role={message.role}
-              secret={message.secret}
+              secret={message?.secret}
             />
           ))}
         </div>

@@ -9,6 +9,7 @@ import Header from "./Header";
 import useLocalStorageState from "use-local-storage-state";
 
 export const ConversationContext = createContext(null);
+export const HeaderOpenContext = createContext(null);
 export const ThemeContext = createContext(null);
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
   // State
   const [conversations, setConversations] = useState([]);
   const [isVisible, setIsVisible] = useState(true);
+  const [headerOpen, setHeaderOpen] = useState(false);
   // Persistance
   let darkTheme, setDarkTheme;
   // In a browser, we persist the theme in local storage
@@ -109,6 +111,11 @@ function App() {
     return [conversations, refreshConversations];
   }, [conversations]);
 
+  const headerOpenContextProps = useMemo(
+    () => [headerOpen, setHeaderOpen],
+    [headerOpen, setHeaderOpen]
+  );
+
   return (
     <>
       <Helmet
@@ -148,20 +155,23 @@ function App() {
         htmlAttributes={{
           class: `
             ${darkTheme ? "theme--dark" : "theme--light"}
+            ${headerOpen ? "header--open" : ""}
             ${isVisible ? "visibility--visible" : "visibility--hidden"}
           `,
         }}
       />
-      <ThemeContext.Provider value={themeContextProps}>
-        <ConversationContext.Provider value={conversationContextProps}>
-          <Header />
-          <div id="main" className="main">
-            <div className="main__container">
-              <Outlet />
+      <HeaderOpenContext.Provider value={headerOpenContextProps}>
+        <ThemeContext.Provider value={themeContextProps}>
+          <ConversationContext.Provider value={conversationContextProps}>
+            <Header />
+            <div id="main" className="main">
+              <div className="main__container">
+                <Outlet />
+              </div>
             </div>
-          </div>
-        </ConversationContext.Provider>
-      </ThemeContext.Provider>
+          </ConversationContext.Provider>
+        </ThemeContext.Provider>
+      </HeaderOpenContext.Provider>
     </>
   );
 }

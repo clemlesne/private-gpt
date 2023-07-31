@@ -57,6 +57,7 @@ const pcaConfig = {
   },
   cache: {
     cacheLocation: "localStorage",
+    storeAuthStateInCookie: false, // Issue with Safari and its "Cross-site tracking prevention" feature
     temporaryCacheLocation: "sessionStorage",
   },
   system: {

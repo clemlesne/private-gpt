@@ -1,3 +1,4 @@
+from .icache import ICache
 from abc import ABC, abstractmethod
 from enum import Enum
 from models.conversation import GetConversationModel, StoredConversationModel
@@ -5,66 +6,73 @@ from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
-from typing import List, Union
+from typing import List, Optional
 from uuid import UUID
 
 
 class StoreImplementation(str, Enum):
     COSMOS = "cosmos"
-    REDIS = "redis"
+    CACHE = "cache"
 
 
 class IStore(ABC):
+    cache: ICache
+
+    def __init__(self, cache: ICache):
+        self.cache = cache
+
     @abstractmethod
     async def readiness(self) -> ReadinessStatus:
         pass
 
     @abstractmethod
-    async def user_get(self, user_external_id: str) -> Union[UserModel, None]:
+    def user_get(self, user_external_id: str) -> Optional[UserModel]:
         pass
 
     @abstractmethod
-    async def user_set(self, user: UserModel) -> None:
+    def user_set(self, user: UserModel) -> None:
         pass
 
     @abstractmethod
-    async def conversation_get(
+    def conversation_get(
         self, conversation_id: UUID, user_id: UUID
-    ) -> Union[GetConversationModel, None]:
+    ) -> Optional[GetConversationModel]:
         pass
 
     @abstractmethod
-    async def message_get_index(
+    def message_get_index(
         self, messages: List[IndexMessageModel]
-    ) -> List[MessageModel]:
+    ) -> Optional[List[MessageModel]]:
         pass
 
     @abstractmethod
-    async def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         pass
 
     @abstractmethod
-    async def conversation_set(self, conversation: StoredConversationModel) -> None:
+    def conversation_set(self, conversation: StoredConversationModel) -> None:
         pass
 
     @abstractmethod
-    async def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    def conversation_list(
+        self, user_id: UUID
+    ) -> Optional[List[StoredConversationModel]]:
         pass
 
     @abstractmethod
-    async def message_get(
+    def message_get(
         self, message_id: UUID, conversation_id: UUID
-    ) -> Union[MessageModel, None]:
+    ) -> Optional[MessageModel]:
         pass
 
     @abstractmethod
-    async def message_set(self, message: StoredMessageModel) -> None:
+    def message_set(self, message: StoredMessageModel) -> None:
         pass
 
     @abstractmethod
-    async def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    def message_list(self, conversation_id: UUID) -> Optional[List[MessageModel]]:
         pass
 
     @abstractmethod
-    async def usage_set(self, usage: UsageModel) -> None:
+    def usage_set(self, usage: UsageModel) -> None:
         pass

@@ -104,14 +104,15 @@ function Search() {
       {messages.length > 0 && (
         <div className="search__messages">
           <h2 className="search__title">Search results</h2>
-          {messages.map((message) => (
+          {messages.map((message) => message.data.content && (
             <Message
-              content={message.data.content}
+              actions={message.data?.actions}
+              content={message.data?.content}
               date={message.data.created_at}
               defaultDisplaySub={true}
               key={message.data.id}
               role={message.data.role}
-              secret={message.secret}
+              secret={message.data?.secret}
             />
           ))}
         </div>

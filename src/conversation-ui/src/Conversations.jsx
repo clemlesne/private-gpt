@@ -1,6 +1,5 @@
 import "./conversations.scss";
-import { ConversationContext } from "./App";
-import { header } from "./Utils";
+import { ConversationContext, HeaderOpenContext } from "./App";
 import { useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import moment from "moment";
@@ -11,6 +10,7 @@ function Conversations() {
   // Dynamic
   const navigate = useNavigate();
   // React context
+  const [, setHeaderOpen] = useContext(HeaderOpenContext);
   const [conversations] = useContext(ConversationContext);
 
   const groupedConversations = conversations.reduce(
@@ -44,7 +44,7 @@ function Conversations() {
           <a
             key={conversation.id}
             onClick={() => {
-              header(false);
+              setHeaderOpen(false);
               navigate(`/conversation/${conversation.id}`);
             }}
             disabled={conversation.id == conversationId}

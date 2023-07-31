@@ -1,3 +1,4 @@
+from .icache import ICache
 from .istore import IStore
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -12,7 +13,11 @@ class SearchImplementation(str, Enum):
 
 
 class ISearch(ABC):
-    def __init__(self, store: IStore):
+    cache: ICache
+    store: IStore
+
+    def __init__(self, store: IStore, cache: ICache):
+        self.cache = cache
         self.store = store
 
     @abstractmethod
@@ -20,11 +25,11 @@ class ISearch(ABC):
         pass
 
     @abstractmethod
-    async def message_search(
+    def message_search(
         self, query: str, user_id: UUID, limit: int
     ) -> SearchModel[MessageModel]:
         pass
 
     @abstractmethod
-    async def message_index(self, message: StoredMessageModel, user_id: UUID) -> None:
+    def message_index(self, message: StoredMessageModel) -> None:
         pass

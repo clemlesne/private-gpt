@@ -5,6 +5,7 @@
   flex-grow: 1;
   grid-area: main;
   overflow-x: hidden; // Avoid horizontal scroll
+  overflow-y: scroll; // Avoid view to shrink on scroll required
 
   .main__container {
     box-sizing: border-box;

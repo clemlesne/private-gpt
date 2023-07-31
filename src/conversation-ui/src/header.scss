@@ -9,32 +9,13 @@ html {
       grid-template-rows: min-content auto;
     }
 
-    .header__actions {
-      flex-direction: row;
-
-      > * {
-        &.header__actions__toggle {
-          flex-grow: 1;
-        }
-
-        &:not(.header__actions__toggle) {
-          flex-grow: 2;
-        }
-      }
-
-      // Add spaces around actions
-      > *:not(:last-child) {
-        margin-right: calc(var(--header-padding-v) / 2);
-      }
-    }
-
     &.header--open {
       // Make the header full height
       .header {
         box-sizing: border-box;
         height: 100vh;
         overflow-x: auto; // Make it scrollable
-        padding-top: calc(var(--titlebar--height) * 1.25);
+        padding-top: calc(var(--titlebar--height) * 0.5);
       }
 
       // Hide the main content
@@ -46,7 +27,7 @@ html {
     &:not(.header--open) {
       .header {
         backdrop-filter: blur(4em);
-        padding: calc(var(--titlebar--height) * 1.25) 0 calc(var(--titlebar--height) * 0.25) 0;
+        padding: calc(var(--titlebar--height) * 0.5) 0 calc(var(--titlebar--height) * 0.5) 0;
 
         // Stays at the top
         top: 0;
@@ -60,6 +41,35 @@ html {
         display: none;
       }
     }
+
+    .header {
+      > *:last-child {
+        padding-bottom: calc(var(--header-padding-v) / 2);
+      }
+
+      > *:not(:first-child) {
+        padding-top: calc(var(--header-padding-v) / 2);
+      }
+
+      .header__actions {
+        flex-direction: row;
+
+        > * {
+          &.header__actions__toggle {
+            flex-grow: 1;
+          }
+
+          &:not(.header__actions__toggle) {
+            flex-grow: 2;
+          }
+        }
+
+        // Add spaces around actions
+        > *:not(:last-child) {
+          margin-right: calc(var(--header-padding-v) / 2);
+        }
+      }
+    }
   }
 
   // Full width
@@ -70,40 +80,49 @@ html {
       grid-template-rows: auto;
     }
 
-    // header always open, so we need to make sure it is full height
-    .header {
-      box-sizing: border-box;
-      height: 100vh;
-      overflow-x: auto; // Make it scrollable
-      padding-top: calc(var(--titlebar--height) * 1.25);
-    }
-
-    // Hide the toggle button
-    .header__actions__toggle {
-      display: none;
-    }
-
-    .header__actions {
-      flex-direction: column;
-      align-items: stretch;
-
-      // Add spaces around actions
-      > *:not(:last-child) {
-        margin-bottom: calc(var(--header-padding-v) / 2);
-      }
-    }
-
     // Make content to scroll
     .main {
       box-sizing: border-box;
       height: 100vh;
       padding-top: calc(var(--titlebar--height) * 1.25);
     }
+
+    // Header always open, so we need to make sure it is full height
+    .header {
+      box-sizing: border-box;
+      height: 100vh;
+      overflow-x: auto; // Make it scrollable
+      padding-top: calc(var(--titlebar--height) * 1.25);
+
+      > *:last-child {
+        padding-bottom: var(--header-padding-v);
+      }
+
+      > *:not(:first-child) {
+        padding-top: var(--header-padding-v);
+      }
+
+      .header__actions {
+        flex-direction: column;
+        align-items: stretch;
+
+        // Add spaces around actions
+        > *:not(:last-child) {
+          margin-bottom: calc(var(--header-padding-v) / 2);
+        }
+      }
+
+      // Hide the toggle button
+      .header__actions__toggle {
+        display: none;
+      }
+    }
   }
 }
 
 #root {
   display: grid;
+  min-height: 100vh;
 }
 
 .header {
@@ -121,14 +140,6 @@ html {
     margin-right: var(--header-padding-h);
   }
 
-  > *:last-child {
-    margin-bottom: var(--header-padding-v);
-  }
-
-  > *:not(:first-child) {
-    margin-top: var(--header-padding-v);
-  }
-
   .header__actions {
     display: flex;
   }
@@ -138,7 +149,7 @@ html {
   }
 
   .header__bottom {
-    background-color: var(--header--background-color);
+    background: linear-gradient(0deg, var(--header--background-color) calc(100% - var(--header-padding-v)), transparent 100%);
 
     // Stays at the bottom
     bottom: 0;
@@ -153,12 +164,12 @@ html {
 
       // Add spaces blocks
       &:not(:last-child) {
-        margin-bottom: calc(var(--header-padding-h) / 3);
+        margin-bottom: calc(var(--header-padding-v) / 4);
       }
 
       // Add spaces around buttons
       > *:not(:last-child) {
-        margin-right: calc(var(--header-padding-h) / 3);
+        margin-right: calc(var(--header-padding-v) / 4);
       }
     }
   }

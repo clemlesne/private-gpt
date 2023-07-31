@@ -2,7 +2,7 @@ import { InteractionRequiredAuthError } from "@azure/msal-browser";
 import axios from "axios";
 import axiosRetry from "axios-retry";
 
-const headerOpenClass = "header--open";
+const userLang = navigator.language || navigator.userLanguage;
 
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -20,24 +20,18 @@ axiosRetry(client, {
   },
 });
 
-const header = (enabled) => {
-  if (enabled == undefined) {
-    document.documentElement.classList.toggle(headerOpenClass);
-  } else if (enabled) {
-    document.documentElement.classList.add(headerOpenClass);
-  } else {
-    document.documentElement.classList.remove(headerOpenClass);
-  }
-};
-
 const login = async (instance) => {
-  await instance.loginPopup();
+  // Browsers are increasingly blocking third party cookies by default. Detect that option is combersome. Thus, we always use redirect instead of popup.
+  // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/3118#issuecomment-1655932572
+  await instance.loginRedirect();
 };
 
 const logout = async (account, instance) => {
   if (!account) return null;
   const opt = { account };
-  await instance.logoutPopup(opt);
+  // Browsers are increasingly blocking third party cookies by default. Detect that option is combersome. Thus, we always use redirect instead of popup.
+  // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/3118#issuecomment-1655932572
+  await instance.logoutRedirect(opt);
 };
 
 const getIdToken = async (account, instance) => {
@@ -80,7 +74,7 @@ const getIdToken = async (account, instance) => {
 export {
   client,
   getIdToken,
-  header,
   login,
   logout,
+  userLang,
 };
