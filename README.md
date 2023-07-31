@@ -21,7 +21,7 @@ Includes:
 - Unlimited conversation history and number of users
 - Usage tracking, for better understanding of your employees' usage
 
-![Application screenshot](docs/main.png)
+![Application screenshot](docs/ui-conversation.png)
 
 ## How it works
 
@@ -219,7 +219,7 @@ helm upgrade --install default clemlesne-private-gpt/private-gpt
 
 Go to [http://127.0.0.1:8081/redoc](http://127.0.0.1:8081/redoc).
 
-![Documentation endpoint](docs/doc.png)
+![Documentation endpoint](docs/api.png)
 
 ## [Security](./SECURITY.md)
 
