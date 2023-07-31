@@ -54,7 +54,9 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def conversation_list(self, user_id: UUID) -> Optional[List[StoredConversationModel]]:
+    def conversation_list(
+        self, user_id: UUID
+    ) -> Optional[List[StoredConversationModel]]:
         pass
 
     @abstractmethod

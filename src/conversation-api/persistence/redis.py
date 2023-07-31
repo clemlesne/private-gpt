@@ -124,7 +124,9 @@ class RedisCache(ICache):
             return None
         return {k.decode("utf-8"): v.decode("utf-8") for k, v in raw.items()}
 
-    def hset(self, key: str, mapping: Dict[str, str], expiry: Optional[int] = None) -> None:
+    def hset(
+        self, key: str, mapping: Dict[str, str], expiry: Optional[int] = None
+    ) -> None:
         if not mapping:
             return
         client.hset(key, mapping=mapping)
@@ -135,7 +137,10 @@ class RedisCache(ICache):
         raws = client.mget(keys)
         if not raws:
             return {}
-        return {keys[i]: (raw.decode("utf-8") if raw else None) for i, raw in enumerate(raws)}
+        return {
+            keys[i]: (raw.decode("utf-8") if raw else None)
+            for i, raw in enumerate(raws)
+        }
 
     def mset(self, mapping: Dict[str, str], expiry: Optional[int] = None) -> None:
         client.mset(mapping)

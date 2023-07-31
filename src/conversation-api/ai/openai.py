@@ -27,7 +27,13 @@ from openai.error import InvalidRequestError, APIError
 from persistence.icache import ICache
 from persistence.isearch import ISearch
 from persistence.istore import IStore
-from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type, retry_if_result
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+    retry_if_exception_type,
+    retry_if_result,
+)
 from typing import Any, Callable, List, Optional, Sequence
 from uuid import UUID
 import asyncio
@@ -75,9 +81,13 @@ class OpenAI:
         self._loop.create_task(self._refresh_token_background())
 
         # Misc
-        self.gpt_max_tokens = get_config(["ai", "openai"], "gpt_max_tokens", int, required=True)
+        self.gpt_max_tokens = get_config(
+            ["ai", "openai"], "gpt_max_tokens", int, required=True
+        )
         openai_args = {
-            "openai_api_base": get_config(["ai", "openai"], "api_base", str, required=True),
+            "openai_api_base": get_config(
+                ["ai", "openai"], "api_base", str, required=True
+            ),
             "openai_api_key": oai_token,
             "openai_api_type": "azure_ad",
             "openai_api_version": "2023-05-15",
@@ -138,7 +148,9 @@ class OpenAI:
             ),
             Tool(
                 description=f"{req_tool.description} Use this to download the content of a HTTP link. Link requires to be either HTML, or text (example: XML, JSON). Output will be reduced to its characters, no text formatting will be applied.",
-                func=lambda *args, **kwargs: (sanitize(try_or_none(req_tool.run, *args, **kwargs)) or str())[:int(self.gpt_max_tokens)],
+                func=lambda *args, **kwargs: (
+                    sanitize(try_or_none(req_tool.run, *args, **kwargs)) or str()
+                )[: int(self.gpt_max_tokens)],
                 name=req_tool.name,
             ),
             Tool(
@@ -153,7 +165,9 @@ class OpenAI:
             ),
         ]
         # Azure Cognitive Search
-        for instance in get_config("tools", "azure_cognitive_search", list, required=True):
+        for instance in get_config(
+            "tools", "azure_cognitive_search", list, required=True
+        ):
             _logger.debug(f"Loading Azure Cognitive Search custom tool: {instance}")
             # Parameters
             api_key = instance.get("api_key")
@@ -166,17 +180,18 @@ class OpenAI:
             # Create tool
             tool = Tool(
                 description=f"{usage} The input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
-                func=lambda q: str([
-                    sanitize(doc.page_content)
-                    for doc in
-                        AzureCognitiveSearchRetriever(
+                func=lambda q: str(
+                    [
+                        sanitize(doc.page_content)
+                        for doc in AzureCognitiveSearchRetriever(
                             api_key=api_key,
                             content_key=content_key,
                             index_name=index_name,
                             service_name=service_name,
                             top_k=top_k,
                         ).get_relevant_documents(q)
-                ])[:int(self.gpt_max_tokens)],
+                    ]
+                )[: int(self.gpt_max_tokens)],
                 name=f"{displayed_name} (Azure Cognitive Search)",
             )
             self.tools.append(tool)
@@ -203,7 +218,12 @@ class OpenAI:
         return self.embeddings.embed_query(prompt)
 
     async def completion(
-        self, message: MessageModel, template: str, language: str, message_callback: Callable[[str], None], usage_callback: Callable[[int, str], None],
+        self,
+        message: MessageModel,
+        template: str,
+        language: str,
+        message_callback: Callable[[str], None],
+        usage_callback: Callable[[int, str], None],
     ) -> None:
         builder = PromptTemplate(
             template=template, input_variables=["query", "language"]
@@ -217,7 +237,12 @@ class OpenAI:
 
     @retry(
         reraise=True,
-        retry=(retry_if_result(lambda res: res == "Agent stopped due to iteration limit or time limit.") | retry_if_exception_type((InvalidRequestError, APIError))),
+        retry=(
+            retry_if_result(
+                lambda res: res == "Agent stopped due to iteration limit or time limit."
+            )
+            | retry_if_exception_type((InvalidRequestError, APIError))
+        ),
         stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=0.5, max=30),
     )
@@ -246,10 +271,14 @@ class OpenAI:
         tools = [
             *self.tools,
             Tool(
-                func=lambda q: str([
-                    f'{answer.data.role}, {sanitize(answer.data.content) or "No content"}'
-                    for answer in self.search.message_search(q, current_user.id, 5).answers
-                ])[:int(self.gpt_max_tokens)],
+                func=lambda q: str(
+                    [
+                        f'{answer.data.role}, {sanitize(answer.data.content) or "No content"}'
+                        for answer in self.search.message_search(
+                            q, current_user.id, 5
+                        ).answers
+                    ]
+                )[: int(self.gpt_max_tokens)],
                 description="Useful for when you need past user messages, from other conversations. The input should be a string, representing the search query written in semantic language. The output will be a list of 5 messages as JSON objects.",
                 name="messages_search",
             ),
@@ -402,7 +431,7 @@ class CustomHistory(BaseChatMessageHistory):
     @property
     def messages(self) -> List[BaseMessage]:
         res = []
-        for message in (self.store.message_list(self.conversation_id) or []):
+        for message in self.store.message_list(self.conversation_id) or []:
             if message.role == MessageRole.ASSISTANT:
                 obj = AIMessage(content=message.content, **message.extra)
             elif message.role == MessageRole.USER:

@@ -35,7 +35,9 @@ class ICache(ABC):
         pass
 
     @abstractmethod
-    def hset(self, key: str, mapping: Dict[str, str], expiry: Optional[int] = None) -> None:
+    def hset(
+        self, key: str, mapping: Dict[str, str], expiry: Optional[int] = None
+    ) -> None:
         pass
 
     @abstractmethod

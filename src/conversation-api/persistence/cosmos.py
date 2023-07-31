@@ -7,7 +7,7 @@ from .istore import IStore
 from azure.cosmos import CosmosClient
 from azure.cosmos.exceptions import CosmosHttpResponseError
 from datetime import datetime
-from models.conversation import StoredConversationModel, StoredConversationModel
+from models.conversation import StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
@@ -123,9 +123,13 @@ class CosmosStore(IStore):
         )
         # Update cache
         self.cache.set(cache_key, conversation.json())
-        self.cache.delete(f"conversation-list:{conversation.user_id}")  # Invalidate list
+        self.cache.delete(
+            f"conversation-list:{conversation.user_id}"
+        )  # Invalidate list
 
-    def conversation_list(self, user_id: UUID) -> Optional[List[StoredConversationModel]]:
+    def conversation_list(
+        self, user_id: UUID
+    ) -> Optional[List[StoredConversationModel]]:
         cache_key = f"conversation-list:{user_id}"
 
         try:
@@ -187,9 +191,7 @@ class CosmosStore(IStore):
         try:
             if all(self.cache.exists(k) for k in cache_keys):
                 _logger.debug(f'Cache hit for message index "{message_indexs}"')
-                return [
-                    MessageModel.parse_raw(self.cache.get(k)) for k in cache_keys
-                ]
+                return [MessageModel.parse_raw(self.cache.get(k)) for k in cache_keys]
         except ValidationError as e:
             _logger.warn(f'Error parsing message index from cache, "{e}"')
 

@@ -59,6 +59,7 @@ cache_impl = get_config("persistence", "cache", CacheImplementation, required=Tr
 try:
     if cache_impl == CacheImplementation.REDIS:
         from persistence.redis import RedisCache
+
         cache = RedisCache()
     else:
         raise ValueError(f"Unknown cache implementation: {cache_impl}")
@@ -74,9 +75,11 @@ store_impl = get_config("persistence", "store", StoreImplementation, required=Tr
 try:
     if store_impl == StoreImplementation.COSMOS:
         from persistence.cosmos import CosmosStore
+
         store = CosmosStore(cache)
     elif store_impl == StoreImplementation.CACHE:
         from persistence.cache import CacheStore
+
         store = CacheStore(cache)
     else:
         raise ValueError(f"Unknown store implementation: {store_impl}")
@@ -101,6 +104,7 @@ search_impl = get_config("persistence", "search", SearchImplementation, required
 try:
     if search_impl == SearchImplementation.QDRANT:
         from persistence.qdrant import QdrantSearch
+
         index = QdrantSearch(store, cache, openai)
     else:
         raise ValueError(f"Unknown search implementation: {search_impl}")
@@ -116,6 +120,7 @@ stream_impl = get_config("persistence", "stream", StreamImplementation, required
 try:
     if stream_impl == StreamImplementation.REDIS:
         from persistence.redis import RedisStream
+
         stream = RedisStream()
     else:
         raise ValueError(f"Unknown stream implementation: {stream_impl}")

@@ -3,7 +3,7 @@ from utils import build_logger
 
 # Import misc
 from .istore import IStore
-from models.conversation import StoredConversationModel, StoredConversationModel
+from models.conversation import StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
@@ -41,7 +41,9 @@ class CacheStore(IStore):
         key = self._conversation_key(user_id, conversation_id)
         if not self.cache.exists(key):
             return None
-        StoredConversationModel.parse_raw(self.cache.get(self._conversation_key(user_id, conversation_id)))
+        StoredConversationModel.parse_raw(
+            self.cache.get(self._conversation_key(user_id, conversation_id))
+        )
 
     def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
         key = self._conversation_key(user_id, conversation_id)
@@ -51,7 +53,9 @@ class CacheStore(IStore):
         key = self._conversation_key(conversation.user_id, conversation.id)
         self.cache.set(key, conversation.json())
 
-    def conversation_list(self, user_id: UUID) -> Optional[List[StoredConversationModel]]:
+    def conversation_list(
+        self, user_id: UUID
+    ) -> Optional[List[StoredConversationModel]]:
         key = f"{self._conversation_key(user_id)}:*"
         if not self.cache.exists(key):
             return None
