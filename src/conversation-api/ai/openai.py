@@ -398,7 +398,7 @@ class CustomHistory(BaseChatMessageHistory):
     @property
     def messages(self) -> List[BaseMessage]:
         res = []
-        for message in self.store.message_list(self.conversation_id):
+        for message in (self.store.message_list(self.conversation_id) or []):
             if message.role == MessageRole.ASSISTANT:
                 obj = AIMessage(content=message.content, **message.extra)
             elif message.role == MessageRole.USER:

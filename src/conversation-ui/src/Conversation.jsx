@@ -370,7 +370,7 @@ function Conversation() {
         <div className="conversation__messages">
           {conversation.messages.map((message) => (
             <Message
-              actions={message.actions}
+              actions={message?.actions}
               content={message?.content}
               date={message.created_at}
               defaultDisplaySub={message.secret}

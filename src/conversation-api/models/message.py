@@ -11,14 +11,14 @@ class MessageRole(str, Enum):
 
 
 class MessageModel(BaseModel):
-    actions: Optional[list[str]] = None
+    actions: Optional[list[str]] = None  # Optional for backward compatibility
     content: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    extra: Dict[str, Any] = Field(default_factory=dict)
+    extra: Optional[Dict[str, Any]] = Field(default_factory=dict)  # Optional for backward compatibility
     id: UUID = Field(default_factory=uuid4)
     role: MessageRole
     secret: bool
-    token: Optional[UUID] = Field(default_factory=uuid4)
+    token: Optional[UUID] = Field(default_factory=uuid4)  # Optional for backward compatibility
 
 
 class StoredMessageModel(MessageModel):

@@ -2,6 +2,7 @@
 from utils import build_logger, get_config
 
 # Import misc
+from .icache import ICache
 from .isearch import ISearch
 from .istore import IStore
 from ai.openai import OpenAI
@@ -29,10 +30,11 @@ client = QdrantClient(host=QD_HOST, port=6333)
 
 class QdrantSearch(ISearch):
     _loop: asyncio.AbstractEventLoop
+    CACHE_TTL_SECS = 5 * 60  # 5 minutes
     openai: OpenAI
 
-    def __init__(self, store: IStore, openai: OpenAI):
-        super().__init__(store)
+    def __init__(self, store: IStore, cache: ICache, openai: OpenAI):
+        super().__init__(store, cache)
 
         self._loop = asyncio.get_running_loop()
         self.openai = openai
@@ -74,9 +76,16 @@ class QdrantSearch(ISearch):
     ) -> SearchModel[MessageModel]:
         _logger.debug(f"Searching for: {q}")
         start = time.monotonic()
+        cache_key = f"message-search:{user_id}:{q}:{limit}"
 
-        conversations = self.store.conversation_list(user_id)
+        try:
+            if self.cache.exists(cache_key):
+                _logger.debug(f'Cache hit for search message "{q}"')
+                return SearchModel[MessageModel].parse_raw(self.cache.get(cache_key))
+        except ValidationError as e:
+            _logger.warn(f'Error parsing message search from cache, "{e}"')
 
+        conversations = self.store.conversation_list(user_id) or []
         vector = self.openai.vector_from_text(
             textwrap.dedent(
                 f"""
@@ -84,7 +93,6 @@ class QdrantSearch(ISearch):
         """
             )
         )
-
         total = client.count(collection_name=QD_COLLECTION, exact=False).count
         raws = client.search(
             collection_name=QD_COLLECTION,
@@ -110,10 +118,10 @@ class QdrantSearch(ISearch):
             except ValidationError as e:
                 _logger.warn(f'Error parsing index message, "{e}"')
 
-        messages = self.store.message_get_index(index_messages)
+        messages = self.store.message_get_index(index_messages) or []
         _logger.debug(f"Messages: {messages}")
 
-        return SearchModel[MessageModel](
+        search = SearchModel[MessageModel](
             answers=[
                 SearchAnswerModel[MessageModel](data=m, score=s)
                 for m, s in zip(messages, [raw.score for raw in raws])
@@ -121,6 +129,9 @@ class QdrantSearch(ISearch):
             query=q,
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
+        # Update cache
+        self.cache.set(cache_key, search.json(), self.CACHE_TTL_SECS)
+        return search
 
     def message_index(self, message: StoredMessageModel) -> None:
         _logger.debug(f'Indexing message "{message.id}"')

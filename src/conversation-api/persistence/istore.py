@@ -1,3 +1,4 @@
+from .icache import ICache
 from abc import ABC, abstractmethod
 from enum import Enum
 from models.conversation import GetConversationModel, StoredConversationModel
@@ -11,10 +12,15 @@ from uuid import UUID
 
 class StoreImplementation(str, Enum):
     COSMOS = "cosmos"
-    REDIS = "redis"
+    CACHE = "cache"
 
 
 class IStore(ABC):
+    cache: ICache
+
+    def __init__(self, cache: ICache):
+        self.cache = cache
+
     @abstractmethod
     async def readiness(self) -> ReadinessStatus:
         pass
@@ -36,7 +42,7 @@ class IStore(ABC):
     @abstractmethod
     def message_get_index(
         self, messages: List[IndexMessageModel]
-    ) -> List[MessageModel]:
+    ) -> Optional[List[MessageModel]]:
         pass
 
     @abstractmethod
@@ -48,7 +54,7 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def conversation_list(self, user_id: UUID) -> List[StoredConversationModel]:
+    def conversation_list(self, user_id: UUID) -> Optional[List[StoredConversationModel]]:
         pass
 
     @abstractmethod
@@ -62,7 +68,7 @@ class IStore(ABC):
         pass
 
     @abstractmethod
-    def message_list(self, conversation_id: UUID) -> List[MessageModel]:
+    def message_list(self, conversation_id: UUID) -> Optional[List[MessageModel]]:
         pass
 
     @abstractmethod

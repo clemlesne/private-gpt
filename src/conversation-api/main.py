@@ -59,7 +59,6 @@ cache_impl = get_config("persistence", "cache", CacheImplementation, required=Tr
 try:
     if cache_impl == CacheImplementation.REDIS:
         from persistence.redis import RedisCache
-
         cache = RedisCache()
     else:
         raise ValueError(f"Unknown cache implementation: {cache_impl}")
@@ -75,12 +74,10 @@ store_impl = get_config("persistence", "store", StoreImplementation, required=Tr
 try:
     if store_impl == StoreImplementation.COSMOS:
         from persistence.cosmos import CosmosStore
-
-        store = CosmosStore()
-    elif store_impl == StoreImplementation.REDIS:
-        from persistence.redis import RedisStore
-
-        store = RedisStore()
+        store = CosmosStore(cache)
+    elif store_impl == StoreImplementation.CACHE:
+        from persistence.cache import CacheStore
+        store = CacheStore(cache)
     else:
         raise ValueError(f"Unknown store implementation: {store_impl}")
     _logger.info(f'Using "{type(store).__name__}" as store backend')
@@ -104,8 +101,7 @@ search_impl = get_config("persistence", "search", SearchImplementation, required
 try:
     if search_impl == SearchImplementation.QDRANT:
         from persistence.qdrant import QdrantSearch
-
-        index = QdrantSearch(store, openai)
+        index = QdrantSearch(store, cache, openai)
     else:
         raise ValueError(f"Unknown search implementation: {search_impl}")
     _logger.info(f'Using "{type(index).__name__}" as search backend')
@@ -120,7 +116,6 @@ stream_impl = get_config("persistence", "stream", StreamImplementation, required
 try:
     if stream_impl == StreamImplementation.REDIS:
         from persistence.redis import RedisStream
-
         stream = RedisStream()
     else:
         raise ValueError(f"Unknown stream implementation: {stream_impl}")
@@ -317,7 +312,7 @@ async def conversation_get(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Conversation not found",
         )
-    messages = store.message_list(conversation.id)
+    messages = store.message_list(conversation.id) or []
     return GetConversationModel(
         **conversation.dict(),
         messages=messages,
@@ -328,7 +323,7 @@ async def conversation_get(
 async def conversation_list(
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> ListConversationsModel:
-    conversations = store.conversation_list(current_user.id)
+    conversations = store.conversation_list(current_user.id) or []
     return ListConversationsModel(conversations=conversations)
 
 
@@ -411,7 +406,7 @@ async def message_post(
         store.message_set(message)
         index.message_index(message)
 
-    messages = store.message_list(conversation.id)
+    messages = store.message_list(conversation.id) or []
 
     # Execute message completion in background
     _loop.create_task(

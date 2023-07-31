@@ -10,6 +10,7 @@ Includes:
 - Dark theme for better readability
 - Dead simple interface
 - Deployable on any Kubernetes cluster, with its Helm chart
+- Every persistence layers (search, index, AI) is cached, for performance and low cost
 - Manage users effortlessly with OpenID Connect
 - Monitoring with Azure App Insights (logs, traces, user behaviors)
 - More than 150 tones and personalities (accountant, advisor, debater, excel sheet, instructor, logistician, etc.) to better help employees in their specific daily tasks
@@ -134,7 +135,7 @@ connection_str = "InstrumentationKey=[key];[...]"
 [persistence]
 cache = "redis" # Enum: "redis"
 search = "qdrant" # Enum: "qdrant"
-store = "cosmos" # Enum: "redis", "cosmos"
+store = "cosmos" # Enum: "cache", "cosmos"
 stream = "redis" # Enum: "redis"
 
 [persistence.qdrant]

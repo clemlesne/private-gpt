@@ -1,3 +1,4 @@
+from .icache import ICache
 from .istore import IStore
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -12,9 +13,11 @@ class SearchImplementation(str, Enum):
 
 
 class ISearch(ABC):
+    cache: ICache
     store: IStore
 
-    def __init__(self, store: IStore):
+    def __init__(self, store: IStore, cache: ICache):
+        self.cache = cache
         self.store = store
 
     @abstractmethod
