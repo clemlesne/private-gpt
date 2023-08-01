@@ -9,8 +9,6 @@ html {
   --content-max-width: 80rem;
   --conversation-padding-v: var(--titlebar--height);
   --conversations-padding: 0.25rem;
-  --font-size-small: 0.75rem;
-  --font-size: 0.875rem;
   --header-padding-v: var(--titlebar--height);
   --header-width: min(26rem, 38vw);
   --message-padding-v: 0.75rem;
@@ -19,6 +17,8 @@ html {
   --titlebar--height: 2rem;
 
   // Relative values
+  --font-size-small: 0.75em;
+  --font-size: 0.875em;
   --line-height-small: 1.5;
   --line-height: 1.7;
 
