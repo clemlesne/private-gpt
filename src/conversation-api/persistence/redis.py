@@ -54,7 +54,7 @@ class RedisStream(IStream):
 
     async def get(
         self, token: UUID, loop_func: Callable[[], Awaitable[bool]]
-    ) -> AsyncGenerator[Any | Literal["STOP"], None]:
+    ) -> AsyncGenerator[str, None]:
         stream_id = 0
         is_end = False
 
@@ -79,7 +79,7 @@ class RedisStream(IStream):
             for message_content in messages_raw[0][1]:
                 stream_id = message_content[0]
                 message = message_content[1][b"message"].decode("utf-8")
-                if message == self.stopword():
+                if message == self.STOPWORD:
                     is_end = True
                     break
                 yield message
@@ -88,7 +88,7 @@ class RedisStream(IStream):
             await asyncio.sleep(0.125)
 
         # Send the end of stream message
-        yield self.stopword()
+        yield self.STOPWORD
 
     async def clean(self, token: UUID) -> None:
         client.delete(self._key(token))
