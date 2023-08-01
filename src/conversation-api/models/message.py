@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
 from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
@@ -43,3 +43,10 @@ class IndexMessageModel(BaseModel):
 class StreamMessageModel(BaseModel):
     action: Optional[str] = None
     content: Optional[str] = None
+
+    @root_validator(pre=True)
+    def validate(cls, values):
+        action, content = values.get("action"), values.get("content")
+        if action is None and content is None:
+            raise ValueError("Either action or content must be set")
+        return values
