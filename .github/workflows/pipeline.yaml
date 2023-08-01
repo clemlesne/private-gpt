@@ -337,6 +337,8 @@ jobs:
     name: Create release
     needs:
       - init
+      - sast-creds
+      - sast-semgrep
     permissions:
       # Allow to create releases
       contents: write
