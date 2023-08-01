@@ -81,7 +81,8 @@ function Message({
         }}
         ref={httpContent}
       >
-        {loading && <>Thinking...</>}
+        {loading && <em>Thinking...</em>}
+        {!loading && !content && <em>No content</em>}
         {content && (
           <ReactMarkdown
             linkTarget="_blank"
