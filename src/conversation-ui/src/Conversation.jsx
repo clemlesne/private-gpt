@@ -191,7 +191,7 @@ function Conversation() {
           let content = "";
           let actions = [];
           const source = new EventSource(
-            `${client.defaults.baseURL}/message/${lastMessage.id}?token=${lastMessage.token}`
+            `${client.defaults.baseURL}/message/${lastMessage.token}`
           );
           source.onmessage = (e) => {
             if (e.data === "STOP") {

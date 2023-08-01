@@ -433,8 +433,11 @@ async def message_post(
     )
 
 
-@api.get("/message/{id}")
-async def message_get(id: UUID, token: UUID, req: Request) -> EventSourceResponse:
+@api.get(
+    "/message/{token}",
+    description="Load a message from its token. This endpoint is used for SSE. No authentication is required.",
+)
+async def message_get(token: UUID, req: Request) -> EventSourceResponse:
     return EventSourceResponse(_read_message_sse(req, token))
 
 
