@@ -9,6 +9,10 @@ html {
       grid-template-rows: min-content auto;
     }
 
+    .main {
+      padding-top: calc(var(--titlebar--height) * 0.5);
+    }
+
     &.header--open {
       // Make the header full height
       .header {
