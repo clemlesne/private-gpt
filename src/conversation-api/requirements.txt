@@ -9,7 +9,7 @@ fastapi==0.100.1
 langchain==0.0.249
 mmh3==4.0.1
 openai==0.27.8
-opentelemetry-instrumentation-fastapi==0.39b0
+opentelemetry-instrumentation-fastapi==0.40b0
 opentelemetry-instrumentation-redis==0.39b0
 opentelemetry-instrumentation-requests==0.39b0
 opentelemetry-instrumentation-system-metrics==0.39b0
