@@ -9,6 +9,10 @@ html {
       grid-template-rows: min-content auto;
     }
 
+    .main {
+      padding-top: calc(var(--titlebar--height) * 0.5);
+    }
+
     &.header--open {
       // Make the header full height
       .header {
@@ -149,7 +153,7 @@ html {
   }
 
   .header__bottom {
-    background: linear-gradient(0deg, var(--header--background-color) calc(100% - var(--header-padding-v)), transparent 100%);
+    background: linear-gradient(0deg, var(--header--background-color) 50%, transparent 100%);
 
     // Stays at the bottom
     bottom: 0;

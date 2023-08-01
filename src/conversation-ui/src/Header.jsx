@@ -60,6 +60,25 @@ function Header() {
       </div>
       <small className="header__bottom">
         <div className="header__bottom__block">
+          <Button
+            onClick={() => {
+              setHeaderOpen(false);
+              isAuthenticated ? logout(account, instance) : login(instance);
+            }}
+            emoji={isAuthenticated ? DoorFilled : KeyFilled}
+            loading={inProgress === "login"}
+            text={isAuthenticated ? "Signout" : "Signin"}
+          />
+          <Button
+            onClick={() => {
+              setHeaderOpen(false);
+              setDarkTheme(!darkTheme);
+            }}
+            emoji={darkTheme ? WeatherSunnyFilled : WeatherMoonFilled}
+            text={darkTheme ? "Light" : "Dark"}
+          />
+        </div>
+        <div className="header__bottom__block">
           {isAuthenticated && (
             <p>
               Logged as{" "}
@@ -79,25 +98,6 @@ function Header() {
           <span>
             App v{import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
           </span>
-        </div>
-        <div className="header__bottom__block">
-          <Button
-            onClick={() => {
-              setHeaderOpen(false);
-              isAuthenticated ? logout(account, instance) : login(instance);
-            }}
-            emoji={isAuthenticated ? DoorFilled : KeyFilled}
-            loading={inProgress === "login"}
-            text={isAuthenticated ? "Signout" : "Signin"}
-          />
-          <Button
-            onClick={() => {
-              setHeaderOpen(false);
-              setDarkTheme(!darkTheme);
-            }}
-            emoji={darkTheme ? WeatherSunnyFilled : WeatherMoonFilled}
-            text={darkTheme ? "Light" : "Dark"}
-          />
         </div>
       </small>
     </div>

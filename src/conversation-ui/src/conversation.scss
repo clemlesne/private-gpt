@@ -25,7 +25,7 @@
     flex-grow: 1;
 
     > *:not(:last-child) {
-      margin-bottom: var(--conversation-padding-v);
+      margin-bottom: calc(var(--conversation-padding-v) / 2);
     }
   }
 

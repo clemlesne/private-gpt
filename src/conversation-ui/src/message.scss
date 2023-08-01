@@ -12,6 +12,7 @@
 
     .message__content {
       background-color: var(--background-bold);
+      border-bottom-left-radius: calc(var(--radius) / 4);
     }
   }
 
@@ -23,6 +24,7 @@
 
     .message__content {
       background-color: var(--background-active);
+      border-bottom-right-radius: calc(var(--radius) / 4);
     }
   }
 

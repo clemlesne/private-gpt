@@ -20,19 +20,19 @@ function Conversations() {
 
       if (now.isSame(created_at, "day")) {
         acc.today.push(conversation);
-      } else if (now.isSame(created_at, "week")) {
-        acc.thisWeek.push(conversation);
-      } else if (now.isSame(created_at, "month")) {
-        acc.thisMonth.push(conversation);
-      } else if (now.isSame(created_at, "year")) {
-        acc.thisYear.push(conversation);
+      } else if (now.diff(created_at, "week") == 0) {
+        acc.weekAgo.push(conversation);
+      } else if (now.diff(created_at, "month") == 0) {
+        acc.monthAgo.push(conversation);
+      } else if (now.diff(created_at, "year") == 0) {
+        acc.yearAgo.push(conversation);
       } else {
         acc.older.push(conversation);
       }
 
       return acc;
     },
-    { today: [], thisWeek: [], thisMonth: [], thisYear: [], older: [] }
+    { today: [], weekAgo: [], monthAgo: [], yearAgo: [], older: [] }
   );
 
   const displayConversations = (title, arr) => {
@@ -61,9 +61,9 @@ function Conversations() {
       <h2>Your conversations</h2>
       { conversations.length === 0 && <p>No conversations yet.</p>}
       {displayConversations("Today", groupedConversations.today)}
-      {displayConversations("This week", groupedConversations.thisWeek)}
-      {displayConversations("This month", groupedConversations.thisMonth)}
-      {displayConversations("This year", groupedConversations.thisYear)}
+      {displayConversations("A week ago", groupedConversations.weekAgo)}
+      {displayConversations("A month ago", groupedConversations.monthAgo)}
+      {displayConversations("A year ago", groupedConversations.yearAgo)}
       {displayConversations("Older", groupedConversations.older)}
     </div>
   );
