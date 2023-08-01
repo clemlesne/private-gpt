@@ -335,7 +335,8 @@ async def conversation_list(
 
 
 @api.post(
-    "/message", description="Moderation check in place, as the content is persisted."
+    "/message",
+    description="Moderation check in place, as the content is persisted.",
 )
 async def message_post(
     content: str,
@@ -345,6 +346,7 @@ async def message_post(
     conversation_id: Optional[UUID] = None,
     prompt_id: Optional[UUID] = None,
 ) -> GetConversationModel:
+    # TODO: Moderation fails to test messages longer than 1000 characters approx, that is a huge UX limitation
     # if await content_safety.is_moderated(content):
     #     _logger.info(f"Message content is moderated: {content}")
     #     raise HTTPException(
@@ -436,10 +438,10 @@ async def message_get(id: UUID, token: UUID, req: Request) -> EventSourceRespons
     return EventSourceResponse(_read_message_sse(req, token))
 
 
-async def _read_message_sse(req: Request, message_id: UUID):
+async def _read_message_sse(req: Request, message_token: UUID):
     async def clean():
-        _logger.info(f"Cleared message cache (message_id={message_id})")
-        await stream.clean(message_id)
+        _logger.info(f"Cleared message cache (message_token={message_token})")
+        await stream.clean(message_token)
 
     async def client_disconnect():
         _logger.info(f"Disconnected from client (via refresh/close) (req={req.client})")
@@ -452,7 +454,7 @@ async def _read_message_sse(req: Request, message_id: UUID):
         return False
 
     try:
-        async for data in stream.get(message_id, loop_func):
+        async for data in stream.get(message_token, loop_func):
             yield data
     except Exception:
         _logger.exception("Error while streaming message", exc_info=True)
