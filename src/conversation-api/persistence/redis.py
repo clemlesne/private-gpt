@@ -44,7 +44,7 @@ async def _readiness() -> ReadinessStatus:
 
 
 class RedisStream(IStream):
-    STREAM_PREFIX = "stream"
+    STREAM_PREFIX: str = "stream"
 
     async def readiness(self) -> ReadinessStatus:
         return await _readiness()

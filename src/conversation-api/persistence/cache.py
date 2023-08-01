@@ -17,11 +17,11 @@ _logger = build_logger(__name__)
 
 
 class CacheStore(IStore):
-    CONVERSATION_PREFIX = "conversation"
-    MESSAGE_PREFIX = "message"
-    SECRET_TTL_SECS = 60 * 60 * 24  # 1 day
-    USAGE_PREFIX = "usage"
-    USER_PREFIX = "user"
+    CONVERSATION_PREFIX: str = "conversation"
+    MESSAGE_PREFIX: str = "message"
+    SECRET_TTL_SECS: int = 60 * 60 * 24  # 1 day
+    USAGE_PREFIX: str = "usage"
+    USER_PREFIX: str = "user"
 
     async def readiness(self) -> ReadinessStatus:
         return await self.cache.readiness()
