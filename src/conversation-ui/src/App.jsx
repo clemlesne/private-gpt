@@ -59,10 +59,12 @@ function App() {
   const fetchConversations = async (idToSelect = null) => {
     if (!account) return;
 
+    const controller = new AbortController();
     const idToken = await getIdToken(account, instance);
 
     await client
       .get("/conversation", {
+        signal: controller.signal,
         timeout: 10_000,
         headers: {
           Authorization: `Bearer ${idToken}`,
@@ -93,6 +95,10 @@ function App() {
       .catch((err) => {
         console.error(err);
       });
+
+    return () => {
+      if (controller) controller.abort();
+    }
   };
 
   useEffect(() => {
