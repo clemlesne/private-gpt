@@ -140,6 +140,7 @@ jobs:
     name: Publish Helm chart
     needs:
       - build-helm
+      - build-images
       - create-release
       - init
     runs-on: ubuntu-22.04
@@ -170,7 +171,7 @@ jobs:
               repo: context.repo.repo,
             });
 
-  build-publish:
+  build-images:
     name: Build & publish image "${{ matrix.src }}"
     needs:
       - init
@@ -336,6 +337,8 @@ jobs:
     name: Create release
     needs:
       - init
+      - sast-creds
+      - sast-semgrep
     permissions:
       # Allow to create releases
       contents: write

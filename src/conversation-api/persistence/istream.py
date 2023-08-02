@@ -10,8 +10,7 @@ class StreamImplementation(str, Enum):
 
 
 class IStream(ABC):
-    def stopword(self) -> str:
-        return "STOP"
+    STOPWORD: str = "STOP"
 
     @abstractmethod
     async def readiness(self) -> ReadinessStatus:
@@ -22,12 +21,12 @@ class IStream(ABC):
         pass
 
     def end(self, token: UUID) -> None:
-        self.push(self.stopword(), token)
+        self.push(self.STOPWORD, token)
 
     @abstractmethod
     async def get(
         self, token: UUID, loop_func: Callable[[], bool]
-    ) -> AsyncGenerator[Any | Literal["STOP"], None]:
+    ) -> AsyncGenerator[str, None]:
         pass
 
     @abstractmethod

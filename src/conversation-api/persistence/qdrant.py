@@ -30,7 +30,7 @@ client = QdrantClient(host=QD_HOST, port=6333)
 
 class QdrantSearch(ISearch):
     _loop: asyncio.AbstractEventLoop
-    CACHE_TTL_SECS = 5 * 60  # 5 minutes
+    CACHE_TTL_SECS: int = 5 * 60  # 5 minutes
     openai: OpenAI
 
     def __init__(self, store: IStore, cache: ICache, openai: OpenAI):

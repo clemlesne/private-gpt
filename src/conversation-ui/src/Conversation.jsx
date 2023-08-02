@@ -41,6 +41,8 @@ function Conversation() {
   useEffect(() => {
     if (!account) return;
 
+    const controller = new AbortController();
+
     const fetchPrompts = async () => {
       if (conversationId) return;
 
@@ -48,6 +50,7 @@ function Conversation() {
 
       await client
         .get("/prompt", {
+          signal: controller.signal,
           timeout: 10_000,
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -67,6 +70,10 @@ function Conversation() {
     };
 
     fetchPrompts();
+
+    return () => {
+      if (controller) controller.abort();
+    }
   }, [account, conversationId]);
 
   useMemo(() => {
@@ -95,6 +102,8 @@ function Conversation() {
   useEffect(() => {
     if (!account) return;
 
+    const controller = new AbortController();
+
     const fetchConversation = async () => {
       if (!conversationId) {
         setConversation({ messages: [] });
@@ -105,6 +114,7 @@ function Conversation() {
 
       await client
         .get(`/conversation/${conversationId}`, {
+          signal: controller.signal,
           timeout: 10_000,
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -120,11 +130,18 @@ function Conversation() {
     };
 
     fetchConversation();
+
+    return () => {
+      if (controller) controller.abort();
+    }
   }, [account, conversationId]);
 
   const sendMessage = () => {
     // Create a locache state cache, as state props wont't be updated until the next render
     let localMessages = [...conversation.messages];
+
+    const controller = new AbortController();
+    let source;
 
     // Append the message to the list
     const addMessages = (newMessages) => {
@@ -155,6 +172,8 @@ function Conversation() {
       // First, create the message
       await client
         .post("/message", null, {
+          signal: controller.signal,
+          timeout: 10_000,
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
@@ -163,7 +182,6 @@ function Conversation() {
             secret: secret,
             language: userLang,
           },
-          timeout: 10_000,
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
@@ -190,7 +208,7 @@ function Conversation() {
           const lastMessage = res.data.messages[res.data.messages.length - 1];
           let content = "";
           let actions = [];
-          const source = new EventSource(
+          source = new EventSource(
             `${client.defaults.baseURL}/message/${lastMessage.token}`
           );
           source.onmessage = (e) => {
@@ -258,6 +276,11 @@ function Conversation() {
 
     // Reset the input
     setInput("");
+
+    return () => {
+      if (controller) controller.abort();
+      if (source) source.close();
+    }
   };
 
   // Scroll to the bottom of the page when the conversation changes

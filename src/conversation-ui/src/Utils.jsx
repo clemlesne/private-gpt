@@ -50,11 +50,6 @@ const getIdToken = async (account, instance) => {
       return res.idToken;
     })
     .catch((error) => {
-      if (!(error instanceof InteractionRequiredAuthError)) {
-        console.error(error);
-        return null;
-      }
-
       const onSuccess = (res) => {
         return res.idToken;
       };
@@ -64,8 +59,13 @@ const getIdToken = async (account, instance) => {
         return null;
       };
 
-      // Failback to popup
-      return instance.acquireTokenPopup(req).then(onSuccess).catch(onError);
+      if (!(error instanceof InteractionRequiredAuthError)) {
+        return onError(error);
+      }
+
+      // Browsers are increasingly blocking third party cookies by default. Detect that option is combersome. Thus, we always use redirect instead of popup.
+      // See: https://github.com/AzureAD/microsoft-authentication-library-for-js/issues/3118#issuecomment-1655932572
+      return instance.acquireTokenRedirect(req).then(onSuccess).catch(onError);
     });
 
   return idToken;

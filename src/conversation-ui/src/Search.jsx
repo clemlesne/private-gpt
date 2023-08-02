@@ -23,14 +23,16 @@ function Search() {
 
     setLoading(true);
 
+    const controller = new AbortController();
     const idToken = await getIdToken(account, instance);
 
     await client
       .get("/message", {
+        signal: controller.signal,
+        timeout: 10_000,
         params: {
           q: input,
         },
-        timeout: 10_000,
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -45,6 +47,10 @@ function Search() {
       .finally(() => {
         setLoading(false);
       });
+
+    return () => {
+      if (controller) controller.abort();
+    }
   };
 
   useMemo(() => {
