@@ -1,9 +1,6 @@
 # See: https://github.com/clemlesne/gitops-version
 .version.cache
 
-# Local Helm values.yaml file
-.values.yaml
-
 # Local app config file
 config.toml
 
