@@ -2,6 +2,9 @@
 
 > 👋🏻 Demo available at [private-gpt.shopping-cart-devops-demo.lesne.pro](https://private-gpt.shopping-cart-devops-demo.lesne.pro).
 
+<!-- Use absolute path for images in README.md, so that they are displayed on ArtifactHub.io, Lens, OpenLens, etc. -->
+<img src="https://raw.githubusercontent.com/clemlesne/private-gpt/main/logo-512.png" width="100">
+
 Private GPT is a local version of Chat GPT, using Azure OpenAI. It is an enterprise grade platform to deploy a ChatGPT-like interface for your employees.
 
 Includes:
