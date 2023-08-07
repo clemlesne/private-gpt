@@ -1,4 +1,4 @@
-.PHONY: deploy
+.PHONY: deploy dry-run
 namespace ?= private-gpt
 instance ?= default
 
