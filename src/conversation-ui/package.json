@@ -11,7 +11,7 @@
     "test": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@azure/msal-node": "^1.18.0",
+    "@azure/msal-node": "^1.18.1",
     "@azure/msal-react": "^1.5.9",
     "@fluentui/react-icons": "^2.0.209",
     "@microsoft/applicationinsights-react-js": "^17.0.0",
