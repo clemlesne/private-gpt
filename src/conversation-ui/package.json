@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@azure/msal-node": "^1.18.0",
-    "@azure/msal-react": "^1.5.9",
+    "@azure/msal-react": "^2.0.0",
     "@fluentui/react-icons": "^2.0.209",
     "@microsoft/applicationinsights-react-js": "^17.0.0",
     "@microsoft/applicationinsights-web": "^3.0.2",
