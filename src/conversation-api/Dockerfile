@@ -1,5 +1,5 @@
 # Build container
-FROM docker.io/library/python:3.11-slim-bullseye as build
+FROM docker.io/library/python:3.11-slim-bullseye AS build
 
 RUN apt-get update \
   && apt-get install --yes gcc python3-dev \
