@@ -173,7 +173,7 @@ function Conversation() {
       await client
         .post("/message", null, {
           signal: controller.signal,
-          timeout: 10_000,
+          timeout: 30_000,
           params: {
             content: input,
             conversation_id: conversation ? conversation.id : null,
