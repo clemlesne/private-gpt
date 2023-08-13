@@ -11,12 +11,12 @@
     "test": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@azure/msal-node": "^1.18.0",
-    "@azure/msal-react": "^1.5.9",
-    "@fluentui/react-icons": "^2.0.209",
+    "@azure/msal-node": "^1.18.1",
+    "@azure/msal-react": "^1.5.10",
+    "@fluentui/react-icons": "^2.0.210",
     "@microsoft/applicationinsights-react-js": "^17.0.0",
     "@microsoft/applicationinsights-web": "^3.0.2",
-    "@orama/orama": "^1.1.1",
+    "@orama/orama": "^1.2.1",
     "autoprefixer": "^10.4.14",
     "axios": "^1.4.0",
     "axios-retry": "^3.6.0",
@@ -26,7 +26,7 @@
     "react-dom": "^18.2.0",
     "react-helmet-async": "^1.3.0",
     "react-markdown": "^8.0.7",
-    "react-router-dom": "^6.14.2",
+    "react-router-dom": "^6.15.0",
     "react-schemaorg": "^2.0.0",
     "react-select": "^5.7.4",
     "react-syntax-highlighter": "^15.5.0",
@@ -41,14 +41,14 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
-    "@types/react": "^18.2.18",
+    "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "@vitejs/plugin-react": "^4.0.4",
-    "eslint": "^8.46.0",
+    "eslint": "^8.47.0",
     "eslint-plugin-react": "^7.33.1",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.3",
-    "sass": "^1.64.2",
-    "vite": "^4.4.8"
+    "sass": "^1.65.1",
+    "vite": "^4.4.9"
   }
 }
