@@ -16,7 +16,7 @@
     "@microsoft/applicationinsights-react-js": "^17.0.0",
     "@microsoft/applicationinsights-web": "^3.0.2",
     "@orama/orama": "^1.2.1",
-    "autoprefixer": "^10.4.14",
+    "autoprefixer": "^10.4.15",
     "axios": "^1.4.0",
     "axios-retry": "^3.6.0",
     "moment": "^2.29.4",
