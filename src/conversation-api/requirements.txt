@@ -5,10 +5,10 @@ azure-ai-formrecognizer==3.3.0
 azure-cosmos==4.5.0
 azure-identity==1.14.0
 azure-monitor-opentelemetry==1.0.0b14
-fastapi==0.101.0
-langchain==0.0.263
+fastapi==0.102.0
+langchain==0.0.273
 mmh3==4.0.1
-openai==0.27.8
+openai==0.27.9
 opentelemetry-instrumentation-fastapi==0.39b0
 opentelemetry-instrumentation-redis==0.39b0
 opentelemetry-instrumentation-requests==0.39b0
@@ -18,9 +18,9 @@ pyjwt[crypto]==2.8.0
 pyowm==3.3.0
 python-dotenv==1.0.0
 qdrant-client==1.4.0
-redis==4.6.0
+redis==5.0.0
 sse-starlette==1.6.5
-tenacity==8.2.2
+tenacity==8.2.3
 uvicorn==0.23.2
 wikipedia==1.4.0
 youtube-search==2.1.2
