@@ -42,6 +42,7 @@ class QdrantSearch(ISearch):
         # Ensure collection exists
         try:
             client.get_collection(QD_COLLECTION)
+            _logger.debug(f"Collection {QD_COLLECTION} already exists")
         except Exception:
             client.create_collection(
                 collection_name=QD_COLLECTION,
@@ -50,6 +51,7 @@ class QdrantSearch(ISearch):
                     size=QD_DIMENSION,
                 ),
             )
+            _logger.debug(f"Collection {QD_COLLECTION} created")
 
     async def readiness(self) -> ReadinessStatus:
         try:
