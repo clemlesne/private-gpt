@@ -26,10 +26,10 @@ upgrade:
 	@make -C src/conversation-ui upgrade
 
 start:
-	docker-compose up -d
+	docker-compose --file src/docker-compose.dev.yaml up --detach
 
 stop:
-	docker-compose down
+	docker-compose --file src/docker-compose.dev.yaml down
 
 logs:
 	docker-compose logs --follow
