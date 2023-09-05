@@ -24,7 +24,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pathlib import Path
 from tenacity import retry, stop_after_attempt, wait_random_exponential
-from typing import Dict, Optional, Type, TypeVar, Union, Hashable
+from typing import Dict, Optional, TypeVar, Union, Hashable
 from uuid import UUID
 import html
 import jwt
@@ -65,7 +65,7 @@ def get_config(
     Get config from environment variable or config file.
     """
 
-    def get_env(key: Union[str, list[str]], res_default: T) -> Union[str, T]:
+    def get_env(key: Union[str, list[str]], res_default: T) -> T:
         """
         Get config from environment variable.
         """
@@ -74,8 +74,8 @@ def get_config(
         key = f"pg_{key}".upper()
         res = os.environ.get(key, res_default)
         try:
-            return json.loads(res)
-        except Exception:
+            return json.loads(str(res))
+        except json.JSONDecodeError:
             return res or res_default
 
     # Get config from file
@@ -97,7 +97,9 @@ def get_config(
 
     # Convert to res_type
     try:
-        if validate is bool:  # bool
+        if validate is str:  # str
+            pass  # no conversion needed
+        elif validate is bool:  # bool
             res = res.strip().lower() == "true"
         elif validate is int:  # int
             res = int(res)
@@ -105,12 +107,9 @@ def get_config(
             res = float(res)
         elif validate is UUID:  # UUID
             res = UUID(res)
-        else:  # Enum
-            try:
-                res = validate(res)
-            except Exception:
-                pass
-    except Exception:
+        elif issubclass(validate, Enum):  # Enum
+            res = validate(res)
+    except (ValueError, TypeError, AttributeError):
         raise ConfigNotFound(
             f'Cannot convert config "{sections}/{key}" ({validate.__name__}), found "{res}" ({type(res).__name__})'
         )
@@ -139,7 +138,7 @@ while CONFIG_FOLDER:
         if CONFIG_FOLDER.parent == CONFIG_FOLDER:
             raise ConfigNotFound("Cannot find config file")
         CONFIG_FOLDER = CONFIG_FOLDER.parent.parent
-    except tomllib.TOMLDecodeError as e:
+    except Exception as e:
         print(f'Cannot load config file "{CONFIG_PATH}"')
         raise e
 print(f'Config "{CONFIG_PATH}" loaded')
