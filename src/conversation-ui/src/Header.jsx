@@ -96,7 +96,7 @@ function Header() {
         </div>
         <div className="header__bottom__block">
           <span>
-            App v{import.meta.env.VITE_VERSION} ({import.meta.env.MODE})
+            App v{import.meta.env.VITE_VERSION || "0.0.0-unknown"} ({import.meta.env.MODE})
           </span>
         </div>
       </small>

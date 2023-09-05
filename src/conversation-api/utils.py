@@ -40,7 +40,7 @@ import json
 # Init misc
 ###
 
-VERSION = os.environ.get("VERSION")
+VERSION = os.environ.get("VERSION") or "0.0.0-unknown"
 AZ_CREDENTIAL = DefaultAzureCredential()
 
 ###

@@ -145,7 +145,7 @@ function App() {
             name: "Private GPT",
             releaseNotes: "https://github.com/clemlesne/private-gpt/releases",
             typicalAgeRange: "12-",
-            version: import.meta.env.VITE_VERSION,
+            version: (import.meta.env.VITE_VERSION || "0.0.0-unknown"),
             sourceOrganization: {
               "@type": "Organization",
               name: "Microsoft",
