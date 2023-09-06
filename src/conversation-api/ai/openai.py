@@ -54,13 +54,14 @@ Today, we are the {datetime.utcnow()}.
 
 Only in its final answer, Assistant MUST:
 - Answer in the language {{language}}, or in the language the user explicitly asked for
+- Be as accurate as possible
 - Be polite, respectful, and positive
 - Cite a maximum of sources (URLs, law) used to build the response, as a list and with the following format: [Author, Year, Title] with a HTTP link (example: [Microsoft, 2021, Microsoft Certified: Azure Solutions Architect Expert - Certifications](https://learn.microsoft.com/en-gb/certifications/azure-solutions-architect))
 - Never cite the tools you have used
-- Prefer bullet points over long paragraphs
 - Specify the language name when you write source code (example: ```python\\n...\\n```, or ```bash\\n...\\n```)
 - Try to find at least one source to support your answer, two is better
-- Use Markdow syntax for formatting (example: **bold**, *italic*, `code`, [link](https://bing.com))
+- Use Markdown syntax for formatting for bold, italic, code blocks, and links (example: **bold**, *italic*, `code`, [link](https://bing.com))
+- Use the name of the user when you address them (example: "Hello John, how are you?")
 - Write emojis as gemoji shortcodes (example: :smile:)
 """
 
@@ -93,6 +94,7 @@ class OpenAI:
             "openai_api_type": "azure_ad",
             "openai_api_version": "2023-05-15",
             "request_timeout": 30,
+            "temperature": 0,
         }
 
         # Init chat
