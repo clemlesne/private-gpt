@@ -5,7 +5,6 @@ from utils import build_logger, get_config, AZ_CREDENTIAL, try_or_none, sanitize
 from datetime import datetime
 from langchain import PromptTemplate
 from langchain.agents import AgentType, initialize_agent, load_tools, Tool
-from langchain.cache import BaseCache
 from langchain.callbacks import get_openai_callback
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import AzureChatOpenAI
@@ -13,6 +12,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory, ReadOnlySharedMemory
 from langchain.retrievers import AzureCognitiveSearchRetriever
 from langchain.schema import BaseChatMessageHistory, ChatGeneration, AgentAction
+from langchain.schema.cache import BaseCache
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.tools import YouTubeSearchTool, PubmedQueryRun
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
@@ -159,7 +159,7 @@ class OpenAI:
             Tool(
                 description="Useful for when you need to generate ideas, write articles, search new point of views. If the result of this function is similar to the previous one, do not use it. The input should be a string, representing the idea. The output will be a text describing the idea.",
                 func=lambda q: self.chat.predict(q),
-                name="immagination",
+                name="imagination",
             ),
             Tool(
                 description="Useful for when you need to summarize a text. The input should be a string, representing the text to summarize. The output will be a text describing the text.",
