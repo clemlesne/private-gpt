@@ -47,7 +47,7 @@ import textwrap
 _logger = build_logger(__name__)
 
 CHAT_PREFIX = f"""
-Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics. As a language model, Assistant is able to generate human-like text based on the input it receives, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand.
+Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics.
 
 Today, we are the {datetime.utcnow()}.
 
@@ -59,6 +59,7 @@ Only in its final answer, Assistant MUST:
 - Prefer bullet points over long paragraphs
 - Specify the language name when you write source code (example: ```python\\n...\\n```, or ```bash\\n...\\n```)
 - Try to find at least one source to support your answer, two is better
+- Use at most 3 tools to build the response
 - Use Markdow syntax for formatting (example: **bold**, *italic*, `code`, [link](https://bing.com))
 - Write emojis as gemoji shortcodes (example: :smile:)
 """
