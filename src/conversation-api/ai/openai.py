@@ -36,6 +36,7 @@ from tenacity import (
 )
 from typing import Any, Callable, List, Optional, Sequence
 from uuid import UUID
+import urllib.parse
 import asyncio
 import textwrap
 
@@ -174,6 +175,8 @@ class OpenAI:
             content_key = instance.get("content_key")
             displayed_name = instance.get("displayed_name")
             index_name = instance.get("index_name")
+            language = instance.get("language")
+            semantic_configuration = instance.get("semantic_configuration")
             service_name = instance.get("service_name")
             top_k = instance.get("top_k")
             usage = instance.get("usage")
@@ -183,10 +186,12 @@ class OpenAI:
                 func=lambda q: str(
                     [
                         sanitize(doc.page_content)
-                        for doc in AzureCognitiveSearchRetriever(
+                        for doc in AzureCognitiveSearchSemanticRetriever(
                             api_key=api_key,
                             content_key=content_key,
                             index_name=index_name,
+                            query_language=language,
+                            semantic_configuration=semantic_configuration,
                             service_name=service_name,
                             top_k=top_k,
                         ).get_relevant_documents(q)
@@ -486,3 +491,38 @@ class CustomHistory(BaseChatMessageHistory):
     def clear(self) -> None:
         # Clear not implemented, we don't want to clear storage layer
         pass
+
+
+class AzureCognitiveSearchSemanticRetriever(AzureCognitiveSearchRetriever):
+    """
+    Azure Cognitive Search retriever with semantic search.
+
+    Native LangChain implementation is not used because it does not support semantic search.
+
+    See:
+    - API doc: https://learn.microsoft.com/en-us/rest/api/searchservice/preview-api/search-documents
+    - Native implementation: https://github.com/langchain-ai/langchain/blob/v0.0.281/libs/langchain/langchain/retrievers/azure_cognitive_search.py
+    """
+    api_version: str = "2023-07-01-Preview"
+    query_language: str = ""
+    semantic_configuration: str = ""
+
+    def _build_search_url(self, query: str) -> str:
+        params = urllib.parse.urlencode(
+            {
+                "api-version": self.api_version,
+                "search": query,
+                "top": self.top_k,
+                # Semantic search
+                "queryType": "semantic",
+                "semanticConfiguration": self.semantic_configuration,
+                # Language ranker
+                "queryLanguage": self.query_language,
+                "speller": "lexicon",  # Required param for both semantic and language ranker
+            } | {
+                "top": self.top_k,
+            } if self.top_k else {}
+        )
+        url = f"https://{self.service_name}.search.windows.net/indexes/{self.index_name}/docs?" + params
+        _logger.debug(f"Built search URL: {url}")
+        return url
