@@ -161,7 +161,7 @@ class OpenAI:
             ),
             Tool(
                 description="Useful for when you need to summarize a text. The input should be a string, representing the text to summarize. The output will be a text describing the text.",
-                func=lambda q: load_summarize_chain().run(q),
+                func=lambda q: load_summarize_chain(self.chat).run(q),
                 name="summarize",
             ),
         ]
