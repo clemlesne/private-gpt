@@ -227,7 +227,7 @@ class OpenAI:
         usage_callback: Callable[[int, str], None],
     ) -> None:
         builder = PromptTemplate(
-            template=template, input_variables=["query", "language"]
+            template=template, input_variables=["language", "query"]
         )
         prompt = builder.format(query=message.content, language=language)
         _logger.debug(f"Asking completion with prompt: {prompt}")
@@ -237,13 +237,13 @@ class OpenAI:
             usage_callback(cb.total_tokens, self.chat.model_name)
 
     @retry(
-        reraise=True,
         retry=(
             retry_if_result(
                 lambda res: res == "Agent stopped due to iteration limit or time limit."
             )
             | retry_if_exception_type((InvalidRequestError, APIError))
         ),
+        reraise=True,
         stop=stop_after_attempt(3),
         wait=wait_random_exponential(multiplier=0.5, max=30),
     )
@@ -300,9 +300,9 @@ class OpenAI:
         agent = initialize_agent(
             agent_kwargs={
                 "input_variables": [
-                    "input",
-                    "chat_history",
                     "agent_scratchpad",
+                    "chat_history",
+                    "input",
                     "language",
                 ],
                 "system_message": prefix,
@@ -319,8 +319,11 @@ class OpenAI:
         )
 
         def on_agent_action(action: AgentAction, **kwargs):
-            if action.tool != "_Exception":
-                message_callback(StreamMessageModel(action=action.tool))
+            if action.tool == "_Exception":
+                _logger.error(f"Agent error: {action}")
+                return
+
+            message_callback(StreamMessageModel(action=action.tool))
 
         with get_openai_callback() as cb:
             cb.on_agent_action = on_agent_action
@@ -465,9 +468,9 @@ class CustomHistory(BaseChatMessageHistory):
         self.store.message_set(
             StoredMessageModel(
                 content=message,
+                conversation_id=self.conversation_id,
                 role=MessageRole.USER,
                 secret=self.secret,
-                conversation_id=self.conversation_id,
             )
         )
 
@@ -475,9 +478,9 @@ class CustomHistory(BaseChatMessageHistory):
         self.store.message_set(
             StoredMessageModel(
                 content=message,
+                conversation_id=self.conversation_id,
                 role=MessageRole.ASSISTANT,
                 secret=self.secret,
-                conversation_id=self.conversation_id,
             )
         )
 
