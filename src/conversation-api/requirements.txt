@@ -23,4 +23,5 @@ sse-starlette==1.6.5
 tenacity==8.2.3
 uvicorn==0.23.2
 wikipedia==1.4.0
+xmltodict==0.13.0
 youtube-search==2.1.2
