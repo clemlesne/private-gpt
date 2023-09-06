@@ -185,6 +185,20 @@ api_key = "[api_token]"
 
 [tools.listen_notes]
 api_key = "[api_token]"
+
+[tools.open_weather_map]
+api_key = "[api_token]"
+
+[[tools.azure_cognitive_search]]
+api_key = "[api_token]"
+content_key = "content"
+displayed_name = "My search engine"
+index_name = "[index_name]"
+language = "en-US"
+semantic_configuration = "default"
+service_name = "[service_name]"
+top_k = 10
+usage = "Useful when you need legal content contained in one of the codes (incl. civil, commercial, labor, electoral) derived from French legislation. Use this in priority for legal content in France."
 ```
 
 Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.
