@@ -1,5 +1,5 @@
 # Build container
-FROM docker.io/library/python:3.11-slim-bullseye@sha256:4fbe5ac40627d19df270ab4c9050f0eb0ffe1402c7706f53d35b13ec7070a747 AS build
+FROM docker.io/library/python:3.11-slim-bullseye@sha256:de917502e531b3f6e4a5acef017e9feef392cf3eb76826fd46d6810c70ae9b5e AS build
 
 RUN apt-get update \
   && apt-get install --yes gcc python3-dev \
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN python3 -m pip install --requirement requirements.txt
 
 # Output container
-FROM docker.io/library/python:3.11-slim-bullseye@sha256:4fbe5ac40627d19df270ab4c9050f0eb0ffe1402c7706f53d35b13ec7070a747
+FROM docker.io/library/python:3.11-slim-bullseye@sha256:de917502e531b3f6e4a5acef017e9feef392cf3eb76826fd46d6810c70ae9b5e
 
 ARG VERSION
 ENV VERSION=${VERSION}
