@@ -185,7 +185,7 @@ class OpenAI:
             # Create tool
             tool = Tool(
                 description=f"{usage} The input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
-                func=lambda q: str(
+                func=lambda q, api_key=api_key, content_key=content_key, index_name=index_name, language=language, semantic_configuration=semantic_configuration, service_name=service_name, top_k=top_k: str(
                     [
                         sanitize(doc.page_content)
                         for doc in AzureCognitiveSearchSemanticRetriever(
