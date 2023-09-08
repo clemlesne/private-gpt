@@ -20,9 +20,11 @@ keywords:
   - private-gpt
   - virtual-assistant-for-employees
 dependencies:
+  # https://github.com/qdrant/qdrant-helm/releases
   - name: qdrant
-    version: 0.2.9
+    version: 0.5.x
     repository: https://qdrant.github.io/qdrant-helm
+  # https://github.com/bitnami/charts/blob/main/bitnami/redis/Chart.yaml
   - name: redis
-    version: 17.11.3
+    version: 18.0.x
     repository: oci://registry-1.docker.io/bitnamicharts
