@@ -5,7 +5,6 @@ instance ?= default
 deploy:
 	helm upgrade \
 		--atomic \
-		--dependency-update \
 		--install \
 		--namespace $(namespace) \
 		--timeout 5m \
@@ -13,10 +12,22 @@ deploy:
 		--wait \
 		$(instance) private-gpt
 
+upgrade:
+	@echo "➡️ Upgrading Helm..."
+	helm dependency update \
+		--skip-refresh \
+		private-gpt
+
+lint:
+	@echo "➡️ Running Helm..."
+	helm lint \
+		--strict \
+		--values .values.yaml \
+		private-gpt
+
 dry-run:
 	helm upgrade \
 		--atomic \
-		--dependency-update \
 		--dry-run \
 		--install \
 		--namespace $(namespace) \

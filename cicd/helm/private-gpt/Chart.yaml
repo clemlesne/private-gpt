@@ -1,8 +1,8 @@
-name: private-gpt
+apiVersion: v2
 description: Private GPT is a local version of Chat GPT, using Azure OpenAI.
 icon: https://raw.githubusercontent.com/clemlesne/private-gpt/main/logo-512.png
+name: private-gpt
 version: 0.0.0
-apiVersion: v1
 keywords:
   - ai-assisted-chat
   - azure-openai

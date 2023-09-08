@@ -18,10 +18,12 @@ test:
 	@make -C src/conversation-ui test
 
 lint:
+	@make -C cicd/helm lint
 	@make -C src/conversation-api lint
 	@make -C src/conversation-ui lint
 
 upgrade:
+	@make -C cicd/helm upgrade
 	@make -C src/conversation-api upgrade
 	@make -C src/conversation-ui upgrade
 

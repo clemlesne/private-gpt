@@ -33,6 +33,7 @@ monitoring:
 oidc:
   algorithms: []
   api_audience: null
+  authority: null
   issuers: []
   jwks: null
 
