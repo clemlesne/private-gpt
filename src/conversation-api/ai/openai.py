@@ -198,7 +198,9 @@ class OpenAI:
                             top_k=top_k,
                         ).get_relevant_documents(q)
                     ]
-                )[: int(self.gpt_max_tokens)],
+                )[
+                    : int(self.gpt_max_tokens)
+                ],
                 name=f"{displayed_name} (Azure Cognitive Search)",
             )
             self.tools.append(tool)
@@ -505,6 +507,7 @@ class AzureCognitiveSearchSemanticRetriever(AzureCognitiveSearchRetriever):
     - API doc: https://learn.microsoft.com/en-us/rest/api/searchservice/preview-api/search-documents
     - Native implementation: https://github.com/langchain-ai/langchain/blob/v0.0.281/libs/langchain/langchain/retrievers/azure_cognitive_search.py
     """
+
     api_version: str = "2023-07-01-Preview"
     query_language: str = ""
     semantic_configuration: str = ""
@@ -521,10 +524,16 @@ class AzureCognitiveSearchSemanticRetriever(AzureCognitiveSearchRetriever):
                 # Language ranker
                 "queryLanguage": self.query_language,
                 "speller": "lexicon",  # Required param for both semantic and language ranker
-            } | {
+            }
+            | {
                 "top": self.top_k,
-            } if self.top_k else {}
+            }
+            if self.top_k
+            else {}
         )
-        url = f"https://{self.service_name}.search.windows.net/indexes/{self.index_name}/docs?" + params
+        url = (
+            f"https://{self.service_name}.search.windows.net/indexes/{self.index_name}/docs?"
+            + params
+        )
         _logger.debug(f"Built search URL: {url}")
         return url
