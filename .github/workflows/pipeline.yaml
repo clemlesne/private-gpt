@@ -255,7 +255,7 @@ jobs:
           echo "tag=$tag" >> $GITHUB_OUTPUT
 
       - name: Build/push container
-        uses: docker/build-push-action@v4.1.1
+        uses: docker/build-push-action@v4.2.1
         with:
           build-args: |
             VERSION=${{ needs.init.outputs.VERSION_FULL }}
