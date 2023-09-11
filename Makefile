@@ -9,6 +9,10 @@ version:
 version-full:
 	@bash ./cicd/version/version.sh -g . -c -m
 
+install:
+	@make -C src/conversation-api install
+	@make -C src/conversation-ui install
+
 build:
 	@make -C src/conversation-api build
 	@make -C src/conversation-ui build
