@@ -18,6 +18,9 @@ build:
 	@make -C src/conversation-ui build
 
 test:
+	@echo "➡️ Running TruffleHog..."
+	trufflehog git file://. --since-commit main --branch HEAD --fail --no-update --only-verified
+
 	@make -C src/conversation-api test
 	@make -C src/conversation-ui test
 
