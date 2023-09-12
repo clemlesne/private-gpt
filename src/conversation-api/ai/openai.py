@@ -169,12 +169,12 @@ class OpenAI:
                 name=req_tool.name,
             ),
             Tool(
-                description="Useful for when you need to generate ideas, write articles, search new point of views. If the result of this function is similar to the previous one, do not use it. The input should be a string, representing the idea. The output will be a text describing the idea.",
+                description="Useful for when you need to generate ideas, write articles, search new point of views. If the result of this function is similar to the previous one, do not use it. Input should be a string, representing the idea. The output will be a text describing the idea.",
                 func=lambda q: self.chat.predict(q),
                 name="imagination",
             ),
             Tool(
-                description="Useful for when you need to summarize a text. The input should be a string, representing the text to summarize. The output will be a text describing the text.",
+                description="Useful for when you need to summarize a text. Input should be a string, representing the text to summarize. The output will be a text describing the text.",
                 func=lambda q: load_summarize_chain(self.chat).run(q),
                 name="summarize",
             ),
@@ -196,7 +196,7 @@ class OpenAI:
             usage = instance.get("usage")
             # Create tool
             tool = Tool(
-                description=f"{usage} The input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
+                description=f"{usage} Input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
                 func=lambda q, api_key=api_key, content_key=content_key, index_name=index_name, language=language, semantic_configuration=semantic_configuration, service_name=service_name, top_k=top_k: str(
                     [
                         sanitize(doc.page_content)
@@ -304,7 +304,7 @@ class OpenAI:
                         ).answers
                     ]
                 )[: int(self.gpt_max_tokens)],
-                description="Useful for when you need past user messages, from other conversations. The input should be a string, representing the search query written in semantic language. The output will be a list of 5 messages as JSON objects.",
+                description="Useful for when you need past user messages, from other conversations. Input should be a string, representing the search query written in semantic language. The output will be a list of 5 messages as JSON objects.",
                 name="messages_search",
             ),
         ]
