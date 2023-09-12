@@ -88,6 +88,7 @@ const pcaConfig = {
   },
 };
 const pca = new PublicClientApplication(pcaConfig);
+pca.initialize();
 
 // Set the default account
 pca.addEventCallback((event) => {
