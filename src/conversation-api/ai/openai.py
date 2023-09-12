@@ -276,6 +276,7 @@ class OpenAI:
         message_callback: Callable[[StreamMessageModel], None],
         usage_callback: Callable[[int, str], None],
     ) -> None:
+        # Setup memory
         message_history = CustomHistory(
             conversation_id=conversation.id,
             secret=message.secret,
@@ -288,7 +289,10 @@ class OpenAI:
             memory_key="chat_history",
             return_messages=True,
         )
+        # Protect memory from being modified by the tools
         readonly_memory = ReadOnlySharedMemory(memory=memory)
+
+        # Setup personalized tools
         tools = [
             *self.tools,
             Tool(
@@ -304,6 +308,8 @@ class OpenAI:
                 name="messages_search",
             ),
         ]
+
+        # Setup personalized prompt
         prefix = textwrap.dedent(
             f"""
             {CUSTOM_PREFIX}
@@ -317,6 +323,8 @@ class OpenAI:
             - Name: {current_user.name}
         """
         )
+
+        # Run
         agent = initialize_agent(
             agent_kwargs={
                 "verbose": True,
