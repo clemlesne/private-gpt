@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: conversation-ui
-          image: "ghcr.io/clemlesne/private-gpt/conversation-ui:{{ .Values.image.tag | default .Chart.Version }}"
+          image: "ghcr.io/clemlesne/private-gpt:conversation-ui-{{ .Values.image.tag | default .Chart.Version }}"
           imagePullPolicy: Always
           ports:
             - name: http

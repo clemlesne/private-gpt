@@ -23,7 +23,7 @@ spec:
       serviceAccountName: {{ .Values.serviceAccountName | required "A value for .Values.serviceAccountName is required" }}
       containers:
         - name: conversation-api
-          image: "ghcr.io/clemlesne/private-gpt/conversation-api:{{ .Values.image.tag | default .Chart.Version }}"
+          image: "ghcr.io/clemlesne/private-gpt:conversation-api-{{ .Values.image.tag | default .Chart.Version }}"
           imagePullPolicy: Always
           ports:
             - name: http

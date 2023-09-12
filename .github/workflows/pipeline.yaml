@@ -236,6 +236,8 @@ jobs:
           images: |
             ${{ env.CONTAINER_REGISTRY_GHCR }}/${{ env.CONTAINER_NAME }}
             ${{ env.CONTAINER_REGISTRY_DOCKER_HUB }}/${{ env.CONTAINER_NAME }}
+          flavor: |
+            prefix=${{ matrix.src }}-
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
