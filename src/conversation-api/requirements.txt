@@ -22,6 +22,7 @@ qdrant-client==1.5.1
 redis==5.0.0
 sse-starlette==1.6.5
 tenacity==8.2.3
+tiktoken==0.5.0
 uvicorn==0.23.2
 wikipedia==1.4.0
 xmltodict==0.13.0
