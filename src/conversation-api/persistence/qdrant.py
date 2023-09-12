@@ -151,6 +151,6 @@ class QdrantSearch(ISearch):
         client.upsert(
             collection_name=QD_COLLECTION,
             points=[
-                qmodels.PointStruct(id=message.id.hex, payload=index, vector=vector)
+                qmodels.PointStruct(id=message.id.hex, payload=index.dict(), vector=vector)
             ],
         )
