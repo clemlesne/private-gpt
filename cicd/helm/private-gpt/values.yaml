@@ -62,6 +62,8 @@ tools:
     api_key: null
   open_weather_map:
     api_key: null
+  google_places:
+    api_key: null
   azure_cognitive_search:
     []
     # - api_key: xxx

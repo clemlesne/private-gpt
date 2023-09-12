@@ -17,6 +17,7 @@ from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.tools import YouTubeSearchTool, PubmedQueryRun
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
 from langchain.tools.base import Tool
+from langchain.tools.google_places import GooglePlacesTool
 from langchain.tools.requests.tool import RequestsGetTool
 from langchain.utilities.requests import TextRequestsWrapper
 from models.conversation import StoredConversationModel
@@ -39,6 +40,7 @@ from uuid import UUID
 import urllib.parse
 import asyncio
 import textwrap
+import os
 
 
 ###
@@ -64,6 +66,12 @@ Only in its final answer, Assistant MUST:
 - Use the name of the user when you address them (example: "Hello John, how are you?")
 - Write emojis as gemoji shortcodes (example: :smile:)
 """
+
+###
+# Init auth for tools
+###
+
+os.environ["GPLACES_API_KEY"] = get_config(["tools", "google_places"], "api_key", str, required=True)
 
 
 class OpenAI:
@@ -149,6 +157,9 @@ class OpenAI:
                     ["tools", "azure_form_recognizer"], "api_token", str, required=True
                 ),
             ),
+            GooglePlacesTool(
+                description="Useful for when you need to validate addresses or get details about places (incl. address, phone, website). Input should be a search query.",
+            ),  # Requires GPLACES_API_KEY env var
             Tool(
                 description=f"{req_tool.description} Use this to download the content of a HTTP link. Link requires to be either HTML, or text (example: XML, JSON). Output will be reduced to its characters, no text formatting will be applied.",
                 func=lambda *args, **kwargs: (

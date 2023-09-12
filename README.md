@@ -77,6 +77,7 @@ graph
 
         subgraph "Public data"
             bing["Bing"]
+            google_maps["Google Maps"]
             listen_notes["Listen notes"]
             news["News"]
             tmdb["TMDB"]
@@ -187,6 +188,9 @@ api_key = "[api_token]"
 api_key = "[api_token]"
 
 [tools.open_weather_map]
+api_key = "[api_token]"
+
+[tools.google_places]
 api_key = "[api_token]"
 
 [[tools.azure_cognitive_search]]

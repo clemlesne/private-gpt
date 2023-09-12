@@ -78,6 +78,9 @@ data:
     [tools.open_weather_map]
     api_key = {{ .Values.tools.open_weather_map.api_key | quote | required "A value for .Values.tools.open_weather_map.api_key is required" }}
 
+    [tools.google_places]
+    api_key = {{ .Values.tools.google_places.api_key | quote | required "A value for .Values.tools.google_places.api_key is required" }}
+
     {{- range .Values.tools.azure_cognitive_search }}
     # Tool {{ .displayed_name | required "A value for .displayed_name is required" }}
     [[tools.azure_cognitive_search]]

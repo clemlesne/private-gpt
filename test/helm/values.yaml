@@ -34,6 +34,8 @@ tools:
     api_key: xxx
   open_weather_map:
     api_key: xxx
+  google_places:
+    api_key: xxx
   azure_cognitive_search:
     - api_key: xxx
       content_key: xxx
