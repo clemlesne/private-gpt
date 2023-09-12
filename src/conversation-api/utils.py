@@ -259,6 +259,13 @@ class VerifyToken:
         self.token = token
 
     def verify(self) -> Dict[str, str]:
+        if not self.token:
+            _logger.info("JWT token is missing")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="JWT token is missing",
+            )
+
         try:
             self._load_jwks()
         except Exception:
