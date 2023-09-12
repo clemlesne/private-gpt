@@ -68,44 +68,44 @@ graph
     ui["Conversation UI\n(PWA)"]
 
     subgraph tools["Tools"]
-    subgraph "Business data"
-        form_recognizer["Form recognizer"]
-        cognitive_services["Cognitive services"]
-        storage_blob["Blob storage"]
-        mssql["SQL Server"]
-    end
+        subgraph "Business data"
+            cognitive_services["Cognitive services"]
+            form_recognizer["Form recognizer"]
+            mssql["SQL Server"]
+            storage_blob["Blob storage"]
+        end
 
-    subgraph "Public data"
-        tmdb["TMDB"]
-        news["News"]
-        listen_notes["Listen notes"]
-        bing["Bing"]
-    end
+        subgraph "Public data"
+            bing["Bing"]
+            listen_notes["Listen notes"]
+            news["News"]
+            tmdb["TMDB"]
+        end
     end
 
     subgraph "Persistence"
-    cosmosdb[("Cosmos DB\n(disk)")]
-    qdrant[("Qdrant\n(disk)")]
-    redis[("Redis\n(memory)")]
+        cosmosdb[("Cosmos DB\n(disk)")]
+        qdrant[("Qdrant\n(disk)")]
+        redis[("Redis\n(memory)")]
     end
 
     subgraph "Azure OpenAI services"
-    oai_ada["ADA embedding"]
-    oai_gpt["GPT completions"]
-    safety["Content Safety"]
+        oai_ada["ADA embedding"]
+        oai_gpt["GPT completions"]
+        safety["Content Safety"]
     end
 
     api -- Cache low-level AI results --> redis
     api -- Generate completions --> oai_gpt
     api -- Generate embeddings --> oai_ada
     api -- Index messages --> qdrant
+    api -- Orchestrate external capabilities --> tools
     api -- Persist conversations --> cosmosdb
     api -- Test moderation --> safety
-    api -- Orchestrate external capabilities --> tools
-    ui -- Use APIs --> api
-    user -- Use UI --> ui
     cognitive_services -- Index data --> mssql
     cognitive_services -- Index data --> storage_blob
+    ui -- Use APIs --> api
+    user -- Use UI --> ui
 ```
 
 ## How to use
