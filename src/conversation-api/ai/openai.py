@@ -5,11 +5,13 @@ from utils import build_logger, get_config, AZ_CREDENTIAL, try_or_none, sanitize
 from datetime import datetime
 from langchain import PromptTemplate
 from langchain.agents import AgentType, initialize_agent, load_tools, Tool
+from langchain.agents.structured_chat.prompt import PREFIX as DEFAULT_PREFIX
 from langchain.callbacks import get_openai_callback
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import AzureChatOpenAI
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory, ReadOnlySharedMemory
+from langchain.prompts import MessagesPlaceholder
 from langchain.retrievers import AzureCognitiveSearchRetriever
 from langchain.schema import BaseChatMessageHistory, ChatGeneration, AgentAction
 from langchain.schema.cache import BaseCache
@@ -18,12 +20,16 @@ from langchain.tools import YouTubeSearchTool, PubmedQueryRun
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
 from langchain.tools.base import Tool
 from langchain.tools.google_places import GooglePlacesTool
+from langchain.tools.office365.create_draft_message import O365CreateDraftMessage
+from langchain.tools.office365.events_search import O365SearchEvents
+from langchain.tools.office365.messages_search import O365SearchEmails
 from langchain.tools.requests.tool import RequestsGetTool
 from langchain.utilities.requests import TextRequestsWrapper
 from models.conversation import StoredConversationModel
 from models.message import MessageRole
 from models.message import StoredMessageModel, MessageModel, StreamMessageModel
 from models.user import UserModel
+from O365 import Account
 from openai.error import InvalidRequestError, APIError
 from persistence.icache import ICache
 from persistence.isearch import ISearch
@@ -277,6 +283,7 @@ class OpenAI:
         usage_callback: Callable[[int, str], None],
     ) -> None:
         # Setup memory
+        memory_var = "chat_history"
         message_history = CustomHistory(
             conversation_id=conversation.id,
             secret=message.secret,
@@ -286,15 +293,32 @@ class OpenAI:
         # Also can use ConversationSummaryBufferMemory, which can be used to summarize the conversation if it is too long
         memory = ConversationBufferMemory(
             chat_memory=message_history,
-            memory_key="chat_history",
+            memory_key=memory_var,
             return_messages=True,
         )
         # Protect memory from being modified by the tools
         readonly_memory = ReadOnlySharedMemory(memory=memory)
 
+        # Setup Office 365 account
+        o365_account = Account(
+            credentials=(current_user.external_id, current_user.login_hint),
+            scopes=[
+                "Calendars.ReadWrite",
+                "Mail.ReadWrite",
+            ]
+        )
+
+        # Fix type checking in Pydantic, as Account O365 import is conditional in O365BaseTool LangChain class
+        O365CreateDraftMessage.update_forward_refs(Account=Account)
+        O365SearchEmails.update_forward_refs(Account=Account)
+        O365SearchEvents.update_forward_refs(Account=Account)
+
         # Setup personalized tools
         tools = [
             *self.tools,
+            O365CreateDraftMessage(account=o365_account),
+            O365SearchEmails(account=o365_account),
+            O365SearchEvents(account=o365_account),
             Tool(
                 func=lambda q: str(
                     [
@@ -310,6 +334,7 @@ class OpenAI:
         ]
 
         # Setup personalized prompt
+        memory_prompt = MessagesPlaceholder(variable_name=memory_var)
         prefix = textwrap.dedent(
             f"""
             {CUSTOM_PREFIX}
@@ -321,22 +346,26 @@ class OpenAI:
             - Email: {current_user.email}
             - ID: {current_user.preferred_username}
             - Name: {current_user.name}
+
+            {DEFAULT_PREFIX}
         """
         )
 
         # Run
         agent = initialize_agent(
             agent_kwargs={
+                "memory_prompts": [memory_prompt],
+                "prefix": prefix,
                 "verbose": True,
                 "input_variables": [
                     "agent_scratchpad",
-                    "chat_history",
                     "input",
                     "language",
+                    memory_var,
                 ],
-                "system_message": prefix,
             },
-            agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,  # TODO: Test using OPENAI_MULTI_FUNCTIONS, but fails to read memory
+            # agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,
+            agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,  # Support multi-input tools, but bugy (https://github.com/langchain-ai/langchain/issues/5870)
             # early_stopping_method="generate",  # Fix in progress, see: https://github.com/langchain-ai/langchain/issues/8249#issuecomment-1651074268
             handle_parsing_errors=True,  # Catch tool parsing errors
             llm=self.chat,

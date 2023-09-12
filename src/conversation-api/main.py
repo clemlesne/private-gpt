@@ -277,6 +277,7 @@ async def get_current_user(
     email = jwt.get("email")
     name = jwt.get("name")
     preferred_username = jwt.get("preferred_username")
+    login_hint = jwt.get("login_hint")
 
     user = store.user_get(sub)
     if not user:
@@ -291,6 +292,9 @@ async def get_current_user(
 
     if user.preferred_username != preferred_username:
         user_new.preferred_username = preferred_username
+
+    if user.login_hint != login_hint:
+        user_new.login_hint = login_hint
 
     if user_new != user:
         _logger.debug(f"User {user.id} updated")

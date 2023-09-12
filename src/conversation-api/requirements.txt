@@ -9,6 +9,7 @@ fastapi==0.103.1
 googlemaps==4.10.0
 langchain==0.0.285
 mmh3==4.0.1
+O365==2.0.28
 openai==0.28.0
 opentelemetry-instrumentation-fastapi==0.39b0
 opentelemetry-instrumentation-redis==0.39b0

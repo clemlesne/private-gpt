@@ -40,7 +40,7 @@ const getIdToken = async (account, instance) => {
   const req = {
     account: account,
     loginHint: account.username,
-    scopes: ["openid", "profile", "email", "User.Read"],
+    scopes: ["openid", "profile", "email", "User.Read", "Calendars.ReadWrite", "Mail.ReadWrite"],
   };
 
   // Try silent first
