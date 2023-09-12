@@ -49,7 +49,7 @@ import os
 
 _logger = build_logger(__name__)
 
-CHAT_PREFIX = f"""
+CUSTOM_PREFIX = f"""
 Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics.
 
 Today, we are the {datetime.utcnow()}.
@@ -305,7 +305,7 @@ class OpenAI:
         ]
         prefix = textwrap.dedent(
             f"""
-            {CHAT_PREFIX}
+            {CUSTOM_PREFIX}
 
             Only in its final answer, Assistant SHOULD:
             {conversation.prompt.content if conversation.prompt else "None"}
