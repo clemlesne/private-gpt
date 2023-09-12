@@ -59,8 +59,10 @@ function App() {
   const fetchConversations = async (idToSelect = null) => {
     if (!account) return;
 
-    const controller = new AbortController();
     const idToken = await getIdToken(account, instance);
+    if (!idToken) return;
+
+    const controller = new AbortController();
 
     await client
       .get("/conversation", {

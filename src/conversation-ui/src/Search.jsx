@@ -21,10 +21,12 @@ function Search() {
     if (!account) return;
     if (!input || input.length === 0) return;
 
-    setLoading(true);
+    const idToken = await getIdToken(account, instance);
+    if (!idToken) return;
 
     const controller = new AbortController();
-    const idToken = await getIdToken(account, instance);
+
+    setLoading(true);
 
     await client
       .get("/message", {

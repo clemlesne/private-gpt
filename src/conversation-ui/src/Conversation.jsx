@@ -47,6 +47,7 @@ function Conversation() {
       if (conversationId) return;
 
       const idToken = await getIdToken(account, instance);
+      if (!idToken) return;
 
       await client
         .get("/prompt", {
@@ -111,6 +112,7 @@ function Conversation() {
       }
 
       const idToken = await getIdToken(account, instance);
+      if (!idToken) return;
 
       await client
         .get(`/conversation/${conversationId}`, {
@@ -165,9 +167,11 @@ function Conversation() {
     const fetchMessage = async () => {
       if (!isAuthenticated) return;
 
+      const idToken = await getIdToken(account, instance);
+      if (!idToken) return;
+
       setLoading(true);
 
-      const idToken = await getIdToken(account, instance);
 
       // First, create the message
       await client
