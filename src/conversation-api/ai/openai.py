@@ -103,6 +103,7 @@ class OpenAI:
             "openai_api_version": "2023-05-15",
             "request_timeout": 30,
             "temperature": 0,
+            "verbose": True,
         }
 
         # Init chat
@@ -318,6 +319,7 @@ class OpenAI:
         )
         agent = initialize_agent(
             agent_kwargs={
+                "verbose": True,
                 "input_variables": [
                     "agent_scratchpad",
                     "chat_history",
