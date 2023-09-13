@@ -316,8 +316,8 @@ jobs:
 
   publish-artifacthub-metadata:
     name: Publish ArtifactHub metadata
-    # Only publish on main branch, as we don't want to break verification with a bad metadata file during development
-    if: github.ref == 'refs/heads/main'
+    # Only publish on non-scheduled default branch
+    if: (github.event_name != 'schedule') && (github.ref == 'refs/heads/${context.payload.repository.default_branch}')
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -408,8 +408,9 @@ jobs:
     needs:
       - create-release
       - init
-      - publish-artifacthub-metadata
       - publish-helm
+    # Only publish on non-scheduled default branch
+    if: (github.event_name != 'schedule') && (github.ref == 'refs/heads/${context.payload.repository.default_branch}')
     steps:
       - name: publish release
         id: publish-release
