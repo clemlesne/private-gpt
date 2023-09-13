@@ -4,7 +4,7 @@ from utils import build_logger, get_config, AZ_CREDENTIAL, try_or_none, sanitize
 # Import misc
 from datetime import datetime
 from langchain import PromptTemplate
-from langchain.agents import AgentType, initialize_agent, load_tools, Tool
+from langchain.agents import AgentType, initialize_agent, load_tools
 from langchain.callbacks import get_openai_callback
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import AzureChatOpenAI
@@ -16,7 +16,7 @@ from langchain.schema.cache import BaseCache
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.tools import YouTubeSearchTool, PubmedQueryRun
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
-from langchain.tools.base import Tool
+from langchain.tools.base import Tool, BaseTool
 from langchain.tools.google_places import GooglePlacesTool
 from langchain.tools.requests.tool import RequestsGetTool
 from langchain.utilities.requests import TextRequestsWrapper
@@ -35,7 +35,7 @@ from tenacity import (
     retry_if_exception_type,
     retry_if_result,
 )
-from typing import Any, Callable, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 from uuid import UUID
 import urllib.parse
 import asyncio
@@ -80,7 +80,7 @@ class OpenAI:
     gpt_max_tokens: int
     search: ISearch
     store: IStore
-    tools: Sequence[Tool]
+    tools: Sequence[BaseTool]
 
     def __init__(self, store: IStore):
         self._loop = asyncio.get_running_loop()
@@ -180,9 +180,10 @@ class OpenAI:
             ),
         ]
         # Azure Cognitive Search
-        for instance in get_config(
+        azure_cognitive_searches: List[Dict[str, Any]] = get_config(
             "tools", "azure_cognitive_search", list, required=True
-        ):
+        )
+        for instance in azure_cognitive_searches:
             _logger.debug(f"Loading Azure Cognitive Search custom tool: {instance}")
             # Parameters
             api_key = instance.get("api_key")

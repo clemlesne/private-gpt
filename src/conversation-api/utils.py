@@ -27,21 +27,21 @@ from tenacity import retry, stop_after_attempt, wait_random_exponential
 from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 import html
+import json
 import jwt
 import logging
 import mmh3
 import os
 import re
 import tomllib
-import json
 
 
 ###
 # Init misc
 ###
 
-VERSION = os.environ.get("VERSION") or "0.0.0-unknown"
-AZ_CREDENTIAL = DefaultAzureCredential()
+VERSION: str = os.environ.get("VERSION") or "0.0.0-unknown"
+AZ_CREDENTIAL: DefaultAzureCredential = DefaultAzureCredential()
 
 ###
 # Init config
@@ -125,8 +125,8 @@ def get_config(
 
 CONFIG_FILE = "config.toml"
 CONFIG_FOLDER = Path(os.environ.get("PG_CONFIG_PATH", ".")).absolute()
-CONFIG_PATH = None
-CONFIG = None
+CONFIG_PATH: Union[str, None] = None
+CONFIG: Dict[str, Any] = {}
 while CONFIG_FOLDER:
     CONFIG_PATH = f"{CONFIG_FOLDER}/{CONFIG_FILE}"
     print(f'Try to load config "{CONFIG_PATH}"')
@@ -200,9 +200,9 @@ _logger = build_logger(__name__)
 # Init OIDC
 ###
 
-OIDC_ALGORITHMS = get_config("oidc", "algorithms", list, required=True)
+OIDC_ALGORITHMS: List[str] = get_config("oidc", "algorithms", list, required=True)
 OIDC_API_AUDIENCE = get_config("oidc", "api_audience", str, required=True)
-OIDC_ISSUERS = get_config("oidc", "issuers", list, required=True)
+OIDC_ISSUERS: List[str] = get_config("oidc", "issuers", list, required=True)
 OIDC_JWKS = get_config("oidc", "jwks", str, required=True)
 
 
@@ -248,7 +248,7 @@ def try_or_none(func, *args, **kwargs):
         return None
 
 
-def hash_token(str: Union[str, Hashable]) -> UUID:
+def hash_token(str: Union[str, bytes, bytearray, memoryview]) -> UUID:
     return UUID(bytes=mmh3.hash_bytes(str))
 
 
