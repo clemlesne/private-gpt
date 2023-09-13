@@ -24,7 +24,7 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from pathlib import Path
 from tenacity import retry, stop_after_attempt, wait_random_exponential
-from typing import Dict, Optional, TypeVar, Union, Hashable
+from typing import Any, Dict, List, Optional, Type, TypeVar, Union
 from uuid import UUID
 import html
 import jwt
@@ -47,7 +47,7 @@ AZ_CREDENTIAL = DefaultAzureCredential()
 # Init config
 ###
 
-T = TypeVar("T", bool, int, float, UUID, str, Enum, None)
+T = TypeVar("T", bool, int, float, UUID, str, Enum, list, None)
 
 
 class ConfigNotFound(Exception):
@@ -57,8 +57,8 @@ class ConfigNotFound(Exception):
 def get_config(
     sections: Optional[Union[str, list[str]]],
     key: str,
-    validate: T,
-    default: T = None,
+    validate: Type[T],
+    default: Any = None,
     required: bool = False,
 ) -> T:
     """
