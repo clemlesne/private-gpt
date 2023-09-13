@@ -16,7 +16,7 @@ from langchain.schema.cache import BaseCache
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.tools import YouTubeSearchTool, PubmedQueryRun
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
-from langchain.tools.base import Tool, BaseTool
+from langchain.tools.base import Tool, BaseTool, ToolException
 from langchain.tools.google_places import GooglePlacesTool
 from langchain.tools.requests.tool import RequestsGetTool
 from langchain.utilities.requests import TextRequestsWrapper
@@ -357,7 +357,13 @@ class OpenAI:
 
         with get_openai_callback() as cb:
             cb.on_agent_action = on_agent_action
-            res = agent.run(input=message.content, language=language)
+
+            try:
+                res = agent.run(input=message.content, language=language)
+            except ToolException as e:
+                _logger.error(f"Tool error: {e}")
+                res = "Data error, please try again later."
+
             _logger.debug(f"Agent response: {res}")
             message_callback(StreamMessageModel(content=res))
             usage_callback(cb.total_tokens, self.chat.model_name)
