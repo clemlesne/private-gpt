@@ -6,6 +6,9 @@ from .icache import ICache
 from .istream import IStream
 from models.readiness import ReadinessStatus
 from redis import Redis
+from redis.retry import Retry
+from redis.backoff import ExponentialBackoff
+from redis.exceptions import (BusyLoadingError, ConnectionError, TimeoutError)
 from typing import (
     AsyncGenerator,
     Awaitable,
@@ -26,7 +29,7 @@ DB_HOST = get_config(["persistence", "redis"], "host", str, required=True)
 DB_PORT = 6379
 
 # Redis client
-client = Redis(db=0, host=DB_HOST, port=DB_PORT)
+client = Redis(db=0, host=DB_HOST, port=DB_PORT, retry=Retry(ExponentialBackoff(), 3), retry_on_error=[BusyLoadingError, ConnectionError, TimeoutError])
 
 
 async def _readiness() -> ReadinessStatus:
