@@ -8,9 +8,10 @@ from utils import (
 )
 
 # Import misc
+from datetime import datetime, timedelta
 from ai.contentsafety import ContentSafety
 from ai.openai import OpenAI, CustomCache
-from fastapi import FastAPI, HTTPException, status, Request, Depends
+from fastapi import FastAPI, HTTPException, Response, status, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from models.conversation import (
@@ -303,8 +304,12 @@ async def get_current_user(
     return user
 
 
-@api.get("/prompt")
-async def prompt_list() -> ListPromptsModel:
+@api.get(
+    "/prompt",
+    description="List all prompts. Expires in 1 day.",
+)
+async def prompt_list(response: Response) -> ListPromptsModel:
+    response.headers["Expires"] = f"{datetime.utcnow() + timedelta(days=1)}"
     return ListPromptsModel(prompts=list(AI_PROMPTS.values()))
 
 
