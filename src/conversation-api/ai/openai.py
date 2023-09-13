@@ -71,7 +71,9 @@ Only in its final answer, Assistant MUST:
 # Init auth for tools
 ###
 
-os.environ["GPLACES_API_KEY"] = get_config(["tools", "google_places"], "api_key", str, required=True)
+os.environ["GPLACES_API_KEY"] = get_config(
+    ["tools", "google_places"], "api_key", str, required=True
+)
 
 
 class OpenAI:
@@ -277,7 +279,7 @@ class OpenAI:
         message_callback: Callable[[StreamMessageModel], None],
         usage_callback: Callable[[int, str], None],
     ) -> None:
-        # Setup memory
+        # Setup memory
         message_history = CustomHistory(
             conversation_id=conversation.id,
             secret=message.secret,

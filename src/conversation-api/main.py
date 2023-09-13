@@ -226,7 +226,7 @@ AI: A poem
 @api.get(
     "/health/liveness",
     status_code=status.HTTP_204_NO_CONTENT,
-    name="Healthckeck liveness",
+    description="Liveness healthckeck, always returns 204, used to check if the API is up.",
 )
 async def health_liveness_get() -> None:
     return None
@@ -234,7 +234,7 @@ async def health_liveness_get() -> None:
 
 @api.get(
     "/health/readiness",
-    name="Healthckeck readiness",
+    description="Readiness healthckeck, returns the status of all components, and fails if one of them is not ready.",
 )
 async def health_readiness_get() -> ReadinessModel:
     cache_check, index_check, store_check, stream_check = await asyncio.gather(
@@ -313,7 +313,10 @@ async def prompt_list(response: Response) -> ListPromptsModel:
     return ListPromptsModel(prompts=list(AI_PROMPTS.values()))
 
 
-@api.get("/conversation/{id}")
+@api.get(
+    "/conversation/{id}",
+    description="Return a conversation by its ID.",
+)
 async def conversation_get(
     id: UUID, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> GetConversationModel:
@@ -331,7 +334,10 @@ async def conversation_get(
     )
 
 
-@api.get("/conversation")
+@api.get(
+    "/conversation",
+    description="Return all conversations for the current user.",
+)
 async def conversation_list(
     current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> ListConversationsModel:
