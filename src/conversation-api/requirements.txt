@@ -10,11 +10,11 @@ googlemaps==4.10.0
 langchain==0.0.292
 mmh3==4.0.1
 openai==0.28.0
-opentelemetry-instrumentation-fastapi==0.39b0
-opentelemetry-instrumentation-redis==0.39b0
-opentelemetry-instrumentation-requests==0.39b0
-opentelemetry-instrumentation-system-metrics==0.39b0
-opentelemetry-instrumentation-urllib3==0.39b0
+opentelemetry-instrumentation-fastapi==0.41b0
+opentelemetry-instrumentation-redis==0.41b0
+opentelemetry-instrumentation-requests==0.41b0
+opentelemetry-instrumentation-system-metrics==0.41b0
+opentelemetry-instrumentation-urllib3==0.41b0
 pyjwt[crypto]==2.8.0
 pyowm==3.3.0
 python-dotenv==1.0.0
