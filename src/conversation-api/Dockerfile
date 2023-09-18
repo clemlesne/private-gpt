@@ -28,4 +28,4 @@ ENV PATH=/venv/bin:$PATH
 
 COPY --chown=appuser:appuser . /app
 
-CMD ["bash", "-c", "WEB_CONCURRENCY=$(nproc --all) cd /app && uvicorn main:api --host 0.0.0.0 --port 8080 --proxy-headers --no-server-header --timeout-keep-alive 30 --header x-version:${VERSION}"]
+CMD ["bash", "-c", "WEB_CONCURRENCY=4 cd /app && uvicorn main:api --host 0.0.0.0 --port 8080 --proxy-headers --no-server-header --timeout-keep-alive 30 --header x-version:${VERSION}"]

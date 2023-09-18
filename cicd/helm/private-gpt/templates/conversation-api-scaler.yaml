@@ -17,4 +17,4 @@ spec:
     - type: memory
       metadata:
         type: Utilization
-        value: "75"
+        value: "80"
