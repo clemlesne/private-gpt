@@ -19,7 +19,7 @@ pyjwt[crypto]==2.8.0
 pyowm==3.3.0
 python-dotenv==1.0.0
 qdrant-client==1.5.4
-redis==5.0.0
+redis==5.0.1
 sse-starlette==1.6.5
 tenacity==8.2.3
 tiktoken==0.5.1
