@@ -6,7 +6,7 @@ azure-cosmos==4.4.0
 azure-identity==1.13.0
 azure-monitor-opentelemetry==1.0.0b14
 fastapi==0.100.1
-langchain==0.0.249
+langchain==0.0.308
 mmh3==4.0.1
 openai==0.27.8
 opentelemetry-instrumentation-fastapi==0.39b0
