@@ -1,5 +1,5 @@
 # Build container
-FROM docker.io/library/node:20-alpine3.17@sha256:c8ae1785da54b802347d06e826d5ae127fc7851114803ee4098f782d46ba40a9 AS build
+FROM docker.io/library/node:21-alpine3.17@sha256:6abd1eabeba303403a2ffbbbd104e21b01d37b1e39faecabac32211b595402cb AS build
 
 RUN npm install --global npm@latest
 
