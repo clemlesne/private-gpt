@@ -2,7 +2,7 @@ docker := docker
 version_small ?= $(shell $(MAKE) --directory ../../ --silent version)
 version_full ?= $(shell $(MAKE) --directory ../../ --silent version-full)
 component_name := conversation-api
-container_name := ghcr.io/clemlesne/private-gpt/$(component_name)
+container_name := ghcr.io/clemlesne/private-gpt:$(component_name)
 
 install:
 	python3 -m pip install -r requirements.txt
@@ -39,6 +39,6 @@ start:
 build:
 	$(docker) build \
 		--build-arg VERSION=$(version_full) \
-		--tag $(container_name):$(version_small) \
-		--tag $(container_name):latest \
+		--tag $(container_name)-$(version_small) \
+		--tag $(container_name)-latest \
 		.
