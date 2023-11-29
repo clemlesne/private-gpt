@@ -264,7 +264,7 @@ class OpenAI:
             retry_if_result(
                 lambda res: res == "Agent stopped due to iteration limit or time limit."
             )
-            | retry_if_exception_type((InvalidRequestError, APIError))
+            | retry_if_exception_type((BadRequestError, APIError))
         ),
         reraise=True,
         stop=stop_after_attempt(3),

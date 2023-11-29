@@ -83,7 +83,7 @@ class QdrantSearch(ISearch):
         try:
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for search message "{q}"')
-                return SearchModel[MessageModel].parse_raw(self.cache.get(cache_key))
+                return SearchModel[MessageModel].model_validate_json(self.cache.get(cache_key))
         except ValidationError as e:
             _logger.warn(f'Error parsing message search from cache, "{e}"')
 
@@ -132,7 +132,7 @@ class QdrantSearch(ISearch):
             stats=SearchStatsModel(total=total, time=time.monotonic() - start),
         )
         # Update cache
-        self.cache.set(cache_key, search.json(), self.CACHE_TTL_SECS)
+        self.cache.set(cache_key, search.model_dump_json(), self.CACHE_TTL_SECS)
         return search
 
     def message_index(self, message: StoredMessageModel) -> None:

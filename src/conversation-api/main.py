@@ -25,6 +25,7 @@ from models.message import (
     StoredMessageModel,
     StreamMessageModel,
 )
+from langchain.globals import set_llm_cache
 from models.prompt import StoredPromptModel, ListPromptsModel
 from models.readiness import ReadinessModel, ReadinessCheckModel, ReadinessStatus
 from models.search import SearchModel
@@ -41,7 +42,6 @@ from uuid import UUID
 from uuid import uuid4
 import asyncio
 import csv
-import langchain
 
 
 ###
@@ -69,7 +69,7 @@ except Exception as e:
     _logger.error("Failed to initialize cache engine", exc_info=True)
     exit(1)
 # Configure LangChain accordingly
-langchain.llm_cache = CustomCache(cache=cache)
+set_llm_cache(CustomCache(cache=cache))
 
 # Store
 store_impl = get_config("persistence", "store", StoreImplementation, required=True)
@@ -507,7 +507,7 @@ async def _generate_completion_background(
     def on_message(message: StreamMessageModel) -> None:
         _logger.debug(f"Completion result: {message}")
         # Add content to the redis stream cache_key
-        stream.push(message.json(), last_message.token)
+        stream.push(message.model_dump_json(), last_message.token)
         messages.append(message)
 
     def on_usage(total_tokens: int, model_name: str) -> None:

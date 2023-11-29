@@ -64,7 +64,7 @@ class CosmosStore(IStore):
         try:
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for user "{user_external_id}"')
-                return UserModel.parse_raw(self.cache.get(cache_key))
+                return UserModel.model_validate_json(self.cache.get(cache_key))
         except ValidationError as e:
             _logger.warn(f'Error parsing user from cache, "{e}"')
 
@@ -74,7 +74,7 @@ class CosmosStore(IStore):
             raw = next(items)
             user = UserModel(**raw)
             # Update cache
-            self.cache.set(cache_key, user.json())
+            self.cache.set(cache_key, user.model_dump_json())
             return user
         except StopIteration:
             return None
@@ -88,7 +88,7 @@ class CosmosStore(IStore):
             }
         )
         # Update cache
-        self.cache.set(cache_key, user.json())
+        self.cache.set(cache_key, user.model_dump_json())
 
     def conversation_get(
         self, conversation_id: UUID, user_id: UUID
@@ -98,7 +98,7 @@ class CosmosStore(IStore):
         try:
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for conversation "{conversation_id}"')
-                return StoredConversationModel.parse_raw(self.cache.get(cache_key))
+                return StoredConversationModel.model_validate_json(self.cache.get(cache_key))
         except ValidationError as e:
             _logger.warn(f'Error parsing conversation from cache, "{e}"')
 
@@ -108,7 +108,7 @@ class CosmosStore(IStore):
             )
             conversation = StoredConversationModel(**raw)
             # Update cache
-            self.cache.set(cache_key, conversation.json())
+            self.cache.set(cache_key, conversation.model_dump_json())
             return conversation
         except CosmosHttpResponseError:
             return None
@@ -122,7 +122,7 @@ class CosmosStore(IStore):
             body=self._sanitize_before_insert(conversation.dict())
         )
         # Update cache
-        self.cache.set(cache_key, conversation.json())
+        self.cache.set(cache_key, conversation.model_dump_json())
         self.cache.delete(
             f"conversation-list:{conversation.user_id}"
         )  # Invalidate list
@@ -136,7 +136,7 @@ class CosmosStore(IStore):
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for conversation list "{user_id}"')
                 return [
-                    StoredConversationModel.parse_raw(raw)
+                    StoredConversationModel.model_validate_json(raw)
                     for _, raw in (self.cache.hget(cache_key) or {}).items()
                 ]
         except ValidationError as e:
@@ -157,7 +157,7 @@ class CosmosStore(IStore):
             except ValidationError as e:
                 _logger.warn(f'Error parsing conversation, "{e}"')
         # Update cache
-        self.cache.hset(cache_key, {str(c.id): c.json() for c in conversations})
+        self.cache.hset(cache_key, {str(c.id): c.model_dump_json() for c in conversations})
         return conversations or None
 
     def message_get(
@@ -168,7 +168,7 @@ class CosmosStore(IStore):
         try:
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for message "{message_id}"')
-                return MessageModel.parse_raw(self.cache.get(cache_key))
+                return MessageModel.model_validate_json(self.cache.get(cache_key))
         except ValidationError as e:
             _logger.warn(f'Error parsing message from cache, "{e}"')
 
@@ -178,7 +178,7 @@ class CosmosStore(IStore):
             )
             message = MessageModel(**raw)
             # Update cache
-            self.cache.set(cache_key, message.json())
+            self.cache.set(cache_key, message.model_dump_json())
             return message
         except CosmosHttpResponseError:
             return None
@@ -191,7 +191,7 @@ class CosmosStore(IStore):
         try:
             if all(self.cache.exists(k) for k in cache_keys):
                 _logger.debug(f'Cache hit for message index "{message_indexs}"')
-                return [MessageModel.parse_raw(self.cache.get(k)) for k in cache_keys]
+                return [MessageModel.model_validate_json(self.cache.get(k)) for k in cache_keys]
         except ValidationError as e:
             _logger.warn(f'Error parsing message index from cache, "{e}"')
 
@@ -206,7 +206,7 @@ class CosmosStore(IStore):
             except CosmosHttpResponseError:
                 pass
         # Update cache
-        self.cache.mset({k: m.json() for k, m in zip(cache_keys, messages)})
+        self.cache.mset({k: m.model_dump_json() for k, m in zip(cache_keys, messages)})
         return messages or None
 
     def message_set(self, message: StoredMessageModel) -> None:
@@ -219,7 +219,7 @@ class CosmosStore(IStore):
             }
         )
         # Update cache
-        self.cache.set(cache_key, message.json(), expiry)
+        self.cache.set(cache_key, message.model_dump_json(), expiry)
         self.cache.delete(f"message-list:{message.conversation_id}")  # Invalidate list
 
     def message_list(self, conversation_id: UUID) -> Optional[List[MessageModel]]:
@@ -229,7 +229,7 @@ class CosmosStore(IStore):
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for message list "{conversation_id}"')
                 return [
-                    MessageModel.parse_raw(raw)
+                    MessageModel.model_validate_json(raw)
                     for _, raw in (self.cache.hget(cache_key) or {}).items()
                 ]
         except ValidationError as e:
@@ -248,7 +248,7 @@ class CosmosStore(IStore):
             except ValidationError as e:
                 _logger.warn(f'Error parsing message, "{e}"')
         # Update cache
-        self.cache.hset(cache_key, {str(m.id): m.json() for m in messages})
+        self.cache.hset(cache_key, {str(m.id): m.model_dump_json() for m in messages})
         return messages or None
 
     def usage_set(self, usage: UsageModel) -> None:
