@@ -1,6 +1,6 @@
 locals {
   tags = {
-    app     = "Private GPT"
+    app     = "private-gpt"
     sources = "https://github.com/clemlesne/private-gpt"
   }
 }
@@ -17,7 +17,7 @@ resource "azurerm_user_assigned_identity" "identity" {
 
 resource "azuread_application" "this" {
   description      = "Deploy smart and secure conversational agents for your employees, using Azure. Able to use both private and public data."
-  display_name     = "Private GPT (${var.resourcePrefix})"
+  display_name     = "${var.endUserAppName} (${var.resourcePrefix})"
   logo_image       = filebase64("${path.root}/../../logo-512.png")
   owners           = [data.azurerm_client_config.current.object_id]
   sign_in_audience = "AzureADandPersonalMicrosoftAccount"
@@ -345,6 +345,11 @@ resource "azurerm_container_app" "conversation_ui" {
       }
 
       env {
+        name  = "END_USER_APP_NAME"
+        value = replace(var.endUserAppName, "'", "\\'") # Nginx variables are located inside single quotes
+      }
+
+      env {
         name  = "API_HOST"
         value = "https://conversation-api.${azurerm_container_app_environment.this.default_domain}"
       }
@@ -406,12 +411,12 @@ resource "azurerm_container_app" "conversation_api" {
 
       liveness_probe {
         failure_count_threshold = 6
-        initial_delay    = 15
-        interval_seconds = 5
-        path             = "/health/liveness"
-        port             = 8080
-        timeout          = 5
-        transport        = "HTTP"
+        initial_delay           = 15
+        interval_seconds        = 5
+        path                    = "/health/liveness"
+        port                    = 8080
+        timeout                 = 5
+        transport               = "HTTP"
       }
 
       # TODO: Create a GitHub issue to add "initial_delay"
@@ -462,7 +467,7 @@ resource "azurerm_container_app" "conversation_api" {
           monitoring = {
             logging = {
               app_level = "DEBUG"
-              sys_level = "WARN"
+              sys_level = "DEBUG"
             }
             azure_app_insights = {
               connection_str = azurerm_application_insights.this.connection_string

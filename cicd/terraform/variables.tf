@@ -8,6 +8,11 @@ variable "resourcePrefix" {
   }
 }
 
+variable "endUserAppName" {
+  default = "Private GPT"
+  type    = string
+}
+
 variable "appVersion" {
   default = "main"
   type    = string
