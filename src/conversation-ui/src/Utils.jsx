@@ -5,7 +5,7 @@ import axiosRetry from "axios-retry";
 const userLang = navigator.language || navigator.userLanguage;
 
 const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_HOST,
 });
 axiosRetry(client, {
   retries: 11, // 11 retries + 1 attempt = 12 requests

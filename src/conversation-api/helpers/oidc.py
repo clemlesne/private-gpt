@@ -9,7 +9,7 @@ import logging
 
 _logger = build_logger(__name__)
 OIDC_ALGORITHMS: List[str] = CONFIG.oidc.algorithms
-OIDC_API_AUDIENCE = CONFIG.oidc.api_audience
+OIDC_AUDIENCE = CONFIG.oidc.api_audience
 OIDC_ISSUERS: List[str] = CONFIG.oidc.issuers
 OIDC_JWKS = CONFIG.oidc.jwks
 
@@ -42,7 +42,7 @@ class VerifyToken:
                 payload = jwt.decode(
                     self.token,
                     algorithms=OIDC_ALGORITHMS,
-                    audience=OIDC_API_AUDIENCE,
+                    audience=OIDC_AUDIENCE,
                     issuer=issuer,
                     key=self.signing_key.key,
                     options={"require": ["exp", "iss", "sub"]},

@@ -52,7 +52,7 @@ spec:
               mountPath: /app/config.yaml
               subPath: config.yaml
             - name: tmp
-              mountPath: /app/tmp
+              mountPath: /tmp
           env:
             - name: ACS_API_TOKEN
               valueFrom:
@@ -60,7 +60,7 @@ spec:
                   name: {{ include "private-gpt.fullname" . }}-conversation-api
                   key: ACS_API_TOKEN
             - name: TMPDIR
-              value: /app/tmp
+              value: /tmp
       volumes:
         # Store app configuration
         - name: config
