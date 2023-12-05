@@ -92,7 +92,7 @@ class OpenAI:
         openai_kwargs = {
             "api_version": "2023-05-15",  # Latest stable as of Nov 30 2023
             "azure_ad_token": AZ_TOKEN_PROVIDER(),
-            "azure_endpoint": CONFIG.ai.openai.endpoint,
+            "azure_endpoint": str(CONFIG.ai.openai.endpoint),
             "max_retries": 10,  # Catch 429 Too Many Requests
             "request_timeout": 30,
         }
@@ -132,7 +132,7 @@ class OpenAI:
             top_k_results=10,  # wikipedia, arxiv
             openweathermap_api_key=CONFIG.tools.open_weather_map.api_key.get_secret_value(),  # openweathermap-api
             news_api_key=CONFIG.tools.news.api_key.get_secret_value(),  # news-api
-            bing_search_url=CONFIG.tools.bing.search_url,  # bing-search
+            bing_search_url=str(CONFIG.tools.bing.search_url),  # bing-search
             bing_subscription_key=CONFIG.tools.bing.subscription_key.get_secret_value(),  # bing-search
             listen_api_key=CONFIG.tools.listen_notes.api_key.get_secret_value(),  # podcast-api
             llm=self.chat,  # llm-math
@@ -143,7 +143,7 @@ class OpenAI:
             PubmedQueryRun(),
             YouTubeSearchTool(),
             AzureCogsFormRecognizerTool(
-                azure_cogs_endpoint=CONFIG.tools.azure_form_recognizer.api_base,
+                azure_cogs_endpoint=str(CONFIG.tools.azure_form_recognizer.api_base),
                 azure_cogs_key=CONFIG.tools.azure_form_recognizer.api_token.get_secret_value(),
             ),  # type: ignore
             GooglePlacesTool(

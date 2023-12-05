@@ -17,7 +17,7 @@ acs_client = azure_cs.ContentSafetyClient(
     credential=AzureKeyCredential(
         CONFIG.ai.azure_content_safety.api_token.get_secret_value()
     ),
-    endpoint=CONFIG.ai.azure_content_safety.api_base,
+    endpoint=str(CONFIG.ai.azure_content_safety.api_base),
 )
 
 

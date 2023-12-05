@@ -1,14 +1,14 @@
 from typing import List
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, HttpUrl, SecretStr
 
 
 class AzureFormRecognizerModel(BaseModel):
-    api_base: str
+    api_base: HttpUrl
     api_token: SecretStr
 
 
 class BingModel(BaseModel):
-    search_url: str
+    search_url: HttpUrl
     subscription_key: SecretStr
 
 

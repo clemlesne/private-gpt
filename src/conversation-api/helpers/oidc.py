@@ -8,9 +8,9 @@ import logging
 
 
 _logger = build_logger(__name__)
-OIDC_ALGORITHMS: List[str] = CONFIG.oidc.algorithms
+OIDC_ALGORITHMS = CONFIG.oidc.algorithms
 OIDC_AUDIENCE = CONFIG.oidc.api_audience
-OIDC_ISSUERS: List[str] = CONFIG.oidc.issuers
+OIDC_ISSUERS = [str(issuer) for issuer in CONFIG.oidc.issuers]
 OIDC_JWKS = CONFIG.oidc.jwks
 
 

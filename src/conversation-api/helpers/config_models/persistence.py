@@ -3,7 +3,7 @@ from persistence.icache import CacheImplementation
 from persistence.isearch import SearchImplementation
 from persistence.istore import StoreImplementation
 from persistence.istream import StreamImplementation
-from pydantic import BaseModel, SecretStr
+from pydantic import BaseModel, HttpUrl, SecretStr
 from typing import Optional, TypeVar, Generic, Union
 
 
@@ -36,7 +36,7 @@ class RedisModel(BaseModel):
 class CosmosModel(BaseModel):
     consistency: Optional[str] = None
     database: str
-    url: str
+    url: HttpUrl
 
 
 class PersistenceModel(BaseModel):

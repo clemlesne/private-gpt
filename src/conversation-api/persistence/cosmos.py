@@ -31,7 +31,7 @@ class CosmosStore(IStore):
             connection_timeout=5,
             consistency_level=config.consistency,
             credential=AZ_CREDENTIAL,
-            url=config.url,
+            url=str(config.url),
         )
         database = client.get_database_client(config.database)
 
