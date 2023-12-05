@@ -350,6 +350,11 @@ resource "azurerm_container_app" "conversation_ui" {
       }
 
       env {
+        name  = "END_USER_APP_ICON"
+        value = var.endUserAppIcon
+      }
+
+      env {
         name  = "API_HOST"
         value = "https://conversation-api.${azurerm_container_app_environment.this.default_domain}"
       }

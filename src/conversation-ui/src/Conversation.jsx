@@ -328,7 +328,7 @@ function Conversation() {
       {conversation.messages.length == 0 && (
         <div className="conversation__empty">
           <div className="conversation__empty__header">
-            <img src="/favicon.ico" alt="Website favicon" />
+            <span>{import.meta.env.VITE_END_USER_APP_ICON}</span>
             <big>
               Welcome to{" "}
               {import.meta.env.VITE_END_USER_APP_NAME.replace("\\'", "'")}

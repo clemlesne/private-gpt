@@ -22,6 +22,7 @@ server {
 
     sub_filter '%VITE_API_HOST%' '${API_HOST}';
     sub_filter '%VITE_APP_INSIGHTS_CONNECTION_STR%' '${AZURE_APP_INSIGHTS_CONNECTION_STR}';
+    sub_filter '%VITE_END_USER_APP_ICON%' '${END_USER_APP_ICON}';
     sub_filter '%VITE_END_USER_APP_NAME%' '${END_USER_APP_NAME}';
     sub_filter '%VITE_OIDC_AUDIENCE%' '${OIDC_AUDIENCE}';
 

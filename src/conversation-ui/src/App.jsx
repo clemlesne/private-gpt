@@ -130,6 +130,9 @@ function App() {
   );
   const version = import.meta.env.VITE_VERSION || "0.0.0-unknown";
   const description = `${endUserAppName} is a personal assitant using your enterprise data.`;
+  const icon = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">${
+    import.meta.env.VITE_END_USER_APP_ICON
+  }</text></svg>`;
 
   return (
     <>
@@ -139,6 +142,12 @@ function App() {
           {
             name: "description",
             content: description,
+          },
+        ]}
+        link={[
+          {
+            rel: "icon",
+            href: icon,
           },
         ]}
         script={[

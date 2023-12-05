@@ -47,8 +47,8 @@
       flex-direction: column;
       text-align: center;
 
-      > img {
-        height: calc(var(--font-size) * 8);
+      > span {
+        font-size: calc(var(--font-size) * 8);
       }
     }
 

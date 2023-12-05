@@ -13,6 +13,11 @@ variable "endUserAppName" {
   type    = string
 }
 
+variable "endUserAppIcon" {
+  default = "🔒"
+  type    = string
+}
+
 variable "appVersion" {
   default = "main"
   type    = string
