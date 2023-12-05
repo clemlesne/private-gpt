@@ -325,7 +325,6 @@ class OpenAI:
         # Run
         agent = initialize_agent(
             agent_kwargs={
-                "verbose": True,
                 "input_variables": [
                     "agent_scratchpad",
                     "chat_history",
