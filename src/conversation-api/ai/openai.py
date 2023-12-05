@@ -139,6 +139,7 @@ class OpenAI:
             bing_subscription_key=CONFIG.tools.bing.subscription_key.get_secret_value(),  # bing-search
             listen_api_key=CONFIG.tools.listen_notes.api_key.get_secret_value(),  # podcast-api
             llm=self._chat,  # llm-math
+            load_all_available_meta=True,  # arxiv
             news_api_key=CONFIG.tools.news.api_key.get_secret_value(),  # news-api
             openweathermap_api_key=CONFIG.tools.open_weather_map.api_key.get_secret_value(),  # openweathermap-api
             tmdb_bearer_token=CONFIG.tools.tmdb.bearer_token.get_secret_value(),  # tmdb-api
