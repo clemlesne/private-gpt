@@ -12,7 +12,12 @@ from langchain.embeddings import AzureOpenAIEmbeddings
 from langchain.memory import ConversationSummaryMemory, ReadOnlySharedMemory
 from langchain.prompts import PromptTemplate
 from langchain.schema import BaseChatMessageHistory, AgentAction
-from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
+from langchain.schema.messages import (
+    AIMessage,
+    BaseMessage,
+    HumanMessage,
+    SystemMessage,
+)
 from langchain.tools import YouTubeSearchTool
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
 from langchain.tools.base import Tool, BaseTool, ToolException
@@ -49,7 +54,7 @@ AZ_TOKEN_PROVIDER = get_bearer_token_provider(
     AZ_CREDENTIAL, "https://cognitiveservices.azure.com/.default"
 )
 
-CUSTOM_PREFIX = f"""
+PREFIX_MESSAGE = f"""
 Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics.
 
 Today, we are the {datetime.utcnow()}.
@@ -308,8 +313,8 @@ class OpenAI:
         ]
 
         # Setup personalized prompt
-        prefix = (
-            CUSTOM_PREFIX
+        system_message = (
+            PREFIX_MESSAGE
             + "\n\n"
             + textwrap.dedent(
                 f"""
@@ -333,7 +338,7 @@ class OpenAI:
                     "input",
                     "language",
                 ],
-                "system_message": prefix,
+                "system_message": SystemMessage(content=system_message),
             },
             agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,  # TODO: Test using OPENAI_MULTI_FUNCTIONS, but fails to read memory
             # early_stopping_method="generate",  # Fix in progress, see: https://github.com/langchain-ai/langchain/issues/8249#issuecomment-1651074268
