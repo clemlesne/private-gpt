@@ -137,6 +137,7 @@ class OpenAI:
             ],
             bing_search_url=str(CONFIG.tools.bing.search_url),  # bing-search
             bing_subscription_key=CONFIG.tools.bing.subscription_key.get_secret_value(),  # bing-search
+            lang="en",  # wikipedia
             listen_api_key=CONFIG.tools.listen_notes.api_key.get_secret_value(),  # podcast-api
             llm=self._chat,  # llm-math
             load_all_available_meta=True,  # arxiv
