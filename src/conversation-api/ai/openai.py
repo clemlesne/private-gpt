@@ -76,18 +76,18 @@ os.environ["GPLACES_API_KEY"] = CONFIG.tools.google_places.api_key.get_secret_va
 
 class OpenAI:
     _loop: asyncio.AbstractEventLoop
-    chat: AzureChatOpenAI
-    gpt_max_input_tokens: int
+    _chat: AzureChatOpenAI
+    _gpt_max_input_tokens: int
     search: ISearch
-    store: IStore
-    tools: Sequence[BaseTool]
+    _store: IStore
+    _tools: List[BaseTool] = []
 
     def __init__(self, store: IStore):
         self._loop = asyncio.get_running_loop()
-        self.store = store
+        self._store = store
 
         # Misc
-        self.gpt_max_input_tokens = CONFIG.ai.openai.gpt_max_input_tokens
+        self._gpt_max_input_tokens = CONFIG.ai.openai.gpt_max_input_tokens
         # TODO: Use azure_ad_token_provider instead of api_key, when it'll be debuged (https://github.com/langchain-ai/langchain/issues/14069)
         openai_kwargs = {
             "api_version": "2023-05-15",  # Latest stable as of Nov 30 2023
@@ -98,7 +98,7 @@ class OpenAI:
         }
 
         # Init chat
-        self.chat = AzureChatOpenAI(
+        self._chat = AzureChatOpenAI(
             azure_deployment=CONFIG.ai.openai.gpt_deployment,
             model=CONFIG.ai.openai.gpt_model,
             streaming=True,
@@ -117,8 +117,13 @@ class OpenAI:
         # Setup token refresh
         self._loop.create_task(self._refresh_ad_token())
 
-        # Init tools
-        self.tools = load_tools(
+        # Setup tools
+        self._init_default_tools()
+        self._init_custom_tools()
+        self._init_cognitive_search_tools()
+
+    def _init_default_tools(self):
+        self._tools += load_tools(
             [
                 "arxiv",  # Search scholarly articles with Arxiv
                 "bing-search",  # Search the web with Bing
@@ -129,17 +134,19 @@ class OpenAI:
                 "tmdb-api",  # Search movies with TMDB
                 "wikipedia",  # Search general articles with Wikipedia
             ],
-            top_k_results=10,  # wikipedia, arxiv
-            openweathermap_api_key=CONFIG.tools.open_weather_map.api_key.get_secret_value(),  # openweathermap-api
-            news_api_key=CONFIG.tools.news.api_key.get_secret_value(),  # news-api
             bing_search_url=str(CONFIG.tools.bing.search_url),  # bing-search
             bing_subscription_key=CONFIG.tools.bing.subscription_key.get_secret_value(),  # bing-search
             listen_api_key=CONFIG.tools.listen_notes.api_key.get_secret_value(),  # podcast-api
-            llm=self.chat,  # llm-math
+            llm=self._chat,  # llm-math
+            news_api_key=CONFIG.tools.news.api_key.get_secret_value(),  # news-api
+            openweathermap_api_key=CONFIG.tools.open_weather_map.api_key.get_secret_value(),  # openweathermap-api
             tmdb_bearer_token=CONFIG.tools.tmdb.bearer_token.get_secret_value(),  # tmdb-api
+            top_k_results=10,  # wikipedia, arxiv
         )
+
+    def _init_custom_tools(self):
         req_tool = RequestsGetTool(requests_wrapper=TextRequestsWrapper())
-        self.tools += [
+        self._tools += [
             PubmedQueryRun(),
             YouTubeSearchTool(),
             AzureCogsFormRecognizerTool(
@@ -154,23 +161,23 @@ class OpenAI:
                 func=lambda *args, **kwargs: (
                     sanitize(try_or_none(req_tool.run, *args, **kwargs)) or str()
                 )[
-                    : int(self.gpt_max_input_tokens)
+                    : int(self._gpt_max_input_tokens)
                 ],  # Tokens count is not the same as characters, but it's a sufficient approximation
                 name=req_tool.name,
             ),
             Tool(
                 description="Useful for when you need to generate ideas, write articles, search new point of views. If the result of this function is similar to the previous one, do not use it. Input should be a string, representing the idea. The output will be a text describing the idea.",
-                func=lambda q: self.chat.predict(q),
+                func=lambda q: self._chat.predict(q),
                 name="imagination",
             ),
             Tool(
                 description="Useful for when you need to summarize a text. Input should be a string, representing the text to summarize. The output will be a text describing the text.",
-                func=lambda q: load_summarize_chain(self.chat).run(q),
+                func=lambda q: load_summarize_chain(self._chat).run(q),
                 name="summarize",
             ),
         ]
 
-        # Init Azure AI Search
+    def _init_cognitive_search_tools(self):
         azure_cognitive_searches = CONFIG.tools.azure_cognitive_search
         for instance in azure_cognitive_searches:
             _logger.debug(f"Loading Azure Cognitive Search custom tool: {instance}")
@@ -214,11 +221,11 @@ class OpenAI:
                         )
                     ]
                 )[
-                    : int(self.gpt_max_input_tokens)
+                    : int(self._gpt_max_input_tokens)
                 ],  # Tokens count is not the same as characters, but it's a sufficient approximation
                 name=f"{instance.displayed_name} (Azure Cognitive Search)",
             )
-            self.tools.append(tool)
+            self._tools.append(tool)
 
     def vector_from_text(self, prompt: str) -> List[float]:
         _logger.debug(f"Getting vector for text: {prompt}")
@@ -239,8 +246,8 @@ class OpenAI:
         _logger.debug(f"Asking completion with prompt: {prompt}")
 
         with get_openai_callback() as cb:
-            message_callback(self.chat.predict(prompt))
-            usage_callback(cb.total_tokens, self.chat.model_name)
+            message_callback(self._chat.predict(prompt))
+            usage_callback(cb.total_tokens, self._chat.model_name)
 
     @retry(
         retry=(
@@ -266,13 +273,13 @@ class OpenAI:
         message_history = CustomHistory(
             conversation_id=conversation.id,
             secret=message.secret,
-            store=self.store,
+            store=self._store,
             user_id=current_user.id,
         )
         # Also can use ConversationSummaryBufferMemory, which can be used to summarize the conversation if it is too long
         memory = ConversationSummaryMemory(
             chat_memory=message_history,
-            llm=self.chat,
+            llm=self._chat,
             memory_key="chat_history",
             return_messages=True,
         )
@@ -281,7 +288,7 @@ class OpenAI:
 
         # Setup personalized tools
         tools = [
-            *self.tools,
+            *self._tools,
             Tool(
                 func=lambda q: str(
                     [
@@ -291,7 +298,7 @@ class OpenAI:
                         ).answers
                     ]
                 )[
-                    : int(self.gpt_max_input_tokens)
+                    : int(self._gpt_max_input_tokens)
                 ],  # Tokens count is not the same as characters, but it's a sufficient approximation
                 description="Useful for when you need past user messages, from other conversations. Input should be a string, representing the search query written in semantic language. The output will be a list of 5 messages as JSON objects.",
                 name="messages_search",
@@ -330,7 +337,7 @@ class OpenAI:
             agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,  # TODO: Test using OPENAI_MULTI_FUNCTIONS, but fails to read memory
             # early_stopping_method="generate",  # Fix in progress, see: https://github.com/langchain-ai/langchain/issues/8249#issuecomment-1651074268
             handle_parsing_errors=True,  # Catch tool parsing errors
-            llm=self.chat,
+            llm=self._chat,
             max_execution_time=60,  # Timeout
             max_iterations=15,
             memory=readonly_memory,
@@ -356,7 +363,7 @@ class OpenAI:
 
             _logger.debug(f"Agent response: {res}")
             message_callback(StreamMessageModel(content=res))
-            usage_callback(cb.total_tokens, self.chat.model_name)
+            usage_callback(cb.total_tokens, self._chat.model_name)
 
     async def _refresh_ad_token(self):
         """
@@ -368,7 +375,7 @@ class OpenAI:
         """
         while True:
             ad_token = AZ_TOKEN_PROVIDER()
-            self.chat.azure_ad_token = ad_token
+            self._chat.azure_ad_token = ad_token
             self.embeddings.azure_ad_token = ad_token
             await asyncio.sleep(60 * 20)
 
