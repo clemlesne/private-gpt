@@ -1,16 +1,20 @@
 from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from datetime import datetime
 from helpers.config import CONFIG
+from helpers.config_models.tools import OpenApiModel
 from helpers.func import try_or_none, sanitize
 from helpers.logging import build_logger
 from langchain_core.globals import set_verbose as set_langchain_verbose
 from langchain.agents import AgentType, initialize_agent, load_tools
+from langchain.agents.agent_toolkits.openapi import planner
+from langchain.agents.agent_toolkits.openapi.spec import reduce_openapi_spec
 from langchain.callbacks import get_openai_callback
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import AzureChatOpenAI
 from langchain.embeddings import AzureOpenAIEmbeddings
 from langchain.memory import ConversationSummaryMemory, ReadOnlySharedMemory
 from langchain.prompts import PromptTemplate
+from langchain.requests import RequestsWrapper
 from langchain.schema import BaseChatMessageHistory, AgentAction
 from langchain.schema.messages import (
     AIMessage,
@@ -32,6 +36,8 @@ from models.user import UserModel
 from openai import BadRequestError, APIError
 from persistence.isearch import ISearch
 from persistence.istore import IStore
+import requests
+import yaml
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -39,11 +45,11 @@ from tenacity import (
     retry_if_exception_type,
     retry_if_result,
 )
-from typing import Any, Callable, List, Optional, Sequence
+from typing import Any, Callable, List, Sequence
 from uuid import UUID
 import asyncio
-import textwrap
 import os
+import textwrap
 
 
 _logger = build_logger(__name__)
@@ -126,6 +132,7 @@ class OpenAI:
         self._init_default_tools()
         self._init_custom_tools()
         self._init_cognitive_search_tools()
+        self._init_openapi_tools()
 
     def _init_default_tools(self):
         self._tools += load_tools(
@@ -231,6 +238,101 @@ class OpenAI:
                     : int(self._gpt_max_input_tokens)
                 ],  # Tokens count is not the same as characters, but it's a sufficient approximation
                 name=f"{instance.displayed_name} (Azure Cognitive Search)",
+            )
+            self._tools.append(tool)
+
+    def _init_openapi_tools(self):
+        openapis = CONFIG.tools.openapi
+        for instance in openapis:
+            _logger.debug(f"Loading OpenAPI custom tool: {instance}")
+            headers = (
+                {"Authorization": f"Bearer {instance.api_token.get_secret_value()}"}
+                if instance.api_token
+                else {}
+            )
+            raw_schema = yaml.safe_load(
+                requests.get(
+                    headers=headers,
+                    timeout=5,
+                    url=str(instance.schema_yaml_url),
+                ).text
+            )
+            api_spec = reduce_openapi_spec(raw_schema)
+            _logger.debug(f"Reduced OpenAPI schema: {api_spec}")
+            wrapper = RequestsWrapper(headers=headers)
+            tool = planner._create_api_controller_tool(
+                api_spec=api_spec,
+                llm=self._chat,
+                requests_wrapper=wrapper,
+            )
+            tool.name = f"{instance.displayed_name} (OpenAPI)"
+            endpoint_descriptions = [
+                name.replace("{", "{{").replace("}", "}}")
+                + " "
+                + (description or "missing description")
+                for name, description, _ in api_spec.endpoints
+            ]
+            tool.description = textwrap.dedent(
+                f"""
+            Usage: {instance.usage}.
+
+            You should:
+            1) Evaluate whether the user query can be solved by the API documentated below. If no, say why.
+            2) If yes, generate a plan of API calls and say what they are doing step by step.
+            3) If the plan includes a DELETE call, you should always return an ask from the User for authorization first unless the User has specifically asked to delete something.
+
+            Constraints:
+            - You should only use API endpoints documented below ("Endpoints you can use:").
+            - You can only use the DELETE tool if the User has specifically asked to delete something. Otherwise, you should return a request authorization from the User first.
+            - Some user queries can be resolved in a single API call, but some will require several API calls.
+            - The plan will be passed to an API controller that can format it into web requests and return the responses.
+
+            Here are some examples:
+
+            Fake endpoints for examples:
+            GET /user to get information about the current user
+            GET /products/search search across products
+            POST /users/{{id}}/cart to add products to a user's cart
+            PATCH /users/{{id}}/cart to update a user's cart
+            PUT /users/{{id}}/coupon to apply idempotent coupon to a user's cart
+            DELETE /users/{{id}}/cart to delete a user's cart
+
+            User query: tell me a joke
+            Plan: Sorry, this API's domain is shopping, not comedy.
+
+            User query: I want to buy a couch
+            Plan:
+            1. GET /products with a query param to search for couches
+            2. GET /user to find the user's id
+            3. POST /users/{{id}}/cart to add a couch to the user's cart
+
+            User query: I want to add a lamp to my cart
+            Plan:
+            1. GET /products with a query param to search for lamps
+            2. GET /user to find the user's id
+            3. PATCH /users/{{id}}/cart to add a lamp to the user's cart
+
+            User query: I want to add a coupon to my cart
+            Plan:
+            1. GET /user to find the user's id
+            2. PUT /users/{{id}}/coupon to apply the coupon
+
+            User query: I want to delete my cart
+            Plan:
+            1. GET /user to find the user's id
+            2. DELETE required. Did user specify DELETE or previously authorize? Yes, proceed.
+            3. DELETE /users/{{id}}/cart to delete the user's cart
+
+            User query: I want to start a new cart
+            Plan:
+            1. GET /user to find the user's id
+            2. DELETE required. Did user specify DELETE or previously authorize? No, ask for authorization.
+            3. Are you sure you want to delete your cart?
+
+            Do not reference any of the examples above. Here are endpoints you can use:
+
+            {"- " + "- ".join(endpoint_descriptions)}
+            """
             )
             self._tools.append(tool)
 

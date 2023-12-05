@@ -86,3 +86,4 @@ data:
         # No tools configured
         []
         {{- end }}
+      openapi: []

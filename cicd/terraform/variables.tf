@@ -107,6 +107,16 @@ variable "azureCognitiveSearch" {
   }))
 }
 
+variable "openApi" {
+  sensitive = true
+  type = set(object({
+    api_token       = string
+    displayed_name  = string
+    schema_yaml_url = string
+    usage           = string
+  }))
+}
+
 variable "ghcrUsername" {
   type = string
 }

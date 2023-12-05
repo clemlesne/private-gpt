@@ -1,5 +1,12 @@
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, HttpUrl, SecretStr
+
+
+class OpenApiModel(BaseModel):
+    api_token: Optional[SecretStr] = None
+    displayed_name: str
+    schema_yaml_url: HttpUrl
+    usage: str
 
 
 class AzureFormRecognizerModel(BaseModel):
@@ -51,4 +58,5 @@ class ToolsModel(BaseModel):
     listen_notes: ListenNotesModel
     news: NewsModel
     open_weather_map: OpenWeatherMapModel
+    openapi: List[OpenApiModel]
     tmdb: TmdbModel

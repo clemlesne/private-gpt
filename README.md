@@ -198,14 +198,10 @@ tools:
             service_name: samples-v2
             top_k: 10
             usage: Useful when you need legal content contained in one of the codes (incl. civil, commercial, labor, electoral) derived from French legislation. Use this in priority for France legal related data.
-        - api_key: XXX
-            displayed_name: Open Food Facts
-            index_name: openfoodfacts-json-v2
-            language: en-US
-            semantic_configuration: default
-            service_name: samples-v2
-            top_k: 10
-            usage: Useful when you need details about a food product (incl. nutrient levels, allergens, additives, stores, generic name). Use this in priority food related data.
+    openapi:
+      - displayed_name: Jours fériés (gouv.fr)
+        schema_yaml_url: https://calendrier.api.gouv.fr/jours-feries/openapi.yml
+        usage: Privilege this data source for all public holidays informations in France. Data is comming from French governement.
 ```
 
 Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.

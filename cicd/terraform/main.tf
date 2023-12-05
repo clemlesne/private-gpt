@@ -566,6 +566,14 @@ resource "azurerm_container_app" "conversation_api" {
                 usage                  = service.usage
               }
             ]
+            openapi = [
+              for service in var.openApi : {
+                api_token       = service.api_token
+                displayed_name  = service.displayed_name
+                schema_yaml_url = service.schema_yaml_url
+                usage           = service.usage
+              }
+            ]
           }
         })
       }
