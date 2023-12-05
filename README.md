@@ -127,6 +127,7 @@ oidc:
     issuers:
         [
             "https://login.microsoftonline.com/XXX/v2.0", # Your Azure AD tenant
+            "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0", # Microsoft tenant-owned applications
             "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0", # Xbox, Outlook, etc
         ]
     jwks: https://login.microsoftonline.com/common/discovery/v2.0/keys
