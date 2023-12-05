@@ -18,14 +18,19 @@ import ReactDOM from "react-dom/client";
 import Search from "./Search";
 
 const reactPlugin = new ReactPlugin();
-const appInsights = new ApplicationInsights({
-  config: {
-    connectionString: import.meta.env.VITE_APP_INSIGHTS_CONNECTION_STR,
-    extensions: [reactPlugin],
-    enableAutoRouteTracking: true,
-  },
-});
-appInsights.loadAppInsights();
+
+try {
+  const appInsights = new ApplicationInsights({
+    config: {
+      connectionString: import.meta.env.VITE_APP_INSIGHTS_CONNECTION_STR,
+      extensions: [reactPlugin],
+      enableAutoRouteTracking: true,
+    },
+  });
+  appInsights.loadAppInsights();
+} catch (e) {
+  console.error("Cannot init Azure App Insights", e);
+}
 
 const router = createBrowserRouter([
   {
@@ -43,14 +48,14 @@ const router = createBrowserRouter([
       {
         path: "search",
         element: <Search />,
-      }
+      },
     ],
   },
 ]);
 
 const pcaConfig = {
   auth: {
-    clientId: import.meta.env.VITE_OIDC_CLIENT_ID,
+    clientId: import.meta.env.VITE_OIDC_AUDIENCE,
     navigateToLoginRequestUrl: true, // Go back to the original page after login
     postLogoutRedirectUri: "/", // Go back to the app root after logout
     redirectUri: "/", // Go back to the app root after login

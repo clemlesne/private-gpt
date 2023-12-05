@@ -113,96 +113,99 @@ graph
 
 ### Run locally
 
-Create a local configuration file, a file named `config.toml` at the root of the project. The TOML file can be placed anywhere in the folder or in any parent directory.
+Create a local configuration file, a file named `config.yaml` at the root of the project. The TOML file can be placed anywhere in the folder or in any parent directory.
 
-```toml
-# config.toml
+```yaml
+# config.yaml
 # /!\ All the file values are for example, you must change them
-[api]
-# root_path = "[api-path]"
+api: {}
+    # root_path: API_PATH
 
-[oidc]
-algorithms = ["RS256"]
-api_audience = "[aad_app_id]"
-issuers = ["https://login.microsoftonline.com/[tenant_id]/v2.0"]
-jwks = "https://login.microsoftonline.com/common/discovery/v2.0/keys"
+oidc:
+    algorithms: ["RS256"]
+    api_audience: XXX # Your Azure AD application ID
+    issuers:
+        [
+            "https://login.microsoftonline.com/XXX/v2.0", # Your Azure AD tenant
+            "https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/v2.0", # Microsoft tenant-owned applications
+            "https://login.microsoftonline.com/9188040d-6c67-4c5b-b112-36a304b66dad/v2.0", # Xbox, Outlook, etc
+        ]
+    jwks: https://login.microsoftonline.com/common/discovery/v2.0/keys
 
-[monitoring]
+monitoring:
+    logging:
+        app_level: DEBUG
+        sys_level: WARN
+    azure_app_insights:
+        connection_str: InstrumentationKey=XXX;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com
 
-[monitoring.logging]
-app_level = "DEBUG" # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
-sys_level = "WARN" # Enum: "NOSET", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "CRITICAL"
+persistence:
+    cache:
+        type: redis
+        config:
+            host: localhost
+    search:
+        type: qdrant
+        config:
+            host: localhost
+    store:
+        type: cosmos
+        config:
+            url: https://private-gpt.documents.azure.com:443
+            database: private-gpt
+    stream:
+        type: redis
+        config:
+            host: localhost
 
-[monitoring.azure_app_insights]
-connection_str = "InstrumentationKey=[key];[...]"
+ai:
+    openai:
+        ada_deployment: ada
+        ada_max_input_tokens: 8191
+        ada_model: text-embedding-ada-002
+        endpoint: https://private-gpt-llumwf-openai.openai.azure.com/
+        gpt_deployment: gpt
+        gpt_max_input_tokens: 32768
+        gpt_model: gpt-4-32k
+    azure_content_safety:
+        api_base: https://moaw-dev-clesne-moaw-search-acs.cognitiveservices.azure.com
+        api_token: XXX
+        max_input_str: 1000
 
-[persistence]
-cache = "redis" # Enum: "redis"
-search = "qdrant" # Enum: "qdrant"
-store = "cosmos" # Enum: "cache", "cosmos"
-stream = "redis" # Enum: "redis"
-
-[persistence.qdrant]
-host = "[host]"
-
-[persistence.redis]
-db = 0
-host = "[host]"
-
-[persistence.cosmos]
-# Containers "conversation" (/user_id), "message" (/conversation_id), "user" (/dummy), "usage" (/user_id) must exist
-url = "https://[deployment].documents.azure.com:443"
-database = "[db_name]"
-
-[ai]
-
-[ai.openai]
-ada_deploy_id = "ada"
-ada_max_tokens = 2049
-api_base = "https://[deployment].openai.azure.com"
-gpt_deploy_id = "gpt"
-gpt_max_tokens = 4096
-
-[ai.azure_content_safety]
-api_base = "https://[deployment].cognitiveservices.azure.com"
-api_token = "[api_token]"
-max_length = 1000
-
-[tools]
-
-[tools.azure_form_recognizer]
-api_base = "https://[deployment].cognitiveservices.azure.com"
-api_token = "[api_token]"
-
-[tools.bing]
-search_url = "https://api.bing.microsoft.com/v7.0/search"
-subscription_key = "[api_token]"
-
-[tools.tmdb]
-bearer_token = "[jwt_token]"
-
-[tools.news]
-api_key = "[api_token]"
-
-[tools.listen_notes]
-api_key = "[api_token]"
-
-[tools.open_weather_map]
-api_key = "[api_token]"
-
-[tools.google_places]
-api_key = "[api_token]"
-
-[[tools.azure_cognitive_search]]
-api_key = "[api_token]"
-content_key = "content"
-displayed_name = "My search engine"
-index_name = "[index_name]"
-language = "en-US"
-semantic_configuration = "default"
-service_name = "[service_name]"
-top_k = 10
-usage = "Useful when you need legal content contained in one of the codes (incl. civil, commercial, labor, electoral) derived from French legislation. Use this in priority for legal content in France."
+tools:
+    azure_form_recognizer:
+        api_base: https://private-gpt.cognitiveservices.azure.com
+        api_token: XXX
+    bing:
+        search_url: https://api.bing.microsoft.com/v7.0/search
+        subscription_key: XXX
+    tmdb:
+        bearer_token: XXX
+    news:
+        api_key: XXX
+    listen_notes:
+        api_key: XXX
+    open_weather_map:
+        api_key: XXX
+    google_places:
+        api_key: XXX
+    azure_cognitive_search:
+        - api_key: XXX
+            displayed_name: Légifrance
+            index_name: legifrance-xml
+            language: fr-FR
+            semantic_configuration: default
+            service_name: samples-v2
+            top_k: 10
+            usage: Useful when you need legal content contained in one of the codes (incl. civil, commercial, labor, electoral) derived from French legislation. Use this in priority for France legal related data.
+        - api_key: XXX
+            displayed_name: Open Food Facts
+            index_name: openfoodfacts-json-v2
+            language: en-US
+            semantic_configuration: default
+            service_name: samples-v2
+            top_k: 10
+            usage: Useful when you need details about a food product (incl. nutrient levels, allergens, additives, stores, generic name). Use this in priority food related data.
 ```
 
 Now, you can either run the application as container or with live reload. For development, it is recommended to use live reload. For demo, it is recommended to use the container.

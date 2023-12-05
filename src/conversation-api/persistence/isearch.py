@@ -1,10 +1,10 @@
-from .icache import ICache
-from .istore import IStore
 from abc import ABC, abstractmethod
 from enum import Enum
 from models.message import MessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.search import SearchModel
+from persistence.icache import ICache
+from persistence.istore import IStore
 from uuid import UUID
 
 
@@ -21,7 +21,7 @@ class ISearch(ABC):
         self.store = store
 
     @abstractmethod
-    async def readiness(self) -> ReadinessStatus:
+    async def areadiness(self) -> ReadinessStatus:
         pass
 
     @abstractmethod
@@ -31,5 +31,5 @@ class ISearch(ABC):
         pass
 
     @abstractmethod
-    def message_index(self, message: StoredMessageModel) -> None:
+    async def message_aindex(self, message: StoredMessageModel) -> None:
         pass

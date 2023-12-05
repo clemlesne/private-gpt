@@ -329,7 +329,10 @@ function Conversation() {
         <div className="conversation__empty">
           <div className="conversation__empty__header">
             <img src="/favicon.ico" alt="Website favicon" />
-            <big>Welcome to Private GPT</big>
+            <big>
+              Welcome to{" "}
+              {import.meta.env.VITE_END_USER_APP_NAME.replace("\\'", "'")}
+            </big>
           </div>
           <div className="conversation__empty__doc">
             <div>

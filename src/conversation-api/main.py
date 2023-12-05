@@ -1,19 +1,23 @@
-# Import utils
-from utils import (
-    build_logger,
-    get_config,
-    hash_token,
-    VerifyToken,
-    VERSION,
-)
-
-# Import misc
-from datetime import datetime, timedelta
 from ai.contentsafety import ContentSafety
-from ai.openai import OpenAI, CustomCache
-from fastapi import FastAPI, HTTPException, Response, status, Request, Depends
+from ai.openai import OpenAI
+from langchain.cache import RedisCache as LangchainRedisCache
+from datetime import datetime, timedelta
+from fastapi import (
+    FastAPI,
+    HTTPException,
+    Response,
+    status,
+    Request,
+    Depends,
+    BackgroundTasks,
+)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from helpers.config import CONFIG
+from helpers.logging import build_logger
+from helpers.func import hash_token
+from helpers.oidc import VerifyToken
+from helpers.version import VERSION
 from models.conversation import (
     GetConversationModel,
     ListConversationsModel,
@@ -25,6 +29,7 @@ from models.message import (
     StoredMessageModel,
     StreamMessageModel,
 )
+from langchain.globals import set_llm_cache
 from models.prompt import StoredPromptModel, ListPromptsModel
 from models.readiness import ReadinessModel, ReadinessCheckModel, ReadinessStatus
 from models.search import SearchModel
@@ -41,49 +46,43 @@ from uuid import UUID
 from uuid import uuid4
 import asyncio
 import csv
-import langchain
 
-
-###
-# Init misc
-###
 
 _logger = build_logger(__name__)
-_loop = asyncio.get_running_loop()
 
-###
-# Init persistence
-###
 
 # Cache
-cache_impl = get_config("persistence", "cache", CacheImplementation, required=True)
+cache_config = CONFIG.persistence.cache
 try:
-    if cache_impl == CacheImplementation.REDIS:
-        from persistence.redis import RedisCache
+    if cache_config.type == CacheImplementation.REDIS:
+        from persistence.redis import RedisCache, CACHE_TTL_SECS
 
-        cache = RedisCache()
+        cache = RedisCache(cache_config.config)
+
+        # TODO: Set Redis in other database than default cache
+        # TODO: Compare exact match with semantic caching, keeping in mind that semantic caching takes 150x more time (from 2ms to 300ms), see: https://python.langchain.com/docs/integrations/llms/llm_caching#semantic-cache
+        set_llm_cache(LangchainRedisCache(redis_=cache._client, ttl=CACHE_TTL_SECS))
+        _logger.info(f"Using Redis as Langchain cache backend (ttl={CACHE_TTL_SECS})")
     else:
-        raise ValueError(f"Unknown cache implementation: {cache_impl}")
+        raise ValueError(f"Unknown cache implementation: {cache_config}")
     _logger.info(f'Using "{type(cache).__name__}" as cache backend')
 except Exception as e:
     _logger.error("Failed to initialize cache engine", exc_info=True)
     exit(1)
-# Configure LangChain accordingly
-langchain.llm_cache = CustomCache(cache=cache)
 
 # Store
-store_impl = get_config("persistence", "store", StoreImplementation, required=True)
+store_config = CONFIG.persistence.store
 try:
-    if store_impl == StoreImplementation.COSMOS:
+    if store_config.type == StoreImplementation.COSMOS:
         from persistence.cosmos import CosmosStore
 
-        store = CosmosStore(cache)
-    elif store_impl == StoreImplementation.CACHE:
+        store = CosmosStore(store_config.config, cache)  # type: ignore
+    elif store_config == StoreImplementation.CACHE:
         from persistence.cache import CacheStore
 
         store = CacheStore(cache)
     else:
-        raise ValueError(f"Unknown store implementation: {store_impl}")
+        raise ValueError(f"Unknown store implementation: {store_config}")
     _logger.info(f'Using "{type(store).__name__}" as store backend')
 except Exception as e:
     _logger.error("Failed to initialize store engine", exc_info=True)
@@ -101,14 +100,14 @@ content_safety = ContentSafety()
 ###
 
 # Search
-search_impl = get_config("persistence", "search", SearchImplementation, required=True)
+search_config = CONFIG.persistence.search
 try:
-    if search_impl == SearchImplementation.QDRANT:
+    if search_config.type == SearchImplementation.QDRANT:
         from persistence.qdrant import QdrantSearch
 
-        index = QdrantSearch(store, cache, openai)
+        index = QdrantSearch(search_config.config, store, cache, openai)
     else:
-        raise ValueError(f"Unknown search implementation: {search_impl}")
+        raise ValueError(f"Unknown search implementation: {search_config}")
     _logger.info(f'Using "{type(index).__name__}" as search backend')
 except Exception as e:
     _logger.error("Failed to initialize search engine", exc_info=True)
@@ -117,14 +116,14 @@ except Exception as e:
 openai.search = index
 
 # Stream
-stream_impl = get_config("persistence", "stream", StreamImplementation, required=True)
+stream_config = CONFIG.persistence.stream
 try:
-    if stream_impl == StreamImplementation.REDIS:
+    if stream_config.type == StreamImplementation.REDIS:
         from persistence.redis import RedisStream
 
-        stream = RedisStream()
+        stream = RedisStream(stream_config.config)
     else:
-        raise ValueError(f"Unknown stream implementation: {stream_impl}")
+        raise ValueError(f"Unknown stream implementation: {stream_config}")
     _logger.info(f'Using "{type(stream).__name__}" as stream backend')
 except Exception as e:
     _logger.error("Failed to initialize stream engine", exc_info=True)
@@ -134,7 +133,7 @@ except Exception as e:
 # Init FastAPI
 ###
 
-ROOT_PATH = get_config("api", "root_path", str, default="")
+ROOT_PATH = CONFIG.api.root_path
 _logger.info(f'Using root path "{ROOT_PATH}"')
 
 api = FastAPI(
@@ -238,7 +237,7 @@ async def health_liveness_get() -> None:
 )
 async def health_readiness_get() -> ReadinessModel:
     cache_check, index_check, store_check, stream_check = await asyncio.gather(
-        cache.readiness(), index.readiness(), store.readiness(), stream.readiness()
+        cache.areadiness(), index.areadiness(), store.areadiness(), stream.areadiness()
     )
 
     readiness = ReadinessModel(
@@ -279,7 +278,7 @@ async def get_current_user(
     name = jwt.get("name")
     preferred_username = jwt.get("preferred_username")
 
-    user = store.user_get(sub)
+    user = await store.user_aget(sub)
     if not user:
         user = UserModel(external_id=sub, id=uuid4())
     user_new = user.copy()
@@ -295,7 +294,7 @@ async def get_current_user(
 
     if user_new != user:
         _logger.debug(f"User {user.id} updated")
-        store.user_set(user_new)
+        await store.user_aset(user_new)
         user = user_new
 
     _logger.info(f"User {user.id} ({user.preferred_username}) logged in")
@@ -320,7 +319,7 @@ async def prompt_list(response: Response) -> ListPromptsModel:
 async def conversation_get(
     id: UUID, current_user: Annotated[UserModel, Depends(get_current_user)]
 ) -> GetConversationModel:
-    conversation = store.conversation_get(id, current_user.id)
+    conversation = await store.conversation_aget(id, current_user.id)
     if not conversation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -329,7 +328,7 @@ async def conversation_get(
     messages = store.message_list(conversation.id) or []
     messages.sort(key=lambda x: x.created_at)  # Sort ASC
     return GetConversationModel(
-        **conversation.dict(),
+        **conversation.model_dump(),
         messages=messages,
     )
 
@@ -354,6 +353,7 @@ async def message_post(
     content: str,
     current_user: Annotated[UserModel, Depends(get_current_user)],
     language: str,
+    background_tasks: BackgroundTasks,
     secret: bool = False,
     conversation_id: Optional[UUID] = None,
     prompt_id: Optional[UUID] = None,
@@ -378,7 +378,7 @@ async def message_post(
         _logger.info(
             f"Adding message to conversation (conversation_id={conversation_id})"
         )
-        if not store.conversation_exists(conversation_id, current_user.id):
+        if not await store.conversation_aexists(conversation_id, current_user.id):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
@@ -394,14 +394,14 @@ async def message_post(
 
         # Update conversation
         store.message_set(message)
-        conversation = store.conversation_get(conversation_id, current_user.id)
+        conversation = await store.conversation_aget(conversation_id, current_user.id)
         if not conversation:
             _logger.warn("ACID error: conversation not found after testing existence")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Conversation not found",
             )
-        index.message_index(message)
+        await index.message_aindex(message)
     else:
         # Test prompt ID if provided
         if prompt_id and prompt_id not in AI_PROMPTS:
@@ -425,22 +425,33 @@ async def message_post(
             secret=secret,
         )
         store.message_set(message)
-        index.message_index(message)
+        await index.message_aindex(message)
 
     messages = store.message_list(conversation.id) or []
     messages.sort(key=lambda x: x.created_at)  # Sort ASC
 
     # Execute message completion in background
-    _loop.create_task(
-        _generate_completion_background(conversation, messages, current_user, language)
+    background_tasks.add_task(
+        _generate_completion_background,
+        background_tasks=background_tasks,
+        conversation=conversation,
+        current_user=current_user,
+        language=language,
+        messages=messages,
     )
 
     if conversation.title is None:
         # Execute title completion in background
-        _loop.create_task(_guess_title_background(conversation, messages, language))
+        background_tasks.add_task(
+            _guess_title_background,
+            background_tasks=background_tasks,
+            conversation=conversation,
+            language=language,
+            messages=messages,
+        )
 
     return GetConversationModel(
-        **conversation.dict(),
+        **conversation.model_dump(),
         messages=messages,
     )
 
@@ -456,7 +467,7 @@ async def message_get(token: UUID, req: Request) -> EventSourceResponse:
 async def _read_message_sse(req: Request, message_token: UUID):
     async def clean():
         _logger.info(f"Cleared message cache (message_token={message_token})")
-        await stream.clean(message_token)
+        await stream.aclean(message_token)
 
     async def client_disconnect():
         _logger.info(f"Disconnected from client (via refresh/close) (req={req.client})")
@@ -469,7 +480,7 @@ async def _read_message_sse(req: Request, message_token: UUID):
         return False
 
     try:
-        async for data in stream.get(message_token, loop_func):
+        async for data in stream.aget(message_token, loop_func):
             yield data
     except Exception:
         _logger.exception("Error while streaming message", exc_info=True)
@@ -493,6 +504,7 @@ async def _generate_completion_background(
     messages: List[MessageModel],
     current_user: UserModel,
     language: str,
+    background_tasks: BackgroundTasks,
 ) -> None:
     _logger.info(f"Getting completion for conversation {conversation.id}")
 
@@ -507,7 +519,7 @@ async def _generate_completion_background(
     def on_message(message: StreamMessageModel) -> None:
         _logger.debug(f"Completion result: {message}")
         # Add content to the redis stream cache_key
-        stream.push(message.json(), last_message.token)
+        stream.push(message.model_dump_json(), last_message.token)
         messages.append(message)
 
     def on_usage(total_tokens: int, model_name: str) -> None:
@@ -518,7 +530,7 @@ async def _generate_completion_background(
             tokens=total_tokens,
             user_id=conversation.user_id,
         )
-        store.usage_set(usage)
+        background_tasks.add_task(store.usage_set, usage)
 
     await openai.chain(
         last_message, conversation, current_user, language, on_message, on_usage
@@ -535,7 +547,7 @@ async def _generate_completion_background(
         secret=last_message.secret,
     )
     store.message_set(res_message)
-    index.message_index(res_message)
+    await index.message_aindex(res_message)
 
     # Then, send the end of stream message
     stream.end(last_message.token)
@@ -545,6 +557,7 @@ async def _guess_title_background(
     conversation: StoredConversationModel,
     messages: List[MessageModel],
     language: str,
+    background_tasks: BackgroundTasks,
 ) -> None:
     _logger.info(f"Guessing title for conversation {conversation.id}")
 
@@ -567,7 +580,7 @@ async def _guess_title_background(
             tokens=total_tokens,
             user_id=conversation.user_id,
         )
-        store.usage_set(usage)
+        background_tasks.add_task(store.usage_set, usage)
 
     await openai.completion(last_message, AI_TITLE_PROMPT, language, new_message, usage)
 

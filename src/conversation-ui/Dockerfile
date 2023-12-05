@@ -21,5 +21,6 @@ USER root
 
 RUN rm -rf /usr/share/nginx/html/*
 COPY --from=build --chown=$UID:$UID /app/dist /usr/share/nginx/html
+COPY --chown=$UID:$UID conf/default.conf.template /etc/nginx/templates/default.conf.template
 
 USER $UID

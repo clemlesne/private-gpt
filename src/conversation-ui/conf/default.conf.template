@@ -1,0 +1,40 @@
+server {
+  client_max_body_size 0;
+  listen 8080;
+  server_name conversation-ui;
+  server_tokens off;
+
+  location = /health/liveness {
+    return 204;
+  }
+
+  location / {
+    ###
+    # Use static files
+    ###
+
+    root /usr/share/nginx/html;
+    try_files $uri /index.html;
+
+    ###
+    # Rewrite the API URL
+    ###
+
+    sub_filter '%VITE_API_HOST%' '${API_HOST}';
+    sub_filter '%VITE_APP_INSIGHTS_CONNECTION_STR%' '${AZURE_APP_INSIGHTS_CONNECTION_STR}';
+    sub_filter '%VITE_END_USER_APP_NAME%' '${END_USER_APP_NAME}';
+    sub_filter '%VITE_OIDC_AUDIENCE%' '${OIDC_AUDIENCE}';
+
+    sub_filter_once off;
+    sub_filter_types *;
+
+    ###
+    # Cache static files
+    ###
+
+    location /assets/ {
+      expires max;
+      add_header Cache-Control "public";
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "azureCognitiveSearch": [
+    {
+      "api_key": "XXX",
+      "displayed_name": "Archived reports",
+      "index_name": "archived-reports",
+      "language": "en-us",
+      "semantic_configuration": "default",
+      "service_name": "enterprise-search",
+      "top_k": 10,
+      "usage": "Use this index to search through archived reports. Reports are older than 30 days."
+    }
+  ],
+  "ghcrToken": "XXX",
+  "ghcrUsername": "clemlesne",
+  "googlePlacesApiKey": "XXX",
+  "listenNotesApiKey": "XXX",
+  "location": "westeurope",
+  "newsApiKey": "XXX",
+  "openWeatherMapApiKey": "XXX",
+  "resourcePrefix": "private-gpt-llumwf",
+  "tmdbBearerToken": "XXX"
+}

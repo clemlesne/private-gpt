@@ -1,15 +1,17 @@
-# Import utils
-from utils import build_logger, get_config
-
-# Import misc
-from .icache import ICache
-from .istream import IStream
+from helpers.config_models.persistence import RedisModel
+from helpers.logging import build_logger
 from models.readiness import ReadinessStatus
+from persistence.icache import ICache
+from persistence.istream import IStream
 from redis import Redis
-from redis.retry import Retry
+from redis.asyncio import Redis as AsyncRedis
 from redis.backoff import ExponentialBackoff
 from redis.exceptions import BusyLoadingError, ConnectionError, TimeoutError
+from redis.retry import Retry
+from uuid import UUID, uuid4
+import asyncio
 from typing import (
+    Any,
     AsyncGenerator,
     Awaitable,
     Callable,
@@ -18,32 +20,33 @@ from typing import (
     Optional,
     Union,
 )
-from uuid import UUID, uuid4
-import asyncio
 
 
 _logger = build_logger(__name__)
-
-# Configuration
-DB_HOST = get_config(["persistence", "redis"], "host", str, required=True)
-DB_PORT = 6379
-
-# Redis client
-client = Redis(
-    db=0,
-    host=DB_HOST,
-    port=DB_PORT,
-    retry=Retry(ExponentialBackoff(), 3),
-    retry_on_error=[BusyLoadingError, ConnectionError, TimeoutError],
-)
+CACHE_TTL_SECS = 60 * 60 * 24 * 7  # 1 week
 
 
-async def _readiness() -> ReadinessStatus:
+def _config(config: RedisModel) -> Dict[str, Any]:
+    return {
+        "db": config.db,
+        "host": config.host,
+        "password": config.password.get_secret_value() if config.password else None,
+        "port": config.port,
+        "retry_on_error": [BusyLoadingError, ConnectionError, TimeoutError],
+        "retry": Retry(ExponentialBackoff(), 3),
+        "socket_connect_timeout": 5,
+        "socket_keepalive": True,
+        "ssl": config.ssl,
+        "username": config.username,
+    }
+
+
+async def _readiness(aclient: AsyncRedis) -> ReadinessStatus:
     try:
         tmp_id = str(uuid4())
-        client.set(tmp_id, "dummy")
-        client.get(tmp_id)
-        client.delete(tmp_id)
+        await aclient.set(tmp_id, "dummy")
+        await aclient.get(tmp_id)
+        await aclient.delete(tmp_id)
     except Exception:
         _logger.warn("Error connecting to Redis", exc_info=True)
         return ReadinessStatus.FAIL
@@ -51,15 +54,19 @@ async def _readiness() -> ReadinessStatus:
 
 
 class RedisStream(IStream):
-    STREAM_PREFIX: str = "stream"
+    _PREFIX: str = "stream"
 
-    async def readiness(self) -> ReadinessStatus:
-        return await _readiness()
+    def __init__(self, config: RedisModel):
+        self._client = Redis(**_config(config))
+        self._aclient = AsyncRedis(**_config(config))
+
+    async def areadiness(self) -> ReadinessStatus:
+        return await _readiness(self._aclient)
 
     def push(self, content: str, token: UUID) -> None:
-        client.xadd(self._key(token), {"message": content})
+        self._client.xadd(self._key(token), {"message": content})
 
-    async def get(
+    async def aget(
         self, token: UUID, loop_func: Callable[[], Awaitable[bool]]
     ) -> AsyncGenerator[str, None]:
         stream_id = 0
@@ -75,7 +82,7 @@ class RedisStream(IStream):
                 break
 
             message_key = self._key(token)
-            messages_raw = client.xread(
+            messages_raw = await self._aclient.xread(
                 block=10_000,  # Wait 10 seconds
                 streams={message_key: stream_id},
             )
@@ -97,36 +104,50 @@ class RedisStream(IStream):
         # Send the end of stream message
         yield self.STOPWORD
 
-    async def clean(self, token: UUID) -> None:
-        client.delete(self._key(token))
+    async def aclean(self, token: UUID) -> None:
+        await self._aclient.delete(self._key(token))
 
     def _key(self, token: UUID) -> str:
-        return f"{self.STREAM_PREFIX}:{token.hex}"
+        return f"{self._PREFIX}:{token.hex}"
 
 
 class RedisCache(ICache):
-    CACHE_TTL_SECS = 60 * 60  # 1 hour
+    def __init__(self, config: RedisModel):
+        self._client = Redis(**_config(config))
+        self._aclient = AsyncRedis(**_config(config))
 
-    async def readiness(self) -> ReadinessStatus:
-        return await _readiness()
+    async def areadiness(self) -> ReadinessStatus:
+        return await _readiness(self._aclient)
 
     def exists(self, key: str) -> bool:
-        return client.exists(key) != 0
+        return self._client.exists(key) != 0
+
+    async def aexists(self, key: str) -> bool:
+        return await self._aclient.exists(key) != 0
 
     def get(self, key: str) -> Optional[str]:
-        raw = client.get(key)
+        raw = self._client.get(key)
+        if raw is None:
+            return None
+        return raw.decode("utf-8")
+
+    async def aget(self, key: str) -> Optional[str]:
+        raw = await self._aclient.get(key)
         if raw is None:
             return None
         return raw.decode("utf-8")
 
     def set(self, key: str, value: str, expiry: Optional[int] = None) -> None:
-        client.set(key, value, ex=(expiry or self.CACHE_TTL_SECS))
+        self._client.set(key, value, ex=(expiry or CACHE_TTL_SECS))
+
+    async def aset(self, key: str, value: str, expiry: Optional[int] = None) -> None:
+        await self._aclient.set(key, value, ex=(expiry or CACHE_TTL_SECS))
 
     def delete(self, key: str) -> None:
-        client.delete(key)
+        self._client.delete(key)
 
     def hget(self, key: str) -> Optional[Dict[str, str]]:
-        raw = client.hgetall(key)
+        raw = self._client.hgetall(key)
         if not raw:
             return None
         return {k.decode("utf-8"): v.decode("utf-8") for k, v in raw.items()}
@@ -136,12 +157,12 @@ class RedisCache(ICache):
     ) -> None:
         if not mapping:
             return
-        client.hset(key, mapping=mapping)
+        self._client.hset(key, mapping=mapping)
         # TTL is not supported by hset, so we need to set it manually (https://github.com/redis/redis/issues/167#issuecomment-427708753)
-        client.expire(key, (expiry or self.CACHE_TTL_SECS))
+        self._client.expire(key, (expiry or CACHE_TTL_SECS))
 
     def mget(self, keys: Union[str, List[str]]) -> Dict[str, Optional[str]]:
-        raws = client.mget(keys)
+        raws = self._client.mget(keys)
         if not raws:
             return {}
         return {
@@ -150,7 +171,7 @@ class RedisCache(ICache):
         }
 
     def mset(self, mapping: Dict[str, str], expiry: Optional[int] = None) -> None:
-        client.mset(mapping)
+        self._client.mset(mapping)
         # TTL is not supported by hset, so we need to set it manually (https://github.com/redis/redis/issues/167#issuecomment-427708753)
         for key in mapping.keys():
-            client.expire(key, (expiry or self.CACHE_TTL_SECS))
+            self._client.expire(key, (expiry or CACHE_TTL_SECS))

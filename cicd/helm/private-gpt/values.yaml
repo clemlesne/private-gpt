@@ -43,9 +43,9 @@ ai:
     base: null
     token: null
   openai:
-    ada_deploy_id: ada
+    ada_deployment: ada
     base: null
-    gpt_deploy_id: gpt
+    gpt_deployment: gpt
 
 tools:
   azure_form_recognizer:
@@ -67,7 +67,6 @@ tools:
   azure_cognitive_search:
     []
     # - api_key: xxx
-    #   content_key: content
     #   displayed_name: Légifrance
     #   index_name: legifrance-xml
     #   service_name: samples-v2

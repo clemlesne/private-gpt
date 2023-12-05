@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from uuid import UUID
 from models.readiness import ReadinessStatus
 from typing import Dict, List, Optional, Union
 
@@ -11,7 +10,7 @@ class CacheImplementation(str, Enum):
 
 class ICache(ABC):
     @abstractmethod
-    async def readiness(self) -> ReadinessStatus:
+    async def areadiness(self) -> ReadinessStatus:
         pass
 
     @abstractmethod
@@ -19,11 +18,23 @@ class ICache(ABC):
         pass
 
     @abstractmethod
+    async def aexists(self, key: str) -> bool:
+        pass
+
+    @abstractmethod
     def get(self, key: str) -> Optional[str]:
         pass
 
     @abstractmethod
+    async def aget(self, key: str) -> Optional[str]:
+        pass
+
+    @abstractmethod
     def set(self, key: str, value: str, expiry: Optional[int] = None) -> None:
+        pass
+
+    @abstractmethod
+    async def aset(self, key: str, value: str, expiry: Optional[int] = None) -> None:
         pass
 
     @abstractmethod

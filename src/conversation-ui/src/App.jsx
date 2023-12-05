@@ -124,30 +124,43 @@ function App() {
     [headerOpen, setHeaderOpen]
   );
 
+  const endUserAppName = import.meta.env.VITE_END_USER_APP_NAME.replace(
+    "\\'",
+    "'"
+  );
+  const version = import.meta.env.VITE_VERSION || "0.0.0-unknown";
+  const description = `${endUserAppName} is a personal assitant using your enterprise data.`;
+
   return (
     <>
       <Helmet
+        title={endUserAppName}
+        meta={[
+          {
+            name: "description",
+            content: description,
+          },
+        ]}
         script={[
           helmetJsonLdProp({
             "@context": "https://schema.org",
             "@type": "WebApplication",
-            alternateName: "Private ChatGPT",
+            alternateName: "Private AI Assistant",
             applicationCategory: "Communication",
             applicationSubCategory: "Chat",
             browserRequirements: "Requires JavaScript, HTML5, CSS3.",
             countryOfOrigin: "France",
-            description:
-              "Private GPT is a local version of Chat GPT, using Azure OpenAI",
+            description: description,
             image: "/assets/fluentui-emoji-cat.svg",
             inLanguage: "en-US",
             isAccessibleForFree: true,
             learningResourceType: "workshop",
             license:
               "https://github.com/clemlesne/private-gpt/blob/main/LICENSE",
-            name: "Private GPT",
+            name: endUserAppName,
             releaseNotes: "https://github.com/clemlesne/private-gpt/releases",
             typicalAgeRange: "12-",
-            version: (import.meta.env.VITE_VERSION || "0.0.0-unknown"),
+            version: version,
             sourceOrganization: {
               "@type": "Organization",
               name: "Microsoft",

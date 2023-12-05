@@ -38,7 +38,6 @@ tools:
     api_key: xxx
   azure_cognitive_search:
     - api_key: xxx
-      content_key: xxx
       displayed_name: xxx
       index_name: xxx
       service_name: xxx
