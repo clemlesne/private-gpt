@@ -1,6 +1,6 @@
-from .message import MessageModel
-from .prompt import StoredPromptModel, BasePromptModel
 from datetime import datetime
+from models.message import MessageModel
+from models.prompt import StoredPromptModel, BasePromptModel
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from uuid import UUID, uuid4

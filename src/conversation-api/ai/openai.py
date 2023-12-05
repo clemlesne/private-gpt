@@ -1,18 +1,17 @@
-# Import utils
-from utils import build_logger, get_config, AZ_CREDENTIAL, try_or_none, sanitize
-
-# Import misc
+from azure.identity import DefaultAzureCredential, get_bearer_token_provider
 from datetime import datetime
-from langchain import PromptTemplate
+from helpers.config import CONFIG
+from helpers.func import try_or_none, sanitize
+from helpers.logging import build_logger
+from langchain_core.globals import set_verbose as set_langchain_verbose
 from langchain.agents import AgentType, initialize_agent, load_tools
 from langchain.callbacks import get_openai_callback
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import AzureChatOpenAI
-from langchain.embeddings import OpenAIEmbeddings
+from langchain.embeddings import AzureOpenAIEmbeddings
 from langchain.memory import ConversationBufferMemory, ReadOnlySharedMemory
-from langchain.retrievers import AzureCognitiveSearchRetriever
-from langchain.schema import BaseChatMessageHistory, ChatGeneration, AgentAction
-from langchain.schema.cache import BaseCache
+from langchain.prompts import PromptTemplate
+from langchain.schema import BaseChatMessageHistory, AgentAction
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
 from langchain.tools import YouTubeSearchTool, PubmedQueryRun
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
@@ -20,12 +19,12 @@ from langchain.tools.base import Tool, BaseTool, ToolException
 from langchain.tools.google_places import GooglePlacesTool
 from langchain.tools.requests.tool import RequestsGetTool
 from langchain.utilities.requests import TextRequestsWrapper
+from langchain.vectorstores.azuresearch import AzureSearch
 from models.conversation import StoredConversationModel
 from models.message import MessageRole
 from models.message import StoredMessageModel, MessageModel, StreamMessageModel
 from models.user import UserModel
-from openai.error import InvalidRequestError, APIError
-from persistence.icache import ICache
+from openai import BadRequestError, APIError
 from persistence.isearch import ISearch
 from persistence.istore import IStore
 from tenacity import (
@@ -35,19 +34,20 @@ from tenacity import (
     retry_if_exception_type,
     retry_if_result,
 )
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from typing import Any, Callable, List, Optional, Sequence
 from uuid import UUID
-import urllib.parse
 import asyncio
 import textwrap
 import os
 
 
-###
-# Init misc
-###
-
 _logger = build_logger(__name__)
+set_langchain_verbose(True)  # TODO: Make this dynamic based on debug level
+
+AZ_CREDENTIAL = DefaultAzureCredential()
+AZ_TOKEN_PROVIDER = get_bearer_token_provider(
+    AZ_CREDENTIAL, "https://cognitiveservices.azure.com/.default"
+)
 
 CUSTOM_PREFIX = f"""
 Assistant is designed to be able to assist with a wide range of tasks, from answering simple questions to providing in-depth explanations and discussions on a wide range of topics.
@@ -71,15 +71,13 @@ Only in its final answer, Assistant MUST:
 # Init auth for tools
 ###
 
-os.environ["GPLACES_API_KEY"] = get_config(
-    ["tools", "google_places"], "api_key", str, required=True
-)
+os.environ["GPLACES_API_KEY"] = CONFIG.tools.google_places.api_key.get_secret_value()
 
 
 class OpenAI:
     _loop: asyncio.AbstractEventLoop
     chat: AzureChatOpenAI
-    gpt_max_tokens: int
+    gpt_max_input_tokens: int
     search: ISearch
     store: IStore
     tools: Sequence[BaseTool]
@@ -88,34 +86,38 @@ class OpenAI:
         self._loop = asyncio.get_running_loop()
         self.store = store
 
-        # Init credentials
-        oai_token = self._generate_token()
-        self._loop.create_task(self._refresh_token_background())
-
         # Misc
-        self.gpt_max_tokens = get_config(
-            ["ai", "openai"], "gpt_max_tokens", int, required=True
-        )
-        openai_args = {
-            "openai_api_base": get_config(
-                ["ai", "openai"], "api_base", str, required=True
-            ),
-            "openai_api_key": oai_token,
-            "openai_api_type": "azure_ad",
-            "openai_api_version": "2023-05-15",
+        self.gpt_max_input_tokens = CONFIG.ai.openai.gpt_max_input_tokens
+        # TODO: Use azure_ad_token_provider instead of api_key, when it'll be debuged (https://github.com/langchain-ai/langchain/issues/14069)
+        openai_kwargs = {
+            "api_version": "2023-05-15",  # Latest stable as of Nov 30 2023
+            "azure_ad_token": AZ_TOKEN_PROVIDER(),
+            "azure_endpoint": CONFIG.ai.openai.endpoint,
+            "max_retries": 10,  # Catch 429 Too Many Requests
             "request_timeout": 30,
-            "temperature": 0,
-            "verbose": True,
         }
 
         # Init chat
         self.chat = AzureChatOpenAI(
-            deployment_name=get_config(
-                ["ai", "openai"], "gpt_deploy_id", str, required=True
-            ),
+            azure_deployment=CONFIG.ai.openai.gpt_deployment,
+            model=CONFIG.ai.openai.gpt_model,
             streaming=True,
-            **openai_args,
+            temperature=0,
+            **openai_kwargs,
         )
+
+        # Init embeddings
+        self.embeddings = AzureOpenAIEmbeddings(
+            azure_deployment=CONFIG.ai.openai.ada_deployment,
+            embedding_ctx_length=CONFIG.ai.openai.ada_max_input_tokens,
+            model=CONFIG.ai.openai.ada_model,
+            **openai_kwargs,
+        )
+
+        # Setup token refresh
+        self._loop.create_task(self._refresh_ad_token())
+
+        # Init tools
         self.tools = load_tools(
             [
                 "arxiv",  # Search scholarly articles with Arxiv
@@ -127,39 +129,23 @@ class OpenAI:
                 "tmdb-api",  # Search movies with TMDB
                 "wikipedia",  # Search general articles with Wikipedia
             ],
-            top_k_results=5,  # wikipedia, arxiv
-            openweathermap_api_key=get_config(
-                ["tools", "open_weather_map"], "api_key", str, required=True
-            ),  # openweathermap-api
-            news_api_key=get_config(
-                ["tools", "news"], "api_key", str, required=True
-            ),  # news-api
-            bing_search_url=get_config(
-                ["tools", "bing"], "search_url", str, required=True
-            ),  # bing-search
-            bing_subscription_key=get_config(
-                ["tools", "bing"], "subscription_key", str, required=True
-            ),  # bing-search
-            listen_api_key=get_config(
-                ["tools", "listen_notes"], "api_key", str, required=True
-            ),  # podcast-api
+            top_k_results=10,  # wikipedia, arxiv
+            openweathermap_api_key=CONFIG.tools.open_weather_map.api_key.get_secret_value(),  # openweathermap-api
+            news_api_key=CONFIG.tools.news.api_key.get_secret_value(),  # news-api
+            bing_search_url=CONFIG.tools.bing.search_url,  # bing-search
+            bing_subscription_key=CONFIG.tools.bing.subscription_key.get_secret_value(),  # bing-search
+            listen_api_key=CONFIG.tools.listen_notes.api_key.get_secret_value(),  # podcast-api
             llm=self.chat,  # llm-math
-            tmdb_bearer_token=get_config(
-                ["tools", "tmdb"], "bearer_token", str, required=True
-            ),  # tmdb-api
+            tmdb_bearer_token=CONFIG.tools.tmdb.bearer_token.get_secret_value(),  # tmdb-api
         )
         req_tool = RequestsGetTool(requests_wrapper=TextRequestsWrapper())
         self.tools += [
             PubmedQueryRun(),
             YouTubeSearchTool(),
             AzureCogsFormRecognizerTool(
-                azure_cogs_endpoint=get_config(
-                    ["tools", "azure_form_recognizer"], "api_base", str, required=True
-                ),
-                azure_cogs_key=get_config(
-                    ["tools", "azure_form_recognizer"], "api_token", str, required=True
-                ),
-            ),
+                azure_cogs_endpoint=CONFIG.tools.azure_form_recognizer.api_base,
+                azure_cogs_key=CONFIG.tools.azure_form_recognizer.api_token.get_secret_value(),
+            ),  # type: ignore
             GooglePlacesTool(
                 description="Useful for when you need to validate addresses or get details about places (incl. address, phone, website). Input should be a search query.",
             ),  # Requires GPLACES_API_KEY env var
@@ -167,7 +153,9 @@ class OpenAI:
                 description=f"{req_tool.description} Use this to download the content of a HTTP link. Link requires to be either HTML, or text (example: XML, JSON). Output will be reduced to its characters, no text formatting will be applied.",
                 func=lambda *args, **kwargs: (
                     sanitize(try_or_none(req_tool.run, *args, **kwargs)) or str()
-                )[: int(self.gpt_max_tokens)],
+                )[
+                    : int(self.gpt_max_input_tokens)
+                ],  # Tokens count is not the same as characters, but it's a sufficient approximation
                 name=req_tool.name,
             ),
             Tool(
@@ -181,61 +169,34 @@ class OpenAI:
                 name="summarize",
             ),
         ]
-        # Azure Cognitive Search
-        azure_cognitive_searches: List[Dict[str, Any]] = get_config(
-            "tools", "azure_cognitive_search", list, required=True
-        )
+
+        # Init Azure AI Search
+        azure_cognitive_searches = CONFIG.tools.azure_cognitive_search
         for instance in azure_cognitive_searches:
             _logger.debug(f"Loading Azure Cognitive Search custom tool: {instance}")
-            # Parameters
-            api_key = instance.get("api_key")
-            content_key = instance.get("content_key")
-            displayed_name = instance.get("displayed_name")
-            index_name = instance.get("index_name")
-            language = instance.get("language")
-            semantic_configuration = instance.get("semantic_configuration")
-            service_name = instance.get("service_name")
-            top_k = instance.get("top_k")
-            usage = instance.get("usage")
-            # Create tool
             tool = Tool(
-                description=f"{usage} Input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
-                func=lambda q, api_key=api_key, content_key=content_key, index_name=index_name, language=language, semantic_configuration=semantic_configuration, service_name=service_name, top_k=top_k: str(
+                description=f"{instance.usage} Input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
+                func=lambda q, api_key=instance.api_key.get_secret_value(), index_name=instance.displayed_name, language=instance.language, semantic_configuration=instance.semantic_configuration, service_name=instance.service_name, top_k=instance.top_k: str(
                     [
                         sanitize(doc.page_content)
-                        for doc in AzureCognitiveSearchSemanticRetriever(
-                            api_key=api_key,
-                            content_key=content_key,
+                        for doc in AzureSearch(
+                            azure_search_endpoint=f"https://{service_name}.search.windows.net",
+                            azure_search_key=api_key,
+                            embedding_function=self.embeddings.embed_query,
                             index_name=index_name,
-                            query_language=language,
-                            semantic_configuration=semantic_configuration,
-                            service_name=service_name,
-                            top_k=top_k,
-                        ).get_relevant_documents(q)
+                            semantic_configuration_name=semantic_configuration,
+                            semantic_query_language=language,
+                        ).similarity_search(
+                            k=top_k,
+                            query=q,
+                        )
                     ]
                 )[
-                    : int(self.gpt_max_tokens)
-                ],
-                name=f"{displayed_name} (Azure Cognitive Search)",
+                    : int(self.gpt_max_input_tokens)
+                ],  # Tokens count is not the same as characters, but it's a sufficient approximation
+                name=f"{instance.displayed_name} (Azure Cognitive Search)",
             )
             self.tools.append(tool)
-
-        # Init embeddings
-        self.embeddings = OpenAIEmbeddings(
-            deployment=get_config(
-                ["ai", "openai"], "ada_deploy_id", str, required=True
-            ),
-            model_kwargs={
-                "model_name": get_config(
-                    ["ai", "openai"],
-                    "ada_model",
-                    str,
-                    default="text-embedding-ada-002",
-                    required=True,
-                ),
-            },
-            **openai_args,
-        )
 
     def vector_from_text(self, prompt: str) -> List[float]:
         _logger.debug(f"Getting vector for text: {prompt}")
@@ -306,17 +267,20 @@ class OpenAI:
                             q, current_user.id, 5
                         ).answers
                     ]
-                )[: int(self.gpt_max_tokens)],
+                )[
+                    : int(self.gpt_max_input_tokens)
+                ],  # Tokens count is not the same as characters, but it's a sufficient approximation
                 description="Useful for when you need past user messages, from other conversations. Input should be a string, representing the search query written in semantic language. The output will be a list of 5 messages as JSON objects.",
                 name="messages_search",
             ),
         ]
 
         # Setup personalized prompt
-        prefix = textwrap.dedent(
-            f"""
-            {CUSTOM_PREFIX}
-
+        prefix = (
+            CUSTOM_PREFIX
+            + "\n\n"
+            + textwrap.dedent(
+                f"""
             Only in its final answer, Assistant SHOULD:
             {conversation.prompt.content if conversation.prompt else "None"}
 
@@ -324,7 +288,8 @@ class OpenAI:
             - Email: {current_user.email}
             - ID: {current_user.preferred_username}
             - Name: {current_user.name}
-        """
+            """
+            )
         )
 
         # Run
@@ -370,90 +335,19 @@ class OpenAI:
             message_callback(StreamMessageModel(content=res))
             usage_callback(cb.total_tokens, self.chat.model_name)
 
-    async def _refresh_token_background(self):
+    async def _refresh_ad_token(self):
         """
-        Refresh OpenAI token every 15 minutes.
+        Refresh OpenAI token every 20 minutes.
 
-        The OpenAI SDK does not support token refresh, so we need to do it manually. We passe manually the token to the SDK. Azure AD tokens are valid for 30 mins, but we refresh every 15 minutes to be safe.
+        The OpenAI SDK does not support token refresh, so we need to do it manually. We passe manually the token to the SDK. Azure AD tokens are valid for 30 mins, but we refresh earlier to be safe.
 
         See: https://github.com/openai/openai-python/pull/350#issuecomment-1489813285
         """
         while True:
-            token = self._generate_token()
-            self.chat.openai_api_key = token
-            self.embeddings.openai_api_key = token
-            # Execute every 20 minutes
-            await asyncio.sleep(15 * 60)
-
-    def _generate_token(self):
-        _logger.info("Refreshing OpenAI token")
-        oai_token = AZ_CREDENTIAL.get_token(
-            "https://cognitiveservices.azure.com/.default"
-        )
-        return oai_token.token
-
-
-class CustomCache(BaseCache):
-    PREFIX = "prompt"
-    cache: ICache
-
-    def __init__(self, cache: ICache):
-        self.cache = cache
-
-    def lookup(self, prompt: str, llm_string: str) -> Optional[List[ChatGeneration]]:
-        raws = self.cache.hget(self._key(prompt, llm_string))
-        if not raws:
-            return None
-        generations = []
-        for json, role_str in raws.items():
-            _logger.debug(f"Loading cached message: {json}")
-            try:
-                message = None
-                role_enum = MessageRole(role_str)
-                if role_enum == MessageRole.ASSISTANT:
-                    message = AIMessage.parse_raw(json)
-                elif role_enum == MessageRole.USER:
-                    message = HumanMessage.parse_raw(json)
-                else:
-                    _logger.warn(f"Unsupported message role: {role_enum}")
-                if message:
-                    generations.append(ChatGeneration(message=message))
-            except Exception:
-                _logger.warn("Error parsing cached messages", exc_info=True)
-        _logger.debug(f"Loaded generations from cache: {generations}")
-        return generations if generations else None
-
-    def update(
-        self, prompt: str, llm_string: str, return_val: List[ChatGeneration]
-    ) -> None:
-        messages = {}
-        for generation in return_val:
-            message = generation.message
-            if not message:
-                _logger.debug(f"Generation does not contain message: {generation}")
-                continue
-            role_enum = None
-            if isinstance(message, AIMessage):
-                role_enum = MessageRole.ASSISTANT
-            elif isinstance(message, HumanMessage):
-                role_enum = MessageRole.USER
-            else:
-                _logger.warn(f"Unsupported message type: {type(message)}")
-            if role_enum:
-                messages[message.json()] = role_enum.value
-        if messages:
-            _logger.debug(f"Updating cache with messages: {messages}")
-            self.cache.hset(
-                self._key(prompt, llm_string),
-                messages,
-            )
-
-    def clear(self, **kwargs: Any) -> None:
-        # Clear not implemented, we don't want to clear storage layer
-        pass
-
-    def _key(self, prompt: str, llm_string: str) -> str:
-        return f"{self.PREFIX}:{prompt}:{llm_string}"
+            ad_token = AZ_TOKEN_PROVIDER()
+            self.chat.azure_ad_token = ad_token
+            self.embeddings.azure_ad_token = ad_token
+            await asyncio.sleep(60 * 20)
 
 
 class CustomHistory(BaseChatMessageHistory):
@@ -525,45 +419,3 @@ class CustomHistory(BaseChatMessageHistory):
     def clear(self) -> None:
         # Clear not implemented, we don't want to clear storage layer
         pass
-
-
-class AzureCognitiveSearchSemanticRetriever(AzureCognitiveSearchRetriever):
-    """
-    Azure Cognitive Search retriever with semantic search.
-
-    Native LangChain implementation is not used because it does not support semantic search.
-
-    See:
-    - API doc: https://learn.microsoft.com/en-us/rest/api/searchservice/preview-api/search-documents
-    - Native implementation: https://github.com/langchain-ai/langchain/blob/v0.0.281/libs/langchain/langchain/retrievers/azure_cognitive_search.py
-    """
-
-    api_version: str = "2023-07-01-Preview"
-    query_language: str = ""
-    semantic_configuration: str = ""
-
-    def _build_search_url(self, query: str) -> str:
-        params = urllib.parse.urlencode(
-            {
-                "api-version": self.api_version,
-                "search": query,
-                "top": self.top_k,
-                # Semantic search
-                "queryType": "semantic",
-                "semanticConfiguration": self.semantic_configuration,
-                # Language ranker
-                "queryLanguage": self.query_language,
-                "speller": "lexicon",  # Required param for both semantic and language ranker
-            }
-            | {
-                "top": self.top_k,
-            }
-            if self.top_k
-            else {}
-        )
-        url = (
-            f"https://{self.service_name}.search.windows.net/indexes/{self.index_name}/docs?"
-            + params
-        )
-        _logger.debug(f"Built search URL: {url}")
-        return url

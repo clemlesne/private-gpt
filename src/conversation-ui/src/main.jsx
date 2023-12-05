@@ -18,14 +18,19 @@ import ReactDOM from "react-dom/client";
 import Search from "./Search";
 
 const reactPlugin = new ReactPlugin();
-const appInsights = new ApplicationInsights({
-  config: {
-    connectionString: import.meta.env.VITE_APP_INSIGHTS_CONNECTION_STR,
-    extensions: [reactPlugin],
-    enableAutoRouteTracking: true,
-  },
-});
-appInsights.loadAppInsights();
+
+try {
+  const appInsights = new ApplicationInsights({
+    config: {
+      connectionString: import.meta.env.VITE_APP_INSIGHTS_CONNECTION_STR,
+      extensions: [reactPlugin],
+      enableAutoRouteTracking: true,
+    },
+  });
+  appInsights.loadAppInsights();
+} catch (e) {
+  console.error("Cannot init Azure App Insights", e);
+}
 
 const router = createBrowserRouter([
   {

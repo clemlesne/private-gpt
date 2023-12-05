@@ -5,11 +5,13 @@ azure-ai-formrecognizer==3.3.2
 azure-cosmos==4.5.1
 azure-identity==1.15.0
 azure-monitor-opentelemetry==1.1.0
+azure-search-documents==11.4.0
 fastapi==0.104.1
 googlemaps==4.10.0
-langchain==0.0.300
+langchain==0.0.344
 mmh3==4.0.1
-openai==0.28.0
+numexpr==2.8.7
+openai==1.3.6
 opentelemetry-instrumentation-fastapi==0.41b0
 opentelemetry-instrumentation-redis==0.41b0
 opentelemetry-instrumentation-requests==0.41b0
@@ -18,6 +20,7 @@ opentelemetry-instrumentation-urllib3==0.41b0
 pyjwt[crypto]==2.8.0
 pyowm==3.3.0
 python-dotenv==1.0.0
+pyyaml==6.0.1
 qdrant-client==1.6.9
 redis==5.0.1
 sse-starlette==1.8.2

@@ -1,53 +1,50 @@
-# Import utils
-from utils import build_logger, get_config, AZ_CREDENTIAL
-
-# Import misc
-from .icache import ICache
-from .istore import IStore
 from azure.cosmos import CosmosClient
 from azure.cosmos.exceptions import CosmosHttpResponseError
+from azure.identity import DefaultAzureCredential
 from datetime import datetime
+from helpers.config_models.persistence import CosmosModel
+from helpers.logging import build_logger
 from models.conversation import StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
+from persistence.icache import ICache
+from persistence.istore import IStore
 from pydantic import ValidationError
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 from uuid import UUID, uuid4
-import asyncio
 
 
 _logger = build_logger(__name__)
+AZ_CREDENTIAL = DefaultAzureCredential()
+CONVERSATION_PREFIX = "conversation"
 SECRET_TTL_SECS = 60 * 60 * 24  # 1 day
 
-# Configuration
-CONVERSATION_PREFIX = "conversation"
-DB_URL = get_config(["persistence", "cosmos"], "url", str, required=True)
-DB_NAME = get_config(["persistence", "cosmos"], "database", str, required=True)
 
-# Cosmos DB Client
-client = CosmosClient(url=DB_URL, credential=AZ_CREDENTIAL)
-database = client.get_database_client(DB_NAME)
-conversation_client = database.get_container_client("conversation")
-memory_client = database.get_container_client("memory")
-message_client = database.get_container_client("message")
-usage_client = database.get_container_client("usage")
-user_client = database.get_container_client("user")
-
-
+# TODO: Async functions to avoid UX blocking
 class CosmosStore(IStore):
-    _loop: asyncio.AbstractEventLoop
-
-    def __init__(self, cache: ICache):
+    def __init__(self, config: CosmosModel, cache: ICache):
         super().__init__(cache)
 
-        self._loop = asyncio.get_running_loop()
+        client = CosmosClient(
+            connection_timeout=5,
+            consistency_level=config.consistency,
+            credential=AZ_CREDENTIAL,
+            url=config.url,
+        )
+        database = client.get_database_client(config.database)
 
-    async def readiness(self) -> ReadinessStatus:
+        self._conversation_client = database.get_container_client("conversation")
+        self._memory_client = database.get_container_client("memory")
+        self._message_client = database.get_container_client("message")
+        self._usage_client = database.get_container_client("usage")
+        self._user_client = database.get_container_client("user")
+
+    async def areadiness(self) -> ReadinessStatus:
         try:
             # Cosmos DB is not ACID compliant, so we can't use transactions
-            conversation_client.upsert_item(
+            self._conversation_client.upsert_item(
                 body={
                     "dummy": "dummy",
                     "id": str(uuid4()),
@@ -58,68 +55,70 @@ class CosmosStore(IStore):
             return ReadinessStatus.FAIL
         return ReadinessStatus.OK
 
-    def user_get(self, user_external_id: str) -> Optional[UserModel]:
+    async def user_aget(self, user_external_id: str) -> Optional[UserModel]:
         cache_key = f"user:{user_external_id}"
 
         try:
-            if self.cache.exists(cache_key):
+            if await self.cache.aexists(cache_key):
                 _logger.debug(f'Cache hit for user "{user_external_id}"')
-                return UserModel.model_validate_json(self.cache.get(cache_key))
+                return UserModel.model_validate_json(await self.cache.aget(cache_key))
         except ValidationError as e:
             _logger.warn(f'Error parsing user from cache, "{e}"')
 
         query = f"SELECT * FROM c WHERE c.external_id = '{user_external_id}'"
-        items = user_client.query_items(query=query, partition_key="dummy")
+        items = self._user_client.query_items(query=query, partition_key="dummy")
         try:
             raw = next(items)
             user = UserModel(**raw)
             # Update cache
-            self.cache.set(cache_key, user.model_dump_json())
+            await self.cache.aset(cache_key, user.model_dump_json())
             return user
         except StopIteration:
             return None
 
-    def user_set(self, user: UserModel) -> None:
+    async def user_aset(self, user: UserModel) -> None:
         cache_key = f"user:{user.external_id}"
-        user_client.upsert_item(
+        self._user_client.upsert_item(
             body={
-                **self._sanitize_before_insert(user.dict()),
+                **self._sanitize_before_insert(user.model_dump()),
                 "dummy": "dummy",
             }
         )
         # Update cache
-        self.cache.set(cache_key, user.model_dump_json())
+        await self.cache.aset(cache_key, user.model_dump_json())
 
-    def conversation_get(
+    async def conversation_aget(
         self, conversation_id: UUID, user_id: UUID
     ) -> Optional[StoredConversationModel]:
         cache_key = f"conversation:{user_id}:{conversation_id}"
 
         try:
-            if self.cache.exists(cache_key):
+            if await self.cache.aexists(cache_key):
                 _logger.debug(f'Cache hit for conversation "{conversation_id}"')
-                return StoredConversationModel.model_validate_json(self.cache.get(cache_key))
+                return StoredConversationModel.model_validate_json(
+                    await self.cache.aget(cache_key)
+                )
         except ValidationError as e:
             _logger.warn(f'Error parsing conversation from cache, "{e}"')
 
         try:
-            raw = conversation_client.read_item(
+            raw = self._conversation_client.read_item(
                 item=str(conversation_id), partition_key=str(user_id)
             )
             conversation = StoredConversationModel(**raw)
             # Update cache
-            self.cache.set(cache_key, conversation.model_dump_json())
+            await self.cache.aset(cache_key, conversation.model_dump_json())
             return conversation
         except CosmosHttpResponseError:
             return None
 
-    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
-        return self.conversation_get(conversation_id, user_id) != None
+    async def conversation_aexists(self, conversation_id: UUID, user_id: UUID) -> bool:
+        return await self.conversation_aget(conversation_id, user_id) != None
 
     def conversation_set(self, conversation: StoredConversationModel) -> None:
         cache_key = f"conversation:{conversation.user_id}:{conversation.id}"
-        conversation_client.upsert_item(
-            body=self._sanitize_before_insert(conversation.dict())
+        self._conversation_client.upsert_item(
+            body=self._sanitize_before_insert(conversation.model_dump())
         )
         # Update cache
         self.cache.set(cache_key, conversation.model_dump_json())
@@ -145,7 +144,7 @@ class CosmosStore(IStore):
         query = (
             f"SELECT * FROM c WHERE c.user_id = '{user_id}' ORDER BY c.created_at DESC"
         )
-        raws = conversation_client.query_items(
+        raws = self._conversation_client.query_items(
             query=query, enable_cross_partition_query=True
         )
         conversations = []
@@ -157,31 +156,10 @@ class CosmosStore(IStore):
             except ValidationError as e:
                 _logger.warn(f'Error parsing conversation, "{e}"')
         # Update cache
-        self.cache.hset(cache_key, {str(c.id): c.model_dump_json() for c in conversations})
+        self.cache.hset(
+            cache_key, {str(c.id): c.model_dump_json() for c in conversations}
+        )
         return conversations or None
-
-    def message_get(
-        self, message_id: UUID, conversation_id: UUID
-    ) -> Optional[MessageModel]:
-        cache_key = f"message:{conversation_id}:{message_id}"
-
-        try:
-            if self.cache.exists(cache_key):
-                _logger.debug(f'Cache hit for message "{message_id}"')
-                return MessageModel.model_validate_json(self.cache.get(cache_key))
-        except ValidationError as e:
-            _logger.warn(f'Error parsing message from cache, "{e}"')
-
-        try:
-            raw = message_client.read_item(
-                item=str(message_id), partition_key=str(conversation_id)
-            )
-            message = MessageModel(**raw)
-            # Update cache
-            self.cache.set(cache_key, message.model_dump_json())
-            return message
-        except CosmosHttpResponseError:
-            return None
 
     def message_get_index(
         self, message_indexs: List[IndexMessageModel]
@@ -191,14 +169,17 @@ class CosmosStore(IStore):
         try:
             if all(self.cache.exists(k) for k in cache_keys):
                 _logger.debug(f'Cache hit for message index "{message_indexs}"')
-                return [MessageModel.model_validate_json(self.cache.get(k)) for k in cache_keys]
+                return [
+                    MessageModel.model_validate_json(self.cache.get(k))
+                    for k in cache_keys
+                ]
         except ValidationError as e:
             _logger.warn(f'Error parsing message index from cache, "{e}"')
 
         messages = []
         for message_index in message_indexs:
             try:
-                raw = message_client.read_item(
+                raw = self._message_client.read_item(
                     item=str(message_index.id),
                     partition_key=str(message_index.conversation_id),
                 )
@@ -212,9 +193,9 @@ class CosmosStore(IStore):
     def message_set(self, message: StoredMessageModel) -> None:
         cache_key = f"message:{message.conversation_id}:{message.id}"
         expiry = SECRET_TTL_SECS if message.secret else None
-        message_client.upsert_item(
+        self._message_client.upsert_item(
             body={
-                **self._sanitize_before_insert(message.dict()),
+                **self._sanitize_before_insert(message.model_dump()),
                 "_ts": expiry,  # TTL in seconds
             }
         )
@@ -236,7 +217,7 @@ class CosmosStore(IStore):
             _logger.warn(f'Error parsing message list from cache, "{e}"')
 
         query = f"SELECT * FROM c WHERE c.conversation_id = '{conversation_id}' ORDER BY c.created_at ASC"
-        raws = message_client.query_items(
+        raws = self._message_client.query_items(
             query=query, enable_cross_partition_query=True
         )
         messages = []
@@ -253,12 +234,11 @@ class CosmosStore(IStore):
 
     def usage_set(self, usage: UsageModel) -> None:
         _logger.debug(f'Usage set "{usage.id}"')
-        self._loop.create_task(self._usage_set_background(usage))
+        self._usage_client.upsert_item(
+            body=self._sanitize_before_insert(usage.model_dump())
+        )
 
-    async def _usage_set_background(self, usage: UsageModel) -> None:
-        usage_client.upsert_item(body=self._sanitize_before_insert(usage.dict()))
-
-    def _sanitize_before_insert(self, item: Union[dict, list]) -> Union[dict, list]:
+    def _sanitize_before_insert(self, item: Union[dict, Any]) -> Union[dict, Any]:
         for key, value in item.items() if isinstance(item, dict) else enumerate(item):
             if isinstance(value, UUID):
                 item[key] = str(value)

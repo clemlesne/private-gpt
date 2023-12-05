@@ -1,63 +1,67 @@
-# Import utils
-from utils import build_logger, get_config
-
-# Import misc
-from .icache import ICache
-from .isearch import ISearch
-from .istore import IStore
 from ai.openai import OpenAI
 from datetime import datetime
+from helpers.config_models.persistence import QdrantModel
+from helpers.logging import build_logger
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.search import SearchModel, SearchStatsModel, SearchAnswerModel
+from persistence.icache import ICache
+from persistence.isearch import ISearch
+from persistence.istore import IStore
 from pydantic import ValidationError
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, AsyncQdrantClient
 from uuid import UUID, uuid4
-import asyncio
 import qdrant_client.http.models as qmodels
 import textwrap
 import time
 
 
 _logger = build_logger(__name__)
-QD_COLLECTION = "messages"
+CACHE_TTL_SECS = 60 * 60 * 24 * 7  # 1 week
 QD_DIMENSION = 1536
-QD_HOST = get_config(["persistence", "qdrant"], "host", str, required=True)
-QD_PORT = 6333
 QD_METRIC = qmodels.Distance.DOT
-client = QdrantClient(host=QD_HOST, port=6333)
 
 
+# TODO: Async functions to avoid UX blocking
 class QdrantSearch(ISearch):
-    _loop: asyncio.AbstractEventLoop
-    CACHE_TTL_SECS: int = 5 * 60  # 5 minutes
-    openai: OpenAI
+    _openai: OpenAI
 
-    def __init__(self, store: IStore, cache: ICache, openai: OpenAI):
+    def __init__(
+        self, config: QdrantModel, store: IStore, cache: ICache, openai: OpenAI
+    ):
         super().__init__(store, cache)
 
-        self._loop = asyncio.get_running_loop()
-        self.openai = openai
+        kwargs = {
+            "host": config.host,
+            "https": config.https,
+            "port": config.port,
+            "prefer_grpc": config.prefer_grpc,
+            "timeout": 5,
+        }
+        self._client = QdrantClient(**kwargs)
+        self._aclient = AsyncQdrantClient(**kwargs)
+        self._collection = config.collection
+        self._openai = openai
 
         # Ensure collection exists
         try:
-            client.get_collection(QD_COLLECTION)
-            _logger.debug(f"Collection {QD_COLLECTION} already exists")
+            self._client.get_collection(self._collection)
+            _logger.debug(f"Collection {self._collection} already exists")
         except Exception:
-            client.create_collection(
-                collection_name=QD_COLLECTION,
+            self._client.create_collection(
+                collection_name=self._collection,
                 vectors_config=qmodels.VectorParams(
                     distance=QD_METRIC,
                     size=QD_DIMENSION,
                 ),
             )
-            _logger.debug(f"Collection {QD_COLLECTION} created")
+            _logger.debug(f"Collection {self._collection} created")
 
-    async def readiness(self) -> ReadinessStatus:
+    async def areadiness(self) -> ReadinessStatus:
         try:
             tmp_id = str(uuid4())
-            client.upsert(
-                collection_name=QD_COLLECTION,
+            await self._aclient.upsert(
+                collection_name=self._collection,
                 points=[
                     qmodels.PointStruct(
                         vector=[0.0] * QD_DIMENSION,
@@ -66,8 +70,10 @@ class QdrantSearch(ISearch):
                     )
                 ],
             )
-            client.retrieve(collection_name=QD_COLLECTION, ids=[tmp_id])
-            client.delete(collection_name=QD_COLLECTION, points_selector=[tmp_id])
+            await self._aclient.retrieve(collection_name=self._collection, ids=[tmp_id])
+            await self._aclient.delete(
+                collection_name=self._collection, points_selector=[tmp_id]
+            )
         except Exception:
             _logger.warn("Error connecting to Qdrant", exc_info=True)
             return ReadinessStatus.FAIL
@@ -83,21 +89,23 @@ class QdrantSearch(ISearch):
         try:
             if self.cache.exists(cache_key):
                 _logger.debug(f'Cache hit for search message "{q}"')
-                return SearchModel[MessageModel].model_validate_json(self.cache.get(cache_key))
+                return SearchModel[MessageModel].model_validate_json(
+                    self.cache.get(cache_key)
+                )
         except ValidationError as e:
             _logger.warn(f'Error parsing message search from cache, "{e}"')
 
         conversations = self.store.conversation_list(user_id) or []
-        vector = self.openai.vector_from_text(
+        vector = self._openai.vector_from_text(
             textwrap.dedent(
                 f"""
             Today, we are the {datetime.utcnow()}. {q.capitalize()}
         """
             )
         )
-        total = client.count(collection_name=QD_COLLECTION, exact=False).count
-        raws = client.search(
-            collection_name=QD_COLLECTION,
+        count = self._client.count(collection_name=self._collection, exact=False).count
+        raws = self._client.search(
+            collection_name=self._collection,
             limit=limit,
             query_filter=qmodels.Filter(
                 should=[
@@ -129,30 +137,25 @@ class QdrantSearch(ISearch):
                 for m, s in zip(messages, [raw.score for raw in raws])
             ],
             query=q,
-            stats=SearchStatsModel(total=total, time=time.monotonic() - start),
+            stats=SearchStatsModel(total=count, time=time.monotonic() - start),
         )
         # Update cache
-        self.cache.set(cache_key, search.model_dump_json(), self.CACHE_TTL_SECS)
+        self.cache.set(cache_key, search.model_dump_json(), CACHE_TTL_SECS)
         return search
 
-    def message_index(self, message: StoredMessageModel) -> None:
+    async def message_aindex(self, message: StoredMessageModel) -> None:
         _logger.debug(f'Indexing message "{message.id}"')
-        self._loop.create_task(self._index_background(message))
-
-    async def _index_background(self, message: StoredMessageModel) -> None:
-        _logger.debug(f"Starting indexing worker for message: {message.id}")
-
-        vector = self.openai.vector_from_text(message.content)
+        vector = self._openai.vector_from_text(message.content)
         index = IndexMessageModel(
             conversation_id=message.conversation_id,
             id=message.id,
         )
 
-        client.upsert(
-            collection_name=QD_COLLECTION,
+        await self._aclient.upsert(
+            collection_name=self._collection,
             points=[
                 qmodels.PointStruct(
-                    id=message.id.hex, payload=index.dict(), vector=vector
+                    id=message.id.hex, payload=index.model_dump(), vector=vector
                 )
             ],
         )

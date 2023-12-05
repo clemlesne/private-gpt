@@ -1,38 +1,23 @@
-# Import utils
-from utils import build_logger, get_config
-
-# Import misc
 from azure.core.credentials import AzureKeyCredential
 from fastapi import HTTPException, status
+from helpers.config import CONFIG
+from helpers.logging import build_logger
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 import azure.ai.contentsafety as azure_cs
 import azure.core.exceptions as azure_exceptions
 
 
-###
-# Init misc
-###
-
 _logger = build_logger(__name__)
 
-###
-# Init Azure Content Safety
-###
 
 # Score are following: 0 - Safe, 2 - Low, 4 - Medium, 6 - High
 # See: https://review.learn.microsoft.com/en-us/azure/cognitive-services/content-safety/concepts/harm-categories?branch=release-build-content-safety#severity-levels
 ACS_SEVERITY_THRESHOLD = 2
-ACS_API_BASE = get_config(
-    ["ai", "azure_content_safety"], "api_base", str, required=True
-)
-ACS_API_TOKEN = get_config(
-    ["ai", "azure_content_safety"], "api_token", str, required=True
-)
-ACS_MAX_LENGTH = get_config(
-    ["ai", "azure_content_safety"], "max_length", int, required=True
-)
 acs_client = azure_cs.ContentSafetyClient(
-    ACS_API_BASE, AzureKeyCredential(ACS_API_TOKEN)
+    credential=AzureKeyCredential(
+        CONFIG.ai.azure_content_safety.api_token.get_secret_value()
+    ),
+    endpoint=CONFIG.ai.azure_content_safety.api_base,
 )
 
 
@@ -45,7 +30,7 @@ class ContentSafety:
     async def is_moderated(self, prompt: str) -> bool:
         _logger.debug(f"Checking moderation for text: {prompt}")
 
-        if len(prompt) > ACS_MAX_LENGTH:
+        if len(prompt) > CONFIG.ai.azure_content_safety.max_input_str:
             _logger.info(f"Message ({len(prompt)}) too long for moderation")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

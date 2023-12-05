@@ -49,16 +49,16 @@ spec:
               port: http
           volumeMounts:
             - name: config
-              mountPath: /app/config.toml
-              subPath: config.toml
+              mountPath: /app/config.yaml
+              subPath: config.yaml
             - name: tmp
               mountPath: /app/tmp
           env:
-            - name: PG_ACS_API_TOKEN
+            - name: ACS_API_TOKEN
               valueFrom:
                 secretKeyRef:
                   name: {{ include "private-gpt.fullname" . }}-conversation-api
-                  key: PG_ACS_API_TOKEN
+                  key: ACS_API_TOKEN
             - name: TMPDIR
               value: /app/tmp
       volumes:

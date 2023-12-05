@@ -6,89 +6,83 @@ metadata:
     {{- include "private-gpt.labels" . | nindent 4 }}
     app.kubernetes.io/component: conversation-api
 data:
-  config.toml: |
-    [oidc]
-    algorithms = ["{{ join "\",\"" .Values.oidc.algorithms | required "A value for .Values.oidc.algorithms is required" }}"]
-    api_audience = {{ .Values.oidc.api_audience | quote | required "A value for .Values.oidc.api_audience is required" }}
-    issuers = ["{{ join "\",\"" .Values.oidc.issuers | required "A value for .Values.oidc.issuers is required" }}"]
-    jwks = {{ .Values.oidc.jwks | quote | required "A value for .Values.oidc.jwks is required" }}
+  config.yaml: |
+    oidc:
+      algorithms: ["{{ join "\",\"" .Values.oidc.algorithms | required "A value for .Values.oidc.algorithms is required" }}"]
+      api_audience: {{ .Values.oidc.api_audience | quote | required "A value for .Values.oidc.api_audience is required" }}
+      issuers: ["{{ join "\",\"" .Values.oidc.issuers | required "A value for .Values.oidc.issuers is required" }}"]
+      jwks: {{ .Values.oidc.jwks | quote | required "A value for .Values.oidc.jwks is required" }}
 
-    [api]
-    root_path = "/{{ include "private-gpt.fullname" . }}-conversation-api"
+    api:
+      root_path: "/{{ include "private-gpt.fullname" . }}-conversation-api"
 
-    [monitoring]
+    monitoring:
+      logging:
+        app_level: {{ .Values.monitoring.logging.app | quote | required "A value for .Values.monitoring.logging.app is required" }}
+        sys_level: {{ .Values.monitoring.logging.sys | quote | required "A value for .Values.monitoring.logging.sys is required" }}
+      azure_app_insights:
+        connection_str: {{ .Values.monitoring.azure_app_insights.connection_str | quote | required "A value for .Values.monitoring.azure_app_insights.connection_str is required" }}
 
-    [monitoring.logging]
-    app_level = {{ .Values.monitoring.logging.app | quote | required "A value for .Values.monitoring.logging.app is required" }}
-    sys_level = {{ .Values.monitoring.logging.sys | quote | required "A value for .Values.monitoring.logging.sys is required" }}
+    persistence:
+      cache:
+        type: "redis"
+        config:
+          db: {{ .Values.redis.db | int | required "A value for .Values.redis.db is required" }}
+          host: "{{ include "common.names.fullname" .Subcharts.redis }}-master"
+      search:
+        type: "qdrant"
+        config:
+          host: {{ include "qdrant.fullname" .Subcharts.qdrant | quote | required "A value for .Values.qdrant.host is required" }}
+      store:
+        type: "cosmos"
+        config:
+          url: {{ .Values.persistence.cosmos.url | quote | required "A value for .Values.persistence.cosmos.url is required" }}
+          database: {{ .Values.persistence.cosmos.database | quote | required "A value for .Values.persistence.cosmos.database is required" }}
+      stream:
+        type: "redis"
+        config:
+          db: {{ .Values.redis.db | int | required "A value for .Values.redis.db is required" }}
+          host: "{{ include "common.names.fullname" .Subcharts.redis }}-master"
 
-    [monitoring.azure_app_insights]
-    connection_str = {{ .Values.monitoring.azure_app_insights.connection_str | quote | required "A value for .Values.monitoring.azure_app_insights.connection_str is required" }}
+    ai:
+      openai:
+        ada_deployment: {{ .Values.ai.openai.ada_deployment | quote | required "A value for .Values.ai.openai.ada_deployment is required" }}
+        ada_max_input_tokens: 2049
+        endpoint: {{ .Values.ai.openai.base | quote | required "A value for .Values.ai.openai.base is required" }}
+        gpt_deployment: {{ .Values.ai.openai.gpt_deployment | quote | required "A value for .Values.ai.openai.gpt_deployment is required" }}
+        gpt_max_input_tokens: 16384
+      azure_content_safety:
+        api_base: {{ .Values.ai.azure_content_safety.base | quote | required "A value for .Values.ai.azure_content_safety.base is required" }}
+        api_token: {{ .Values.ai.azure_content_safety.token | quote | required "A value for .Values.ai.azure_content_safety.token is required" }}
+        max_input_str: 1000
 
-    [persistence]
-    cache = "redis"
-    search = "qdrant"
-    store = "cosmos"
-    stream = "redis"
-
-    [persistence.qdrant]
-    host = {{ include "qdrant.fullname" .Subcharts.qdrant | quote | required "A value for .Values.qdrant.host is required" }}
-
-    [persistence.redis]
-    db = {{ .Values.redis.db | int | required "A value for .Values.redis.db is required" }}
-    host = "{{ include "common.names.fullname" .Subcharts.redis }}-master"
-
-    [persistence.cosmos]
-    url = {{ .Values.persistence.cosmos.url | quote | required "A value for .Values.persistence.cosmos.url is required" }}
-    database = {{ .Values.persistence.cosmos.database | quote | required "A value for .Values.persistence.cosmos.database is required" }}
-
-    [ai]
-
-    [ai.openai]
-    ada_deploy_id = {{ .Values.ai.openai.ada_deploy_id | quote | required "A value for .Values.ai.openai.ada_deploy_id is required" }}
-    ada_max_tokens = 2049
-    api_base = {{ .Values.ai.openai.base | quote | required "A value for .Values.ai.openai.base is required" }}
-    gpt_deploy_id = {{ .Values.ai.openai.gpt_deploy_id | quote | required "A value for .Values.ai.openai.gpt_deploy_id is required" }}
-    gpt_max_tokens = 16384
-
-    [ai.azure_content_safety]
-    api_base = {{ .Values.ai.azure_content_safety.base | quote | required "A value for .Values.ai.azure_content_safety.base is required" }}
-    api_token = {{ .Values.ai.azure_content_safety.token | quote | required "A value for .Values.ai.azure_content_safety.token is required" }}
-    max_length = 1000
-
-    [tools]
-
-    [tools.azure_form_recognizer]
-    api_base = {{ .Values.tools.azure_form_recognizer.api_base | quote | required "A value for .Values.tools.azure_form_recognizer.api_base is required" }}
-    api_token = {{ .Values.tools.azure_form_recognizer.api_token | quote | required "A value for .Values.tools.azure_form_recognizer.api_token is required" }}
-
-    [tools.bing]
-    search_url = {{ .Values.tools.bing.search_url | quote | required "A value for .Values.tools.bing.search_url is required" }}
-    subscription_key = {{ .Values.tools.bing.subscription_key | quote | required "A value for .Values.tools.bing.subscription_key is required" }}
-
-    [tools.tmdb]
-    bearer_token = {{ .Values.tools.tmdb.bearer_token | quote | required "A value for .Values.tools.tmdb.bearer_token is required" }}
-
-    [tools.news]
-    api_key = {{ .Values.tools.news.api_key | quote | required "A value for .Values.tools.news.api_key is required" }}
-
-    [tools.listen_notes]
-    api_key = {{ .Values.tools.listen_notes.api_key | quote | required "A value for .Values.tools.listen_notes.api_key is required is required" }}
-
-    [tools.open_weather_map]
-    api_key = {{ .Values.tools.open_weather_map.api_key | quote | required "A value for .Values.tools.open_weather_map.api_key is required" }}
-
-    [tools.google_places]
-    api_key = {{ .Values.tools.google_places.api_key | quote | required "A value for .Values.tools.google_places.api_key is required" }}
-
-    {{- range .Values.tools.azure_cognitive_search }}
-    # Tool {{ .displayed_name | required "A value for .displayed_name is required" }}
-    [[tools.azure_cognitive_search]]
-    api_key = {{ .api_key | quote | required "A value for .api_key is required" }}
-    content_key = {{ .content_key | quote | required "A value for .content_key is required" }}
-    displayed_name = {{ .displayed_name | quote | required "A value for .displayed_name is required" }}
-    index_name = {{ .index_name | quote | required "A value for .index_name is required" }}
-    service_name = {{ .service_name | quote | required "A value for .service_name is required" }}
-    top_k = {{ .top_k | int | required "A value for .top_k is required" }}
-    usage = {{ .usage | quote | required "A value for .usage is required" }}
-    {{- end }}
+    tools:
+      azure_form_recognizer:
+        api_base: {{ .Values.tools.azure_form_recognizer.api_base | quote | required "A value for .Values.tools.azure_form_recognizer.api_base is required" }}
+        api_token: {{ .Values.tools.azure_form_recognizer.api_token | quote | required "A value for .Values.tools.azure_form_recognizer.api_token is required" }}
+      bing:
+        search_url: {{ .Values.tools.bing.search_url | quote | required "A value for .Values.tools.bing.search_url is required" }}
+        subscription_key: {{ .Values.tools.bing.subscription_key | quote | required "A value for .Values.tools.bing.subscription_key is required" }}
+      tmdb:
+        bearer_token: {{ .Values.tools.tmdb.bearer_token | quote | required "A value for .Values.tools.tmdb.bearer_token is required" }}
+      news:
+        api_key: {{ .Values.tools.news.api_key | quote | required "A value for .Values.tools.news.api_key is required" }}
+      listen_notes:
+        api_key: {{ .Values.tools.listen_notes.api_key | quote | required "A value for .Values.tools.listen_notes.api_key is required is required" }}
+      open_weather_map:
+        api_key: {{ .Values.tools.open_weather_map.api_key | quote | required "A value for .Values.tools.open_weather_map.api_key is required" }}
+      google_places:
+        api_key: {{ .Values.tools.google_places.api_key | quote | required "A value for .Values.tools.google_places.api_key is required" }}
+      azure_cognitive_search:
+        {{- range .Values.tools.azure_cognitive_search }}
+        # Tool {{ .displayed_name | required "A value for .displayed_name is required" }}
+        - api_key: {{ .api_key | quote | required "A value for .api_key is required" }}
+          displayed_name: {{ .displayed_name | quote | required "A value for .displayed_name is required" }}
+          index_name: {{ .index_name | quote | required "A value for .index_name is required" }}
+          service_name: {{ .service_name | quote | required "A value for .service_name is required" }}
+          top_k: {{ .top_k | int | required "A value for .top_k is required" }}
+          usage: {{ .usage | quote | required "A value for .usage is required" }}
+        {{- else }}
+        # No tools configured
+        []
+        {{- end }}

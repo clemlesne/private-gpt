@@ -1,13 +1,10 @@
-# Import utils
-from utils import build_logger
-
-# Import misc
-from .istore import IStore
+from helpers.logging import build_logger
 from models.conversation import StoredConversationModel
 from models.message import MessageModel, IndexMessageModel, StoredMessageModel
 from models.readiness import ReadinessStatus
 from models.usage import UsageModel
 from models.user import UserModel
+from persistence.istore import IStore
 from pydantic import ValidationError
 from typing import List, Optional
 from uuid import UUID
@@ -23,31 +20,33 @@ class CacheStore(IStore):
     USAGE_PREFIX: str = "usage"
     USER_PREFIX: str = "user"
 
-    async def readiness(self) -> ReadinessStatus:
-        return await self.cache.readiness()
+    async def areadiness(self) -> ReadinessStatus:
+        return await self.cache.areadiness()
 
-    def user_get(self, user_external_id: str) -> Optional[UserModel]:
+    async def user_aget(self, user_external_id: str) -> Optional[UserModel]:
         key = self._user_key(user_external_id)
-        if not self.cache.exists(key):
+        if not await self.cache.aexists(key):
             return None
-        return UserModel.model_validate_json(self.cache.get(self._user_key(user_external_id)))
+        return UserModel.model_validate_json(
+            await self.cache.aget(self._user_key(user_external_id))
+        )
 
-    def user_set(self, user: UserModel) -> None:
-        self.cache.set(self._user_key(user.external_id), user.model_dump_json())
+    async def user_aset(self, user: UserModel) -> None:
+        await self.cache.aset(self._user_key(user.external_id), user.model_dump_json())
 
-    def conversation_get(
+    async def conversation_aget(
         self, conversation_id: UUID, user_id: UUID
     ) -> Optional[StoredConversationModel]:
         key = self._conversation_key(user_id, conversation_id)
         if not self.cache.exists(key):
             return None
         StoredConversationModel.model_validate_json(
-            self.cache.get(self._conversation_key(user_id, conversation_id))
+            await self.cache.aget(self._conversation_key(user_id, conversation_id))
         )
 
-    def conversation_exists(self, conversation_id: UUID, user_id: UUID) -> bool:
+    async def conversation_aexists(self, conversation_id: UUID, user_id: UUID) -> bool:
         key = self._conversation_key(user_id, conversation_id)
-        return self.cache.exists(key) != 0
+        return await self.cache.aexists(key) != 0
 
     def conversation_set(self, conversation: StoredConversationModel) -> None:
         key = self._conversation_key(conversation.user_id, conversation.id)
@@ -66,14 +65,6 @@ class CacheStore(IStore):
             except ValidationError as e:
                 _logger.warn(f'Error parsing conversation, "{e}"')
         return conversations or None
-
-    def message_get(
-        self, message_id: UUID, conversation_id: UUID
-    ) -> Optional[MessageModel]:
-        key = self._message_key(conversation_id, message_id)
-        if not self.cache.exists(key):
-            return None
-        return MessageModel.model_validate_json(self.cache.get(key))
 
     def message_get_index(
         self, message_indexs: List[IndexMessageModel]
