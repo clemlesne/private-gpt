@@ -399,9 +399,13 @@ class CustomHistory(BaseChatMessageHistory):
         res = []
         for message in self.store.message_list(self.conversation_id) or []:
             if message.role == MessageRole.ASSISTANT:
-                obj = AIMessage(content=message.content, **message.extra)
+                obj = AIMessage(
+                    content=message.content, additional_kwargs=message.extra
+                )
             elif message.role == MessageRole.USER:
-                obj = HumanMessage(content=message.content, **message.extra)
+                obj = HumanMessage(
+                    content=message.content, additional_kwargs=message.extra
+                )
             else:
                 raise ValueError(f"Unsupported message role: {message.role}")
             res.append(obj)
