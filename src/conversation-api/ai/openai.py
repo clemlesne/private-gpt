@@ -54,7 +54,7 @@ Assistant is designed to be able to assist with a wide range of tasks, from answ
 
 Today, we are the {datetime.utcnow()}.
 
-Only in its final answer, Assistant MUST:
+Only in its final answer:
 - Answer in the language {{language}}, or in the language the user explicitly asked for
 - Be as accurate as possible
 - Be polite, respectful, and positive
@@ -175,7 +175,29 @@ class OpenAI:
         for instance in azure_cognitive_searches:
             _logger.debug(f"Loading Azure Cognitive Search custom tool: {instance}")
             tool = Tool(
-                description=f"{instance.usage} Input should be a string, representing an keywords list for the search. Keywords requires to be extended with related ideas and synonyms. The output will be a list of messages. Data can be truncated is the message is too long.",
+                description=textwrap.dedent(
+                    f"""
+                Usage: {instance.usage}.
+
+                Constraints:
+                - Input should be a string, representing an keywords list for the search.
+                - Keywords requires to be extended with related ideas and synonyms.
+                - The output will be a list of messages. Data can be truncated is the message is too long.
+
+                Here are some examples:
+
+                User query: General taxes report for 2020 in the Massachusetts state
+                Query: 2020 taxes report in Massachusetts USA
+
+                User query: Issue on this metal piece in the form of a triangle with a hole in the middle
+                Query: Triangle of metal with a hole
+
+                User query: What do I do after I have been in a car accident?
+                Query: Car accident instructions
+
+                Do not reference any of the examples above.
+                """
+                ),
                 func=lambda q, api_key=instance.api_key.get_secret_value(), index_name=instance.displayed_name, language=instance.language, semantic_configuration=instance.semantic_configuration, service_name=instance.service_name, top_k=instance.top_k: str(
                     [
                         sanitize(doc.page_content)
