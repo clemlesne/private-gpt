@@ -95,7 +95,7 @@ class OpenAI:
         self._gpt_max_input_tokens = CONFIG.ai.openai.gpt_max_input_tokens
         # TODO: Use azure_ad_token_provider instead of api_key, when it'll be debuged (https://github.com/langchain-ai/langchain/issues/14069)
         openai_kwargs = {
-            "api_version": "2023-05-15",  # Latest stable as of Nov 30 2023
+            "api_version": "2023-07-01-preview",  # Only one to support functions
             "azure_ad_token": AZ_TOKEN_PROVIDER(),
             "azure_endpoint": str(CONFIG.ai.openai.endpoint),
             "max_retries": 10,  # Catch 429 Too Many Requests
@@ -340,8 +340,8 @@ class OpenAI:
                 ],
                 "system_message": SystemMessage(content=system_message),
             },
-            agent=AgentType.CHAT_CONVERSATIONAL_REACT_DESCRIPTION,  # TODO: Test using OPENAI_MULTI_FUNCTIONS, but fails to read memory
-            # early_stopping_method="generate",  # Fix in progress, see: https://github.com/langchain-ai/langchain/issues/8249#issuecomment-1651074268
+            agent=AgentType.OPENAI_MULTI_FUNCTIONS,
+            early_stopping_method="generate",
             handle_parsing_errors=True,  # Catch tool parsing errors
             llm=self._chat,
             max_execution_time=60,  # Timeout
