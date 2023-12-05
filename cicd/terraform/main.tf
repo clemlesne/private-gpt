@@ -531,7 +531,7 @@ resource "azurerm_container_app" "conversation_api" {
               api_token = azurerm_cognitive_account.form_recognizer.primary_access_key
             }
             bing = {
-              search_url       = jsondecode(data.azapi_resource.bing.output).properties.endpoint
+              search_url       = "${jsondecode(data.azapi_resource.bing.output).properties.endpoint}/v7.0/search"
               subscription_key = jsondecode(data.azapi_resource_action.bing.output).key1
             }
             tmdb = {
