@@ -13,7 +13,7 @@ from langchain.memory import ConversationSummaryMemory, ReadOnlySharedMemory
 from langchain.prompts import PromptTemplate
 from langchain.schema import BaseChatMessageHistory, AgentAction
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
-from langchain.tools import YouTubeSearchTool, PubmedQueryRun
+from langchain.tools import YouTubeSearchTool
 from langchain.tools.azure_cognitive_services import AzureCogsFormRecognizerTool
 from langchain.tools.base import Tool, BaseTool, ToolException
 from langchain.tools.google_places import GooglePlacesTool
@@ -131,6 +131,7 @@ class OpenAI:
                 "news-api",  # Search news with NewsAPI
                 "openweathermap-api",  # Get weather with OpenWeatherMap
                 "podcast-api",  # Search podcasts with ListenNotes
+                "pubmed",  # Search scholarly articles with PubMed
                 "tmdb-api",  # Search movies with TMDB
                 "wikipedia",  # Search general articles with Wikipedia
             ],
@@ -141,13 +142,12 @@ class OpenAI:
             news_api_key=CONFIG.tools.news.api_key.get_secret_value(),  # news-api
             openweathermap_api_key=CONFIG.tools.open_weather_map.api_key.get_secret_value(),  # openweathermap-api
             tmdb_bearer_token=CONFIG.tools.tmdb.bearer_token.get_secret_value(),  # tmdb-api
-            top_k_results=10,  # wikipedia, arxiv
+            top_k_results=10,  # wikipedia, arxiv, pubmed
         )
 
     def _init_custom_tools(self):
         req_tool = RequestsGetTool(requests_wrapper=TextRequestsWrapper())
         self._tools += [
-            PubmedQueryRun(),
             YouTubeSearchTool(),
             AzureCogsFormRecognizerTool(
                 azure_cogs_endpoint=str(CONFIG.tools.azure_form_recognizer.api_base),
