@@ -9,7 +9,7 @@ from langchain.callbacks import get_openai_callback
 from langchain.chains.summarize import load_summarize_chain
 from langchain.chat_models import AzureChatOpenAI
 from langchain.embeddings import AzureOpenAIEmbeddings
-from langchain.memory import ConversationBufferMemory, ReadOnlySharedMemory
+from langchain.memory import ConversationSummaryMemory, ReadOnlySharedMemory
 from langchain.prompts import PromptTemplate
 from langchain.schema import BaseChatMessageHistory, AgentAction
 from langchain.schema.messages import AIMessage, BaseMessage, HumanMessage
@@ -248,8 +248,9 @@ class OpenAI:
             user_id=current_user.id,
         )
         # Also can use ConversationSummaryBufferMemory, which can be used to summarize the conversation if it is too long
-        memory = ConversationBufferMemory(
+        memory = ConversationSummaryMemory(
             chat_memory=message_history,
+            llm=self.chat,
             memory_key="chat_history",
             return_messages=True,
         )
