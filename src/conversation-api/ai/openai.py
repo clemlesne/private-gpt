@@ -316,17 +316,12 @@ class OpenAI:
         system_message = (
             PREFIX_MESSAGE
             + "\n\n"
-            + textwrap.dedent(
-                f"""
-            Only in its final answer, Assistant SHOULD:
-            {conversation.prompt.content if conversation.prompt else "None"}
-
-            User profile:
-            - Email: {current_user.email}
-            - ID: {current_user.preferred_username}
-            - Name: {current_user.name}
-            """
+            + (
+                f"Assistant has a special task requested by the user:\n${conversation.prompt.content}\n\n"
+                if conversation.prompt
+                else ""
             )
+            + f"User profile: email={current_user.email}, id={current_user.preferred_username}, name={current_user.name}"
         )
 
         # Run
