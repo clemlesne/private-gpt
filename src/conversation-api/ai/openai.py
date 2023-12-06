@@ -107,7 +107,7 @@ class OpenAI:
             azure_deployment=CONFIG.ai.openai.gpt_deployment,
             model=CONFIG.ai.openai.gpt_model,
             streaming=True,
-            temperature=0,
+            temperature=0.5,  # Same at default ChatGPT
             **openai_kwargs,
         )
 
