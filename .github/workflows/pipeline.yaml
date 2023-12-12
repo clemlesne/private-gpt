@@ -134,7 +134,7 @@ jobs:
             .helm-template
 
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2.22.8
+        uses: github/codeql-action/upload-sarif@v2.22.10
         with:
           sarif_file: snyk.sarif
 
@@ -286,7 +286,7 @@ jobs:
             ${{ steps.tag.outputs.tag }}
 
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2.22.8
+        uses: github/codeql-action/upload-sarif@v2.22.10
         with:
           sarif_file: snyk.sarif
 
@@ -310,7 +310,7 @@ jobs:
         run: semgrep ci --sarif --output=semgrep.sarif
 
       - name: Upload results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v2.22.8
+        uses: github/codeql-action/upload-sarif@v2.22.10
         with:
           sarif_file: semgrep.sarif
 
