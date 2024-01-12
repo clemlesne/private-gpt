@@ -391,7 +391,7 @@ jobs:
             const { data } = await github.rest.repos.createRelease({
               draft: true,
               generate_release_notes: true,
-              name: `${repoName}-${{ needs.init.outputs.VERSION_FULL }}`,
+              name: `${repoName} v${{ needs.init.outputs.VERSION }}`,
               owner: context.repo.owner,
               prerelease: !isMain,
               repo: repoName,
