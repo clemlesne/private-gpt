@@ -253,7 +253,8 @@ jobs:
       - name: Store tag
         id: tag
         run: |
-          branch=$(echo "${{ github.ref_name }}" | sed 's/\//-/g')
+          ref="${{ github.ref }}"
+          branch=$(echo "${ref#refs/heads/}" | sed 's/\//-/g')
           tag=$(echo "${{ steps.meta.outputs.tags }}" | grep -m1 $branch)
           echo "tag=$tag" >> $GITHUB_OUTPUT
 
